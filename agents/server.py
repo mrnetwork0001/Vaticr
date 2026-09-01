@@ -279,6 +279,11 @@ async def audit(
     rows = [a.as_dict() for a in audits]
     return {
         "verified": sum(1 for r in rows if r["verdict"] == "match"),
+        "mismatched": sum(1 for r in rows if r["verdict"] == "MISMATCH"),
+        # Windows decided by less than our reconstruction can resolve. Counted
+        # separately rather than as failures: the disagreement is our
+        # resolution running out, not the chain being wrong.
+        "inconclusive": sum(1 for r in rows if r["verdict"] == "inconclusive"),
         "total": len(rows),
         "reference": "mark (EMA) — empirically the settlement series; see docs/SDK_FEEDBACK.md",
         "settlements": rows,

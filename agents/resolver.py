@@ -44,6 +44,14 @@ from . import store
 log = logging.getLogger("vaticr.resolver")
 
 
+# Below this margin an off-chain reconstruction cannot honestly adjudicate a
+# window. The oracle settles on its own sampled tick; we recover the reference
+# from the public feed by timestamp, and the two can differ by a tick. On a
+# window that moved 0.005% that difference flips the sign, so a disagreement
+# here says our resolution ran out — not that the chain is wrong.
+INCONCLUSIVE_BPS = 1.0
+
+
 class SettlementAudit:
     """One market's settlement, checked against the public price feed."""
 
@@ -64,14 +72,28 @@ class SettlementAudit:
         return "up" if self.close_ref >= self.open_ref else "down"
 
     @property
+    def margin_bps(self) -> float | None:
+        """How far the window closed from its own open, in basis points."""
+        if not self.open_ref or self.close_ref is None:
+            return None
+        return (self.close_ref - self.open_ref) / self.open_ref * 10_000
+
+    @property
     def verdict(self) -> str:
         if self.market.outcome == "void":
             return "voided"
         if self.derived is None:
             return "unverifiable"
-        return "match" if self.derived == self.market.outcome else "MISMATCH"
+        if self.derived == self.market.outcome:
+            return "match"
+        margin = self.margin_bps
+        if margin is not None and abs(margin) < INCONCLUSIVE_BPS:
+            # Decided by less than our reconstruction can resolve.
+            return "inconclusive"
+        return "MISMATCH"
 
     def as_dict(self) -> dict:
+        margin = self.margin_bps
         return {
             "market_id": self.market.market_id,
             "symbol": self.market.symbol,
@@ -81,6 +103,7 @@ class SettlementAudit:
             "derived_outcome": self.derived,
             "open_reference": self.open_ref,
             "close_reference": self.close_ref,
+            "margin_bps": None if margin is None else round(margin, 3),
             "verdict": self.verdict,
             "oracle_question_id": self.market.oracle_question_id,
             "receipt_url": self.receipt_url,
@@ -282,16 +305,27 @@ async def _main() -> None:
     result = await resolver.sweep(args.venue)
 
     print("\n=== SETTLEMENT AUDIT (recomputed from the public oracle feed) ===")
-    print(f"{'market':<26}{'chain':<7}{'derived':<9}{'open':>11}{'close':>11}  verdict")
+    print(
+        f"{'market':<26}{'chain':<7}{'derived':<9}{'open':>11}{'close':>11}"
+        f"{'margin':>10}  verdict"
+    )
     for a in result["audits"][: args.limit]:
         o = f"{a['open_reference']:.2f}" if a["open_reference"] else "-"
         c = f"{a['close_reference']:.2f}" if a["close_reference"] else "-"
+        m = f"{a['margin_bps']:+.2f}bp" if a["margin_bps"] is not None else "-"
         print(
             f"{a['symbol']:<26}{str(a['onchain_outcome']):<7}"
-            f"{str(a['derived_outcome']):<9}{o:>11}{c:>11}  {a['verdict']}"
+            f"{str(a['derived_outcome']):<9}{o:>11}{c:>11}{m:>10}  {a['verdict']}"
         )
     matched = sum(1 for a in result["audits"] if a["verdict"] == "match")
-    print(f"\n  {matched}/{len(result['audits'])} settlements independently verified")
+    unclear = sum(1 for a in result["audits"] if a["verdict"] == "inconclusive")
+    total = len(result["audits"])
+    print(f"\n  {matched}/{total} settlements independently verified")
+    if unclear:
+        print(
+            f"  {unclear} inconclusive — decided by under {INCONCLUSIVE_BPS}bp, "
+            f"finer than an off-chain reconstruction can resolve"
+        )
     if result["audits"]:
         print(f"  receipt: {result['audits'][0]['receipt_url']}")
 
