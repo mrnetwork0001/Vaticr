@@ -1,0 +1,26 @@
+{
+  "name": "@vaticr/bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Vaticr headline-driven market maker on DreamDEX Event Contracts.",
+  "main": "src/runner.ts",
+  "scripts": {
+    "start": "tsx src/runner.ts",
+    "dev": "tsx watch src/runner.ts",
+    "doctor": "tsx src/doctor.ts",
+    "typecheck": "tsc --noEmit",
+    "backstop": "tsx src/backstop.ts"
+  },
+  "dependencies": {
+    "@dreamdex-bot-kit/ec-core": "*",
+    "@somnia-chain/markets-sdk": "^0.28.1",
+    "dotenv": "^16.4.5",
+    "viem": "^2.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  }
+}
