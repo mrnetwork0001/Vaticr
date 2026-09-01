@@ -2,33 +2,57 @@
   "name": "vaticr",
   "version": "1.0.0",
   "private": true,
+  "description": "Autonomous DeAI headline-driven market maker for DreamDEX Event Contracts on Somnia.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "vendor/ec-core",
+    "bot"
+  ],
   "scripts": {
+    "bot:start": "node scripts/start.mjs",
+    "bot:dry": "cross-env DRY_RUN=true node scripts/start.mjs",
+    "doctor": "npm run doctor -w @vaticr/bot",
+    "api": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','uvicorn','agents.server:app','--host',process.env.VATICR_API_HOST||'127.0.0.1','--port',process.env.VATICR_API_PORT||'8787'],{stdio:'inherit'})\"",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "bot:start": "ts-node bot/runner.ts",
-    "compile": "hardhat compile"
+    "typecheck": "tsc -p tsconfig.json --noEmit && npm run typecheck -w @vaticr/bot",
+    "compile": "hardhat compile",
+    "deploy:registry": "hardhat run scripts/deploy-registry.cjs --network somniaTestnet",
+    "backstop": "npm run backstop -w @vaticr/bot",
+    "test:contracts": "hardhat test",
+    "test:agents": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','tests.test_pricing'],{stdio:'inherit'})\"",
+    "bot:only": "npm start -w @vaticr/bot",
+    "test": "npm run test:agents && npm run test:contracts",
+    "setup": "npm install && pip install -r requirements.txt"
   },
   "dependencies": {
-    "next": "14.1.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "ethers": "^6.11.0",
-    "@somnia-chain/dreamdex-bot-kit": "^1.0.0",
-    "framer-motion": "^11.0.3",
-    "lucide-react": "^0.330.0"
+    "next": "14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "framer-motion": "^11.3.19",
+    "lucide-react": "^0.427.0"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
-    "@types/node": "^20.11.16",
-    "@types/react": "^18.2.52",
-    "@types/react-dom": "^18.2.19",
-    "autoprefixer": "^10.4.17",
-    "hardhat": "^2.19.5",
-    "postcss": "^8.4.35",
-    "tailwindcss": "^3.4.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3"
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@types/node": "^22.5.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.10",
+    "postcss": "^8.4.41",
+    "tailwindcss": "^3.4.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
   }
 }
