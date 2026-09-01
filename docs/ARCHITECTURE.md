@@ -182,7 +182,18 @@ open:
 
 - **Audit.** Recompute every settlement independently from the public oracle
   feed and compare to the on-chain winner, surfacing the per-source receipt URL.
-  Currently **12/12 verified** on the live testnet venue.
+
+  One honest limit: the oracle settles on its own sampled tick, and we recover
+  the reference from the public feed by timestamp. Those can differ by a tick,
+  which is irrelevant on a normal window and decisive on one that closed a
+  fraction of a basis point from its open. Measured over twenty settlements,
+  both "nearest tick" and "last tick at or before the boundary" reproduce the
+  on-chain winner 19/20, failing on the *same* window — one that moved 0.005%.
+
+  So a disagreement under 1bp is reported as **inconclusive** rather than a
+  mismatch: at that margin our reconstruction has run out of resolution, and
+  claiming the chain is wrong would be the dishonest reading. Anything above
+  that threshold is a real mismatch and is reported as one.
 - **Score.** Every forecast is committed *before* its window closes, then
   Brier-scored once the oracle speaks. A model that cannot beat 0.25 is a coin
   flip with extra steps, and this is the only way to know.

@@ -91,14 +91,24 @@ cycle 4: 8 live market(s), 10 forecast(s)
 And the settlement audit, recomputed independently from the oracle feed:
 
 ```
-market                    chain  derived         open      close  verdict
-BTC 300s @1788242100      down   down        79164.04   79155.85  match
-ETH 300s @1788242100      down   down         2483.53    2483.50  match
-BTC 900s @1788241500      up     up          78968.75   79151.08  match
+market                    chain  derived         open      close    margin  verdict
+ETH 300s @1788270000      down   down          2443.07    2435.90  -29.33bp  match
+BTC 300s @1788270000      down   down         77809.31   77595.24  -27.51bp  match
+BTC 900s @1788269400      up     up           77783.91   77863.42  +10.22bp  match
+ETH 300s @1788269100      down   up            2439.46    2439.58   +0.48bp  inconclusive
 
-  12/12 settlements independently verified
-  receipt: https://dev.oracle.somnia.host/questions/48354?view=graph
+  11/12 settlements independently verified
+  1 inconclusive — decided by under 1bp, finer than an off-chain
+  reconstruction can resolve
+  receipt: https://dev.oracle.somnia.host/questions/48402?view=graph
 ```
+
+That last row is the interesting one. The oracle settles on its own sampled
+tick; Vaticr recovers the reference from the public feed by timestamp, and on a
+window that closed 0.005% from its open those can disagree. Rather than call
+that a failed settlement, the audit reports it as **inconclusive** — our
+resolution ran out, the chain is not wrong. Over twenty settlements there were
+zero genuine mismatches.
 
 ---
 
