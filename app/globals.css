@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+
+body {
+  @apply bg-ink-950 text-slate-200 antialiased;
+  background-image:
+    radial-gradient(60rem 40rem at 15% -10%, rgba(129, 140, 248, 0.10), transparent 60%),
+    radial-gradient(50rem 30rem at 90% 0%, rgba(52, 211, 153, 0.07), transparent 55%);
+  background-attachment: fixed;
+}
+
+.card { @apply rounded-xl border border-white/10 bg-ink-900/70 backdrop-blur; }
+.mono { @apply font-mono tabular-nums; }
