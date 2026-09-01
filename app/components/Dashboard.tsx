@@ -52,6 +52,12 @@ export default function Dashboard() {
     <main className="mx-auto max-w-7xl px-5 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
+          <a
+            href="/"
+            className="mb-1 inline-flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-slate-300"
+          >
+            <span aria-hidden>&larr;</span> Back to overview
+          </a>
           <h1 className="text-2xl font-semibold tracking-tight text-white">
             Vaticr
           </h1>
