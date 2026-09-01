@@ -11,6 +11,32 @@
 
 ---
 
+> ### ⚠️ Design revision — read [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) first
+>
+> Three premises in the original blueprint below turned out not to hold against
+> the live DreamDEX protocol, and the implementation diverges from them:
+>
+> 1. **Event Contracts cannot be created from headlines.** They are rolling
+>    Up/Down windows on BTC/ETH price, minted per window by
+>    `BinaryMarketsModule`. There is no permissionless market-creation entry
+>    point, and the question text is fixed.
+> 2. **Contracts cannot be resolved from news payloads.** Settlement is
+>    oracle-driven and automatic — the question is scheduled on the OracleHub at
+>    creation with its resolution gas reserved, and Somnia reactivity fires the
+>    callback at expiry. `BinaryMarketsModule` is the only trusted settler.
+> 3. **The venue is a CLOB, not an AMM.**
+>
+> What shipped instead: the AI converts headlines into a *Bayesian posterior* on
+> the windows the protocol already runs, the Bot Kit trades that view via
+> **mint-a-pair** two-sided quoting with zero inventory, and the resolution agent
+> audits settlements, Brier-scores every forecast, and drives the permissionless
+> `pokeOracle` / `voidExpired` backstops.
+>
+> The subsystem numbering below still maps 1:1 to `agents/scout.py`,
+> `agents/pricing.py`, `bot/runner.ts` and `agents/resolver.py`.
+
+---
+
 ## 📌 Executive Summary & Core Value Proposition
 
 Prediction markets today suffer from manual market creation, illiquid order books, and slow oracle resolutions. Most hackathon entries build static DApp UIs or hyper-niche math formulas that fail to generate trading volume or active liquidity.
