@@ -1,6 +1,11 @@
+# Vaticr — Python 3.11 intelligence layer
 fastapi>=0.110.0
-uvicorn>=0.28.0
+uvicorn[standard]>=0.28.0
 pydantic>=2.6.0
-web3>=6.15.0
-requests>=2.31.0
+pydantic-settings>=2.2.0
+httpx>=0.27.0
 python-dotenv>=1.0.1
+
+# Optional — enables the LLM headline classifier (agents/llm.py).
+# Without it Vaticr falls back to the deterministic lexicon scorer.
+anthropic>=0.40.0
