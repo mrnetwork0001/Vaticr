@@ -155,9 +155,14 @@ export default function Dashboard() {
               subtitle="Every settlement recomputed from the public oracle feed"
               right={
                 audit && (
-                  <Pill tone={audit.verified === audit.total ? "up" : "warn"}>
-                    {audit.verified}/{audit.total} verified
-                  </Pill>
+                  <div className="flex gap-1.5">
+                    <Pill tone={audit.mismatched === 0 ? "up" : "down"}>
+                      {audit.verified}/{audit.total} verified
+                    </Pill>
+                    {audit.inconclusive > 0 && (
+                      <Pill tone="warn">{audit.inconclusive} too close to call</Pill>
+                    )}
+                  </div>
                 )
               }
             >
@@ -168,6 +173,7 @@ export default function Dashboard() {
                       <th className="px-4 py-2 font-medium">Window</th>
                       <th className="px-3 py-2 font-medium">Open</th>
                       <th className="px-3 py-2 font-medium">Close</th>
+                      <th className="px-3 py-2 font-medium">Margin</th>
                       <th className="px-3 py-2 font-medium">On-chain</th>
                       <th className="px-3 py-2 font-medium">Recomputed</th>
                       <th className="px-3 py-2 font-medium">Receipt</th>
@@ -183,13 +189,28 @@ export default function Dashboard() {
                         <td className="mono px-3 py-2 text-slate-500">
                           {s.close_reference?.toFixed(2) ?? "-"}
                         </td>
+                        <td className="mono px-3 py-2 text-slate-500">
+                          {s.margin_bps === null
+                            ? "-"
+                            : `${s.margin_bps > 0 ? "+" : ""}${s.margin_bps.toFixed(2)}bp`}
+                        </td>
                         <td className="px-3 py-2">
                           <Pill tone={s.onchain_outcome === "up" ? "up" : "down"}>
                             {s.onchain_outcome}
                           </Pill>
                         </td>
                         <td className="px-3 py-2">
-                          <Pill tone={s.verdict === "match" ? "up" : "warn"}>{s.verdict}</Pill>
+                          <Pill
+                            tone={
+                              s.verdict === "match"
+                                ? "up"
+                                : s.verdict === "MISMATCH"
+                                  ? "down"
+                                  : "warn"
+                            }
+                          >
+                            {s.verdict}
+                          </Pill>
                         </td>
                         <td className="px-3 py-2">
                           {s.receipt_url && (
@@ -209,9 +230,18 @@ export default function Dashboard() {
                 </table>
               </div>
               {audit && (
-                <p className="border-t border-white/5 px-4 py-2 text-[11px] text-slate-600">
-                  reference series: {audit.reference}
-                </p>
+                <div className="border-t border-white/5 px-4 py-2 text-[11px] leading-relaxed text-slate-600">
+                  <p>reference series: {audit.reference}</p>
+                  {audit.inconclusive > 0 && (
+                    <p className="mt-1">
+                      &ldquo;too close to call&rdquo; means the window was decided by
+                      under 1bp &mdash; finer than a reconstruction from the public
+                      feed can resolve, since the oracle settles on its own sampled
+                      tick. It is not a disputed settlement; open the receipt to see
+                      the sources that decided it.
+                    </p>
+                  )}
+                </div>
               )}
             </Card>
           </div>

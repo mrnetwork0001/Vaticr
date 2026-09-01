@@ -420,11 +420,10 @@ npm run bot:start   # brain + bot, one command`}
 
             <div className="card p-6">
               <h3 className="text-[13px] font-semibold text-slate-200">Verification</h3>
-              <div className="mt-3 grid grid-cols-3 gap-3 text-center">
+              <div className="mt-3 grid grid-cols-2 gap-3 text-center">
                 {[
                   ["17", "engine property tests"],
                   ["7", "Solidity tests"],
-                  ["12/12", "settlements verified"],
                 ].map(([n, l]) => (
                   <div key={l} className="rounded-lg border border-white/10 bg-ink-950/50 py-3">
                     <div className="mono text-lg font-semibold text-white">{n}</div>
@@ -434,7 +433,9 @@ npm run bot:start   # brain + bot, one command`}
               </div>
               <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
                 Including Monte-Carlo recovery of a known volatility, and a regression
-                for the EMA bug above.
+                for the EMA bug above. Settlements are recomputed continuously rather
+                than claimed once &mdash; the live figure is in the strip at the top,
+                and every row is on the dashboard.
               </p>
             </div>
           </div>

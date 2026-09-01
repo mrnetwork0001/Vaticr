@@ -59,6 +59,7 @@ export interface Settlement {
   derived_outcome: string | null;
   open_reference: number | null;
   close_reference: number | null;
+  margin_bps: number | null;
   verdict: string;
   oracle_question_id: string | null;
   receipt_url: string | null;
@@ -66,6 +67,8 @@ export interface Settlement {
 
 export interface AuditResponse {
   verified: number;
+  mismatched: number;
+  inconclusive: number;
   total: number;
   reference: string;
   settlements: Settlement[];

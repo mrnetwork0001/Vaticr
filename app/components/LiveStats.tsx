@@ -42,6 +42,7 @@ export default function LiveStats() {
           headlines: health?.headlines_in_window ?? null,
           verified:
             audit?.total > 0 ? `${audit.verified}/${audit.total}` : null,
+          // audit.mismatched is the number that would actually be alarming.
           network: health?.network ?? null,
         });
         setOnline(true);
@@ -57,7 +58,7 @@ export default function LiveStats() {
 
   const items = [
     { label: "Live windows priced", value: s.markets, hint: "BTC & ETH, 60s–1h" },
-    { label: "Settlements verified", value: s.verified, hint: "recomputed from the oracle" },
+    { label: "Settlements verified", value: s.verified, hint: "recomputed independently" },
     { label: "Headlines in window", value: s.headlines, hint: "scored for direction" },
     { label: "Network", value: s.network ? `Somnia ${s.network}` : null, hint: "chain 50312" },
   ];
