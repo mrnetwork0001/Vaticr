@@ -102,6 +102,22 @@ export function explainError(err: unknown): Explained {
           routine: true,
           raw,
         };
+      case "ImmediateOrCancelNoFill":
+        return {
+          headline: "An IOC found nothing to take at your price",
+          detail:
+            "An IOC buy only takes offers at or BELOW your limit. Nothing was resting there, so the pool cancelled the whole order rather than resting it — that is what IOC means. No shares were bought and no collateral was escrowed; the gas for the reverted transaction is the only cost. Raise the limit to the best offer to cross, or switch to post-only and rest at your price.",
+          routine: true,
+          raw,
+        };
+      case "FillOrKillNotFilled":
+        return {
+          headline: "A fill-or-kill could not be filled in full",
+          detail:
+            "There was not enough resting size at or better than your price to fill the whole order, so none of it was placed.",
+          routine: true,
+          raw,
+        };
       case "OrderExpiryBeyondMarket":
         return {
           headline: "The order would have outlived its market",
@@ -319,4 +335,148 @@ export function WriteError({ error }: { error: unknown }) {
 /** A short explanatory line under a control, in the site's muted register. */
 export function Hint({ children }: { children: ReactNode }) {
   return <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{children}</p>;
+}
+
+/**
+ * Collateral printed to the LAST DIGIT THE TOKEN CAN HOLD.
+ *
+ * `money` above rounds to four places, which is the right call for a balance
+ * read but the wrong one for a number that is about to be signed: at six
+ * decimals it can differ from the amount the pool actually escrows in the fifth
+ * and sixth place. Anywhere the figure IS the transaction — total cost, max
+ * loss, the amount on the confirm button — use this one, so what is printed and
+ * what is escrowed are the same number.
+ */
+export function moneyExact(raw: bigint, decimals: number, symbol = "tUSDC"): string {
+  const s = formatUnits(raw, decimals);
+  const [whole, frac = ""] = s.split(".");
+  const trimmed = frac.replace(/0+$/, "");
+  const padded = trimmed.length >= 2 ? trimmed : `${trimmed}${"0".repeat(2 - trimmed.length)}`;
+  return `${whole}.${padded} ${symbol}`;
+}
+
+/** A basis-point rate as a percentage, e.g. `25` -> `"0.25%"`. */
+export function bpsPct(bps: number): string {
+  const p = bps / 100;
+  return `${Number.isInteger(p) ? p.toString() : p.toFixed(2)}%`;
+}
+
+/**
+ * Scroll to a section of the dashboard by DOM id, smoothly where the viewer has
+ * not asked for reduced motion.
+ *
+ * This exists because the panels a trader needs AFTER a fill — Positions, and
+ * the Claim panel that settled winnings sit in until someone asks for them —
+ * live below the fold. A receipt that names them without going there is a
+ * receipt that ends the journey in the wrong place.
+ *
+ * Returns false when the target is not on the page, so a caller can fall back
+ * to ordinary anchor navigation rather than swallowing the click.
+ */
+export function scrollToId(id: string): boolean {
+  if (typeof document === "undefined") return false;
+  const el = document.getElementById(id);
+  if (!el) return false;
+
+  const reduced =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  try {
+    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  } catch {
+    // Older engines only accept the boolean form.
+    el.scrollIntoView(true);
+  }
+
+  // Land keyboard focus there too, without a second competing scroll.
+  if (el.tabIndex < 0) el.tabIndex = -1;
+  try {
+    el.focus({ preventScroll: true });
+  } catch {
+    /* focus is a courtesy, never a requirement */
+  }
+  return true;
+}
+
+/**
+ * A link to another section of the dashboard. A real `href` first — so it works
+ * with middle-click, with keyboard, and if the JS handler ever throws — with the
+ * smooth scroll layered on top only when the target actually exists.
+ */
+export function JumpLink({
+  to, children, emphasis = false,
+}: {
+  to: string;
+  children: ReactNode;
+  /** Render as a bordered chip rather than an inline link. */
+  emphasis?: boolean;
+}) {
+  const className = emphasis
+    ? "inline-flex items-center gap-1 rounded-md border border-accent/40 bg-accent/10 px-2.5 py-1 text-[11.5px] font-semibold text-accent transition hover:bg-accent/20"
+    : "text-accent underline underline-offset-2 hover:text-white";
+  return (
+    <a
+      href={`#${to}`}
+      className={className}
+      onClick={(e) => {
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+        if (scrollToId(to)) e.preventDefault();
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+
+/**
+ * A pre-flight notice: something the page already knows that would otherwise be
+ * learned by paying gas for a revert. Amber, never red — nothing has failed
+ * yet — and never a block: it states the problem, offers the two real fixes,
+ * and leaves the decision where it belongs.
+ */
+export function Notice({
+  title, tone = "warn", children, actions,
+}: {
+  title: string;
+  tone?: "warn" | "info";
+  children: ReactNode;
+  actions?: ReactNode;
+}) {
+  const shell =
+    tone === "warn"
+      ? "border-amber-400/30 bg-amber-400/[0.07]"
+      : "border-white/10 bg-white/[0.03]";
+  const head = tone === "warn" ? "text-amber-300" : "text-slate-200";
+  return (
+    <div className={`rounded-lg border px-3 py-2.5 ${shell}`} role="status" aria-live="polite">
+      <p className={`text-[12.5px] font-semibold ${head}`}>{title}</p>
+      <div className="mt-1 text-[11.5px] leading-relaxed text-slate-300">{children}</div>
+      {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
+    </div>
+  );
+}
+
+/** A button offered by a `Notice` — the user's fix, applied only if they click it. */
+export function NoticeAction({
+  onClick, children, primary = false,
+}: {
+  onClick: () => void;
+  children: ReactNode;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-md border px-2.5 py-1 text-[11.5px] font-medium transition ${
+        primary
+          ? "border-accent/40 bg-accent/15 text-accent hover:bg-accent/25"
+          : "border-white/15 text-slate-300 hover:bg-white/5"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }

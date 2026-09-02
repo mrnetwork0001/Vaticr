@@ -33,10 +33,25 @@
  *
  *  5. Nothing auto-submits. Review is a separate, explicit step, and it prints
  *     side, price, size, total cost and max loss before the wallet is opened.
+ *
+ *  6. A revert this panel could have PREDICTED is a bug in this panel. It holds
+ *     the book, so it already knows whether an IOC can find anything to take and
+ *     whether a post-only would cross. Both are checked before the review step
+ *     and explained in words, with the two real fixes offered as buttons —
+ *     informed, never blocked, and never silently re-priced. Learning "that
+ *     could not have filled" by paying gas for `ImmediateOrCancelNoFill` is the
+ *     failure this exists to stop.
+ *
+ *  7. Every money figure printed here is the one that gets signed. The pool
+ *     escrows CEIL(price x size) (see `escrowFor`), so this file rounds the same
+ *     way and prints the amount to the token's own last digit; a payout that
+ *     depends on a fee we could not read says so rather than quoting the gross.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import type { Address } from "viem";
+import { useWalletClient } from "wagmi";
+import { erc20Abi, formatUnits } from "viem";
 import type { BinarySide, PlaceOrderResult } from "@somnia-chain/markets-sdk";
 import { ORDER_TYPE } from "@somnia-chain/markets-sdk";
 import { useMarketFees } from "@somnia-chain/markets-sdk/react";
@@ -52,13 +67,14 @@ import {
 import { useBinaryBook } from "./useBinaryBook";
 import { useOnchainMarket } from "./useOnchainMarket";
 import {
-  Hint, MARKET_STATUS, ReviewRow, TxLink, WriteError,
-  money, pct, price as fmtPrice, rawToNumber, signedFixed, statusExplanation, statusName,
+  Hint, JumpLink, MARKET_STATUS, Notice, NoticeAction, ReviewRow, TxLink, WriteError,
+  bpsPct, moneyExact, pct, price as fmtPrice, rawToNumber, signedFixed,
+  statusExplanation, statusName,
 } from "./shared";
 
 type Outcome = "YES" | "NO";
 type Kind = "post" | "ioc";
-type Phase = "form" | "review" | "sending" | "done";
+type Phase = "form" | "review" | "approving" | "sending" | "done";
 
 const SIDES: Record<`${Outcome}-buy`, BinarySide> = {
   "YES-buy": "BUY_YES",
@@ -78,7 +94,7 @@ interface Plan {
   priceYesRaw: bigint;
   /** Size in outcome tokens, lot-aligned (floored — never more than asked). */
   quantityRaw: bigint;
-  /** price × size: the collateral escrowed, and the most that can be lost. */
+  /** ceil(price × size): the collateral escrowed, and the most that can be lost. */
   costRaw: bigint;
   /** The generation this plan belongs to. A roll invalidates it. */
   pool: Address;
@@ -92,9 +108,37 @@ interface Placed {
   restingRaw: bigint;
   orderId?: bigint;
   avgOwn: number | null;
+  /** Collateral actually paid for the filled part, in the pool's rounding. */
+  spentRaw: bigint;
+  /** What the order escrowed up front — the ceiling `spentRaw` was taken from. */
+  escrowRaw: bigint;
   decimals: number;
   outcome: Outcome;
   kind: Kind;
+}
+
+/**
+ * What a buy escrows: **ceil**(price x size), in the leg's own price terms.
+ *
+ * This must match `BinaryPool`'s own arithmetic exactly — the SDK computes the
+ * approval as `(quantity * price + one - 1) / one` for BUY_YES and
+ * `(quantity * (one - price) + one - 1) / one` for BUY_NO, which is the same
+ * expression in own terms. Flooring instead would under-approve by one wei on
+ * every price x size that is not an exact multiple of one unit, and the pool
+ * would then pull more than it was allowed: either a revert, or (because the
+ * SDK auto-approves behind us) a surprise second wallet prompt for an UNLIMITED
+ * allowance nobody asked for. It would also print a total cost one wei under
+ * the amount actually taken.
+ */
+function escrowFor(priceOwnRaw: bigint, quantityRaw: bigint, one: bigint): bigint {
+  return (priceOwnRaw * quantityRaw + one - 1n) / one;
+}
+
+/** A fee rate the indexer gives as a decimal string, or null when it has none. */
+function bpsOf(value: string | null | undefined): number | null {
+  if (value === null || value === undefined) return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 && n <= 10_000 ? n : null;
 }
 
 /** Trim a typed decimal to what the token can actually represent. */
@@ -133,6 +177,7 @@ export default function TradeTicket({
 }) {
   const marketId = forecast.market_id ?? undefined;
   const { exchange, address, canTrade, isConnected, chainOk } = useVaticrExchange();
+  const { data: walletClient } = useWalletClient();
   const { onchain, grid, error: statusError, refresh } = useOnchainMarket(marketId);
   const decimals = onchain?.decimals ?? 6;
   const one = useMemo(() => 10n ** BigInt(decimals), [decimals]);
@@ -149,6 +194,17 @@ export default function TradeTicket({
   const [plan, setPlan] = useState<Plan | null>(null);
   const [placed, setPlaced] = useState<Placed | null>(null);
   const [sendError, setSendError] = useState<unknown>(null);
+
+  // A one-second clock. Two things need it: the "this window is about to close"
+  // warning, and the expiry check inside `built` — which, keyed only on the
+  // form's own inputs, would otherwise keep answering with the time the ticket
+  // was opened however long it sits there.
+  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1_000);
+    return () => clearInterval(timer);
+  }, []);
+  const nowSec = Math.floor(nowMs / 1000);
 
   const pool = onchain?.pool;
   useEffect(() => {
@@ -187,12 +243,44 @@ export default function TradeTicket({
       ? yesEdge > 0 ? "YES" : null
       : noEdge !== null && noEdge > 0 ? "NO" : null;
 
-  const settlementFeeBps = fees.data?.settlementFeeBps ? Number(fees.data.settlementFeeBps) : null;
+  // Fee config is frozen into the market at creation, and is null both for
+  // markets created before the fee plumbing existed and whenever the indexer
+  // read has not landed (or failed). Those two cases have to stay visible: a
+  // payout quoted gross when a settlement fee might exist is an overstatement of
+  // someone's winnings, which is the one direction this panel must never round.
+  const settlementFeeBps = bpsOf(fees.data?.settlementFeeBps);
+  const takerFeeBps = bpsOf(fees.data?.takerFeeBps);
+  const makerFeeBps = bpsOf(fees.data?.makerFeeBps);
   const payoutPerShare = settlementFeeBps === null ? 1 : 1 - settlementFeeBps / 10_000;
+  /** Gross quantity net of the settlement fee, in integer arithmetic. */
+  const payoutFor = (quantityRaw: bigint): bigint =>
+    settlementFeeBps === null
+      ? quantityRaw
+      : (quantityRaw * BigInt(10_000 - Math.round(settlementFeeBps))) / 10_000n;
 
   /* ------------------------------------------------------- plan + guards */
 
   const tradable = onchain !== null && onchain.status === MARKET_STATUS.Trading;
+
+  /** The pool's tick, as a positive integer, whatever the grid says. */
+  const tick = grid && grid.tickSize > 0n ? grid.tickSize : 1n;
+
+  /**
+   * The price that would actually be signed right now: the box's number snapped
+   * onto the pool's tick, in the selected leg's own terms. `null` when the box
+   * does not hold a usable probability, or the grid has not been read yet.
+   *
+   * Defined once, here, because the plan builder and the crossing guards must
+   * never reason about two different prices.
+   */
+  const priceOwnRaw = useMemo((): bigint | null => {
+    if (!grid) return null;
+    const p = Number(priceInput);
+    if (!Number.isFinite(p) || p <= 0 || p >= 1) return null;
+    const raw = safeRaw(quantizePrice(p, decimals, tick), decimals);
+    if (raw === null || raw <= 0n || raw >= one) return null;
+    return raw;
+  }, [priceInput, grid, tick, decimals, one]);
 
   const built = useMemo((): { plan?: Plan; problem?: string } => {
     if (!marketId) return { problem: "This forecast is not bound to an on-chain market yet." };
@@ -213,8 +301,7 @@ export default function TradeTicket({
     if (!Number.isFinite(p) || p <= 0 || p >= 1) {
       return { problem: "Price must be a probability strictly between 0 and 1 — 0.23, not 23." };
     }
-    const priceOwnRaw = safeRaw(quantizePrice(p, decimals, grid.tickSize), decimals);
-    if (priceOwnRaw === null || priceOwnRaw <= 0n || priceOwnRaw >= one) {
+    if (priceOwnRaw === null) {
       return { problem: "That price falls off the venue's tick grid once snapped. Nudge it a tick." };
     }
 
@@ -229,19 +316,19 @@ export default function TradeTicket({
       };
     }
 
-    const costRaw = (priceOwnRaw * quantityRaw) / one;
+    // Ceil, exactly as the pool does — see `escrowFor`.
+    const costRaw = escrowFor(priceOwnRaw, quantityRaw, one);
     if (balances.native && balances.native.raw === 0n) {
       return { problem: "This wallet holds no STT, so it cannot pay gas on Somnia testnet." };
     }
     if (balances.collateral && balances.collateral.raw < costRaw) {
       return {
         problem:
-          `A buy escrows the full cost up front: this order needs ${money(costRaw, decimals, COLLATERAL_SYMBOL)}` +
+          `A buy escrows the full cost up front: this order needs ${moneyExact(costRaw, decimals, COLLATERAL_SYMBOL)}` +
           ` and the wallet holds ${balances.collateral.exact} ${COLLATERAL_SYMBOL}.`,
       };
     }
 
-    const nowSec = Math.floor(Date.now() / 1000);
     const expirySec = Number(onchain.expiry);
     if (expirySec <= nowSec) {
       return { problem: "This window has already reached its expiry." };
@@ -267,9 +354,204 @@ export default function TradeTicket({
       },
     };
   }, [
-    marketId, canTrade, isConnected, chainOk, onchain, tradable, grid, priceInput, sizeInput,
-    decimals, one, outcome, kind, balances.native, balances.collateral,
+    marketId, canTrade, isConnected, chainOk, onchain, tradable, grid, priceInput, priceOwnRaw,
+    sizeInput, decimals, one, outcome, kind, balances.native, balances.collateral, nowSec,
   ]);
+
+  /* --------------------------------------------------- pre-flight guards */
+
+  // While a review sheet is up, the guards must describe the FROZEN plan, not
+  // the box — the price box keeps following the model until it is touched, so
+  // the two can drift apart while the sheet sits open.
+  const reviewing = (phase === "review" || phase === "approving" || phase === "sending") && plan !== null;
+  const guardPriceRaw = reviewing && plan ? plan.priceOwnRaw : priceOwnRaw;
+  const guardKind: Kind = reviewing && plan ? plan.kind : kind;
+  const guardOutcome: Outcome = reviewing && plan ? plan.outcome : outcome;
+
+  /** Nothing below may be asserted from a book that has not answered yet. */
+  const bookKnown = book.loaded && book.error === null;
+  const guardOffer = offerFor(guardOutcome);
+  /** The touch as an exact integer — floats must not decide whether we cross. */
+  const guardOfferRaw =
+    guardOffer === null ? null : safeRaw(quantizePrice(guardOffer, decimals, 1n), decimals);
+
+  /**
+   * Does this order cross the book as it stands? A BUY takes offers at or below
+   * its limit, in the leg's own terms, so one comparison answers it for both
+   * legs: a NO buy is filled from the YES bids, and `offerFor` has already
+   * complemented those.
+   */
+  const wouldCross =
+    guardPriceRaw !== null && guardOfferRaw !== null && guardPriceRaw >= guardOfferRaw;
+
+  /** The touch, snapped UP onto the tick grid: the cheapest limit that crosses. */
+  const touchRaw = ((): bigint | null => {
+    if (guardOfferRaw === null) return null;
+    const down = (guardOfferRaw / tick) * tick;
+    const up = down < guardOfferRaw ? down + tick : down;
+    return up > 0n && up < one ? up : null;
+  })();
+  /** One tick under the touch: the best price that is still allowed to rest. */
+  const restRaw = touchRaw === null || touchRaw - tick <= 0n ? null : touchRaw - tick;
+
+  /** Crossing at the touch costs more than the model says the share is worth. */
+  const touchAboveFair = guardOffer !== null && guardOffer > fairOwn;
+
+  type Guard = "ioc-cannot-fill" | "ioc-empty-book" | "post-would-cross" | null;
+  const guard: Guard =
+    !bookKnown || guardPriceRaw === null || !tradable
+      ? null
+      : guardKind === "ioc"
+        ? guardOfferRaw === null
+          ? "ioc-empty-book"
+          : wouldCross
+            ? null
+            : "ioc-cannot-fill"
+        : wouldCross
+          ? "post-would-cross"
+          : null;
+
+  // Applying a fix always returns to the form: changing the price or the
+  // execution style under a review sheet would leave the sheet describing an
+  // order that is no longer the one being built.
+  const applyPrice = (raw: bigint) => {
+    setTouchedPrice(true);
+    setPriceInput(formatUnits(raw, decimals));
+    setPhase("form");
+    setSendError(null);
+  };
+  const applyKind = (k: Kind) => {
+    setKind(k);
+    setPhase("form");
+    setSendError(null);
+  };
+  const canAct = phase === "form" || phase === "review";
+
+  const guardPriceLabel = guardPriceRaw === null ? "—" : fmtPrice(rawToNumber(guardPriceRaw, decimals));
+
+  const crossingCost = touchAboveFair && guardOffer !== null && (
+    <>
+      {" "}Note that crossing at{" "}
+      <span className="mono text-amber-300">{fmtPrice(guardOffer)}</span> is{" "}
+      <span className="mono text-down">{signedFixed(fairOwn - guardOffer)}</span> per share against
+      the model's <span className="mono text-accent">{fmtPrice(fairOwn)}</span> — negative expected
+      value, which is the one thing this panel exists to keep you out of.
+    </>
+  );
+
+  const preflight =
+    guard === null ? null : guard === "ioc-empty-book" ? (
+      <Notice
+        title={`Nothing is offered on ${guardOutcome}, so an IOC has nothing to take`}
+        actions={canAct && <NoticeAction primary onClick={() => applyKind("post")}>Rest at {guardPriceLabel} as post-only</NoticeAction>}
+      >
+        An IOC only fills against orders already resting on the book, and this leg has none. The
+        pool would cancel the whole order and revert with{" "}
+        <span className="mono">ImmediateOrCancelNoFill</span> — you would pay the gas and own
+        nothing. Resting a post-only bid puts your price on the book and waits.
+      </Notice>
+    ) : guard === "ioc-cannot-fill" ? (
+      <Notice
+        title="An IOC at this price cannot fill"
+        actions={
+          canAct && (
+            <>
+              {touchRaw !== null && (
+                <NoticeAction primary={!touchAboveFair} onClick={() => applyPrice(touchRaw)}>
+                  Raise the limit to {fmtPrice(rawToNumber(touchRaw, decimals))} and cross
+                </NoticeAction>
+              )}
+              <NoticeAction primary={touchAboveFair} onClick={() => applyKind("post")}>
+                Rest at {guardPriceLabel} as post-only
+              </NoticeAction>
+            </>
+          )
+        }
+      >
+        An IOC buy takes offers at or BELOW your limit. The cheapest {guardOutcome} on the book is{" "}
+        <span className="mono text-amber-300">{fmtPrice(guardOffer!)}</span> and your limit is{" "}
+        <span className="mono">{guardPriceLabel}</span>, so there is nothing it can reach: the pool
+        would revert with <span className="mono">ImmediateOrCancelNoFill</span> and the gas would
+        buy you nothing. Either raise the limit to the touch and cross now, or keep the price and
+        rest on the book with post-only.
+        {crossingCost}
+      </Notice>
+    ) : (
+      <Notice
+        title="A post-only at this price would be rejected"
+        actions={
+          canAct && (
+            <>
+              {restRaw !== null && (
+                <NoticeAction primary onClick={() => applyPrice(restRaw)}>
+                  Rest at {fmtPrice(rawToNumber(restRaw, decimals))}, a tick under the touch
+                </NoticeAction>
+              )}
+              <NoticeAction onClick={() => applyKind("ioc")}>
+                Cross now with an IOC at {guardPriceLabel}
+              </NoticeAction>
+            </>
+          )
+        }
+      >
+        Post-only is only allowed to rest. Your limit of{" "}
+        <span className="mono">{guardPriceLabel}</span> is at or above the best {guardOutcome} offer
+        of <span className="mono text-amber-300">{fmtPrice(guardOffer!)}</span>, so resting it would
+        take liquidity instead — the pool refuses with{" "}
+        <span className="mono">PostOnlyWouldCross</span> and nothing is placed. Move a tick under
+        the touch to rest, or cross on purpose with an IOC.
+        {crossingCost}
+      </Notice>
+    );
+
+  /* -------------------------------------------------------- near expiry */
+
+  // Judged against the window's OWN length, because this series runs from 60s
+  // to a day: it is the last ~15% of a window that reprices, whatever 15%
+  // happens to be in seconds. Floored at 20s so a 60s window still gets a
+  // warning worth reading, and capped at 3 minutes so a daily window does not
+  // spend its last hour shouting.
+  const windowSec = Number.isFinite(forecast.window_sec) && forecast.window_sec > 0
+    ? forecast.window_sec
+    : 0;
+  const warnWithinSec = Math.min(180, Math.max(20, Math.round(windowSec * 0.15)));
+  const secondsLeft = onchain ? Number(onchain.expiry) - nowSec : Math.floor(forecast.seconds_left);
+  const nearExpiry = tradable && secondsLeft > 0 && secondsLeft <= warnWithinSec;
+  const bookAgeSec = book.asOf === null ? null : Math.max(0, Math.round((nowMs - book.asOf) / 1000));
+
+  const expiryWarning = !nearExpiry ? null : (
+    <Notice title={`This window closes in ${countdown(secondsLeft)} — the book is moving`}>
+      The touch above is a snapshot
+      {book.source === "live"
+        ? " from the live tail"
+        : bookAgeSec !== null
+          ? ` read from chain ${bookAgeSec}s ago`
+          : ""}
+      , and in the closing seconds of a {Math.round(windowSec)}s window the resting orders behind it
+      can be gone before your transaction is mined. Expect a fill away from the displayed price.
+      {guardKind === "ioc" ? (
+        <>
+          {" "}Your limit is still a hard ceiling: an IOC never pays more than{" "}
+          <span className="mono">{guardPriceLabel}</span> per share
+          {reviewing && plan && (
+            <>
+              , so never more than{" "}
+              <span className="mono">{moneyExact(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}</span>{" "}
+              in total
+            </>
+          )}
+          .
+        </>
+      ) : (
+        <>
+          {" "}A post-only resting this late may simply never fill. And an order that reaches its
+          expiry does NOT return its escrow by itself — the collateral stays locked in the pool
+          until the order is cancelled or swept. If it has not filled by the close, cancel it from
+          Positions.
+        </>
+      )}
+    </Notice>
+  );
 
   /* ------------------------------------------------------------- the send */
 
@@ -300,6 +582,51 @@ export default function TradeTicket({
         throw new Error("The window reached expiry while the order was being confirmed. Nothing was signed.");
       }
 
+      // Approve the pool ourselves, for exactly this order's escrow.
+      //
+      // Left to the SDK this happens implicitly, and it inherits the SDK's
+      // default 10,000,000 gas CEILING. A ceiling is not a charge — the unused
+      // gas is refunded — but a wallet has no way to know that, so it prices
+      // the worst case and shows 10M x gasPrice. On testnet that reads as ~0.083
+      // STT for an `approve` that actually costs ~46k gas, and Rabby refuses to
+      // sign at all with "gas balance is not enough". The trade is unreachable.
+      //
+      // So: a realistic limit, and an allowance of exactly what this order
+      // escrows rather than the whole balance. It costs one extra transaction
+      // per trade and shows the user a number they can actually verify against
+      // the review sheet.
+      if (p.side === "BUY_YES" || p.side === "BUY_NO") {
+        if (!walletClient) throw new Error("The wallet client went away before the approval could be sent.");
+        const spender = fresh.pool as Address;
+        const owner = address as Address;
+        // The reviewed number, not a second derivation of it. `p.costRaw` is
+        // what the sheet printed and what the pool will pull; recomputing it
+        // here is how the two silently drift apart.
+        const need = p.costRaw;
+        const viem = exchange.client.getViemClient();
+        const allowance = await viem.readContract({
+          address: fresh.collateral as Address,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [owner, spender],
+        });
+        if (allowance < need) {
+          setPhase("approving");
+          const approveHash = await walletClient.writeContract({
+            address: fresh.collateral as Address,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [spender, need],
+            gas: 120_000n,
+          });
+          const approveReceipt = await viem.waitForTransactionReceipt({ hash: approveHash, timeout: 90_000 });
+          if (approveReceipt.status !== "success") {
+            throw new Error(`The ${COLLATERAL_SYMBOL} approval reverted (tx ${approveHash}). No order was placed.`);
+          }
+        }
+        setPhase("sending");
+      }
+
       const res: PlaceOrderResult = await exchange.trader.placeOrder({
         pool: fresh.pool,
         side: p.side,
@@ -311,6 +638,10 @@ export default function TradeTicket({
         collateral: fresh.collateral,
         orderType: p.orderType,
         expireTimestampNs: BigInt(expirySec) * 1_000_000_000n,
+        // Same reason as the approval above: the 10M default makes a wallet
+        // quote a worst case that dwarfs the real cost. 2M is far more than a
+        // small order's matching ever needs and still leaves ample headroom.
+        gas: 2_000_000n,
       });
 
       // The SDK signs with fixed fees and does not simulate, so a REVERTED
@@ -325,14 +656,24 @@ export default function TradeTicket({
 
       const fills = res.fills ?? [];
       const filledRaw = fills.reduce((acc, f) => acc + f.quantityFilled, 0n);
-      const notional = fills.reduce((acc, f) => acc + f.fillPrice * f.quantityFilled, 0n);
-      const avgYes = filledRaw > 0n ? rawToNumber(notional / filledRaw, p.decimals) : null;
+      // `fillPrice` is always the YES price on a binary pool, whichever leg was
+      // bought, so the NO cost per share is its complement. Converting each fill
+      // first and averaging after keeps the average and the amount paid derived
+      // from ONE number rather than from a price that was flipped twice.
+      const notionalOwn = fills.reduce(
+        (acc, f) => acc + (p.outcome === "YES" ? f.fillPrice : one - f.fillPrice) * f.quantityFilled,
+        0n,
+      );
+      const avgOwn = filledRaw > 0n ? rawToNumber(notionalOwn / filledRaw, p.decimals) : null;
       setPlaced({
         hash: res.hash,
         filledRaw,
         restingRaw: p.quantityRaw - filledRaw,
         orderId: res.orderId,
-        avgOwn: avgYes === null ? null : p.outcome === "YES" ? avgYes : 1 - avgYes,
+        avgOwn,
+        // Ceil, the pool's own direction — see `escrowFor`.
+        spentRaw: (notionalOwn + one - 1n) / one,
+        escrowRaw: p.costRaw,
         decimals: p.decimals,
         outcome: p.outcome,
         kind: p.kind,
@@ -386,7 +727,12 @@ export default function TradeTicket({
             </p>
             <p className="mono mt-1.5 text-[11px] text-slate-400">
               best offer on {outcome}
-              {book.source === "none" && " · no resting orders"}
+              {book.source === "none" &&
+                (book.error !== null
+                  ? " · book unread"
+                  : book.loaded
+                    ? " · no resting orders"
+                    : " · reading…")}
             </p>
           </div>
 
@@ -421,7 +767,11 @@ export default function TradeTicket({
         <div className="relative mt-4 h-2 w-full rounded-full bg-ink-700" role="img"
           aria-label={
             `Vaticr posterior on ${outcome} ${pct(fairOwn)}` +
-            (offerFor(outcome) !== null ? `, best offer ${pct(offerFor(outcome)!)}` : ", no resting offer")
+            (offerFor(outcome) !== null
+              ? `, best offer ${pct(offerFor(outcome)!)}`
+              : book.loaded
+                ? ", no resting offer"
+                : ", the book has not been read yet")
           }
         >
           <div className="absolute inset-y-0 left-0 rounded-full bg-accent/70" style={{ width: pct(fairOwn) }} />
@@ -431,7 +781,13 @@ export default function TradeTicket({
         </div>
 
         <p className="mt-3 text-[12.5px] leading-relaxed text-slate-300">
-          {offerFor(outcome) === null ? (
+          {offerFor(outcome) === null && !book.loaded ? (
+            <>
+              Reading this pool's book from chain. Vaticr puts {outcome} at{" "}
+              <span className="mono text-accent">{pct(fairOwn)}</span>; what the book asks is not
+              known yet, so nothing here is a comparison of the two.
+            </>
+          ) : offerFor(outcome) === null ? (
             <>
               Nothing is offered on {outcome} right now. Vaticr puts it at{" "}
               <span className="mono text-accent">{pct(fairOwn)}</span> — rest a post-only bid there
@@ -495,9 +851,22 @@ export default function TradeTicket({
           </div>
         )}
         <p className="mt-2 text-[10.5px] text-slate-600">
-          Book read {book.source === "live" ? "from the live tail" : book.source === "chain" ? "from chain" : "— both sources empty"}
+          Book read{" "}
+          {book.source === "live"
+            ? "from the live tail"
+            : book.source === "chain"
+              ? `from chain${bookAgeSec === null ? "" : `, ${bookAgeSec}s ago`}`
+              : book.loaded
+                ? "— both sources empty"
+                : "— no read has landed yet"}
           . One book per market, quoted in YES; a NO price is always 1 − YES.
         </p>
+        {book.error !== null && (
+          <p className="mt-1.5 text-[11px] leading-relaxed text-down">
+            The chain read of this book failed, so the numbers above may be stale or missing — do
+            not treat an empty side as an empty book. {book.error.message}
+          </p>
+        )}
       </div>
 
       {/* ------------------------------------------------------------- form */}
@@ -572,11 +941,19 @@ export default function TradeTicket({
                 className="mono mt-1.5 w-full rounded-lg border border-white/10 bg-ink-950/70 px-3 py-2 text-[14px] text-slate-100 outline-none focus:border-accent/60"
               />
               <Hint>
-                One share pays {payoutPerShare.toFixed(4)} {COLLATERAL_SYMBOL} if this side wins
-                {settlementFeeBps !== null && settlementFeeBps > 0
-                  ? ` (1 minus the venue's ${(settlementFeeBps / 100).toFixed(2)}% settlement fee)`
-                  : ""}
-                , and 0 if it loses.
+                {settlementFeeBps === null ? (
+                  <>
+                    One share pays 1 {COLLATERAL_SYMBOL} if this side wins and 0 if it loses, BEFORE
+                    the venue's settlement fee — this market's fee schedule could not be read, so
+                    treat 1 as an upper bound rather than the payout.
+                  </>
+                ) : (
+                  <>
+                    One share pays {payoutPerShare.toFixed(4)} {COLLATERAL_SYMBOL} if this side wins
+                    {settlementFeeBps > 0 ? ` (1 minus the venue's ${bpsPct(settlementFeeBps)} settlement fee)` : ""}
+                    , and 0 if it loses.
+                  </>
+                )}
               </Hint>
             </label>
           </div>
@@ -621,6 +998,12 @@ export default function TradeTicket({
             </p>
           )}
 
+          {/* Everything the page already knows that a revert would otherwise
+              teach at the price of gas. Shown here, before the review step, and
+              again on the sheet in case the book moves while it is open. */}
+          {preflight}
+          {expiryWarning}
+
           <button
             type="button"
             disabled={!built.plan}
@@ -636,7 +1019,7 @@ export default function TradeTicket({
       )}
 
       {/* ----------------------------------------------------------- review */}
-      {(phase === "review" || phase === "sending") && plan && (
+      {(phase === "review" || phase === "approving" || phase === "sending") && plan && (
         <div className="px-4 py-4">
           <h3 className="text-[12px] font-semibold uppercase tracking-[0.16em] text-slate-400">
             Confirm before signing
@@ -659,37 +1042,56 @@ export default function TradeTicket({
               note="floored onto the pool's lot grid, so never larger than you asked for"
             />
             <ReviewRow
-              label="Total cost"
-              value={money(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}
-              note="escrowed from your wallet the moment the order is placed"
+              label={plan.kind === "ioc" ? "Cost, at most" : "Escrowed now"}
+              value={moneyExact(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}
+              note={
+                plan.kind === "ioc"
+                  ? "price × size, rounded up exactly as the pool does. An IOC only takes offers at or below your limit, so this is a ceiling: anything that fills cheaper costs less, and whatever does not fill is released in the same transaction."
+                  : "price × size, rounded up exactly as the pool does. Held from the moment the order rests. Cancelling returns it in full — but simply letting the order expire does NOT: the escrow stays locked in the pool until the order is cancelled or swept."
+              }
             />
             <ReviewRow
               label="Max loss"
               tone="warn"
-              value={money(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}
-              note="a binary contract cannot lose more than it cost — this is the whole risk, and you lose all of it if the window closes the other way"
+              value={moneyExact(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}
+              note="if it fills in full and the window closes the other way. A binary contract cannot lose more than it cost — this is the whole risk."
             />
             <ReviewRow
-              label="If it wins"
+              label={settlementFeeBps === null ? "If it wins, before fees" : "If it wins"}
               tone="up"
-              value={money(
-                (plan.quantityRaw * BigInt(Math.round(payoutPerShare * 1e6))) / 1_000_000n,
-                plan.decimals,
-                COLLATERAL_SYMBOL,
-              )}
-              note="claimed, not received — settled winnings sit until you claim them"
+              value={moneyExact(payoutFor(plan.quantityRaw), plan.decimals, COLLATERAL_SYMBOL)}
+              note={
+                settlementFeeBps === null
+                  ? "this market's settlement fee could not be read, so this is the gross payout and the real one is at most this. Claimed, not received — settled winnings sit until you claim them."
+                  : `${settlementFeeBps > 0 ? `net of the venue's ${bpsPct(settlementFeeBps)} settlement fee. ` : ""}Claimed, not received — settled winnings sit until you claim them.`
+              }
             />
             <ReviewRow
               label="Execution"
               value={plan.kind === "post" ? "Post-only" : "IOC"}
               note={plan.kind === "post" ? "rejected rather than filled if it would cross" : "fills what crosses now, cancels the rest"}
             />
+            {(plan.kind === "ioc" ? takerFeeBps : makerFeeBps) !== null &&
+              (plan.kind === "ioc" ? takerFeeBps! : makerFeeBps!) > 0 && (
+                <ReviewRow
+                  label={plan.kind === "ioc" ? "Venue taker fee" : "Venue maker fee"}
+                  value={bpsPct(plan.kind === "ioc" ? takerFeeBps! : makerFeeBps!)}
+                  note="the venue's trading fee on whatever fills. It is charged by the pool on the fill and is not part of the escrow figure above."
+                />
+              )}
             <ReviewRow
               label="Expires"
               value={new Date(plan.expirySec * 1000).toLocaleTimeString()}
               note="capped at the window's own expiry — the pool rejects any order that would outlive its market"
             />
           </div>
+
+          {(preflight || expiryWarning) && (
+            <div className="mt-3 space-y-2">
+              {preflight}
+              {expiryWarning}
+            </div>
+          )}
 
           <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
             The window's on-chain status is re-read one more time immediately before this is
@@ -706,7 +1108,7 @@ export default function TradeTicket({
           <div className="mt-3 flex gap-2">
             <button
               type="button"
-              disabled={phase === "sending"}
+              disabled={phase === "sending" || phase === "approving"}
               onClick={() => { setPhase("form"); setSendError(null); }}
               className="rounded-lg border border-white/10 px-3 py-2 text-[13px] text-slate-300 transition hover:bg-white/5 disabled:opacity-40"
             >
@@ -714,53 +1116,120 @@ export default function TradeTicket({
             </button>
             <button
               type="button"
-              disabled={phase === "sending" || !canTrade}
+              disabled={phase === "sending" || phase === "approving" || !canTrade}
               onClick={() => void send(plan)}
               className="flex-1 rounded-lg border border-accent/40 bg-accent/20 px-4 py-2 text-[13px] font-semibold text-accent transition hover:bg-accent/30 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {phase === "sending" ? "Waiting for your wallet…" : `Sign and place · ${money(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}`}
+              {phase === "approving"
+                ? `Approving ${COLLATERAL_SYMBOL}…`
+                : phase === "sending"
+                  ? "Waiting for your wallet…"
+                  : `Sign and place · ${moneyExact(plan.costRaw, plan.decimals, COLLATERAL_SYMBOL)}`}
             </button>
           </div>
         </div>
       )}
 
       {/* ----------------------------------------------------------- result */}
-      {phase === "done" && placed && (
+      {phase === "done" && placed && (() => {
+        const filled = placed.filledRaw > 0n;
+        const rested = placed.orderId !== undefined && placed.restingRaw > 0n;
+        // A transaction that neither filled nor rested is not a success, and a
+        // green "confirmed" over it would be the panel congratulating someone
+        // for paying gas. It gets the amber treatment instead.
+        const good = filled || rested;
+        return (
         <div className="px-4 py-4">
-          <div className="rounded-lg border border-up/30 bg-up/[0.07] px-3 py-3">
-            <p className="text-[13px] font-semibold text-up">Order confirmed on-chain</p>
+          <div className={`rounded-lg border px-3 py-3 ${good ? "border-up/30 bg-up/[0.07]" : "border-amber-400/30 bg-amber-400/[0.07]"}`}>
+            <p className={`text-[13px] font-semibold ${good ? "text-up" : "text-amber-300"}`}>
+              {filled && rested
+                ? "Filled and resting on-chain"
+                : filled
+                  ? `Filled — you own ${rawToNumber(placed.filledRaw, placed.decimals)} ${placed.outcome} shares`
+                  : rested
+                    ? "Resting on the book"
+                    : "Confirmed on-chain, but nothing filled and nothing rested"}
+            </p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-slate-300">
-              {placed.filledRaw > 0n && (
+              {filled && (
                 <>
                   Filled{" "}
                   <span className="mono">{rawToNumber(placed.filledRaw, placed.decimals)}</span>{" "}
                   {placed.outcome} shares
-                  {placed.avgOwn !== null && <> at an average of <span className="mono">{fmtPrice(placed.avgOwn)}</span></>}.{" "}
+                  {placed.avgOwn !== null && <> at an average of <span className="mono">{fmtPrice(placed.avgOwn)}</span></>}
+                  , for{" "}
+                  <span className="mono">{moneyExact(placed.spentRaw, placed.decimals, COLLATERAL_SYMBOL)}</span>
+                  {/* Only a claim about a refund when nothing is still resting:
+                      an unfilled remainder that RESTED is still escrowed, and
+                      calling that "returned" would be a lie about live money. */}
+                  {placed.spentRaw < placed.escrowRaw && !rested && (
+                    <>
+                      {" "}of the{" "}
+                      <span className="mono">{moneyExact(placed.escrowRaw, placed.decimals, COLLATERAL_SYMBOL)}</span>{" "}
+                      escrowed — the pool released the rest in the same transaction
+                    </>
+                  )}
+                  {placed.spentRaw < placed.escrowRaw && rested && (
+                    <>
+                      {" "}of the{" "}
+                      <span className="mono">{moneyExact(placed.escrowRaw, placed.decimals, COLLATERAL_SYMBOL)}</span>{" "}
+                      escrowed; the balance stays locked behind the resting remainder
+                    </>
+                  )}
+                  .{" "}
                 </>
               )}
-              {placed.restingRaw > 0n && placed.orderId !== undefined && (
+              {rested && (
                 <>
                   <span className="mono">{rawToNumber(placed.restingRaw, placed.decimals)}</span>{" "}
                   shares are resting on the book as order{" "}
-                  <span className="mono">#{placed.orderId.toString()}</span> — it appears in Positions
-                  below, where you can cancel it.
+                  <span className="mono">#{placed.orderId!.toString()}</span> — cancel it from
+                  Positions.{" "}
                 </>
               )}
               {placed.kind === "ioc" && placed.restingRaw > 0n && placed.orderId === undefined && (
                 <>
                   The remaining{" "}
                   <span className="mono">{rawToNumber(placed.restingRaw, placed.decimals)}</span>{" "}
-                  shares were cancelled rather than rested — that is what IOC means. The escrow for
-                  them never left your wallet.
+                  shares were cancelled rather than rested — that is what IOC means. Their escrow
+                  was released in the same transaction.
                 </>
               )}
-              {placed.filledRaw === 0n && placed.orderId === undefined && placed.kind === "post" && (
-                <>The order was accepted on-chain but nothing rested and nothing filled.</>
+              {!filled && !rested && placed.kind === "post" && (
+                <>The order was accepted on-chain but nothing rested and nothing filled — no
+                collateral was escrowed and you hold no new shares.</>
               )}
             </p>
-            <p className="mt-2 text-[11px]">
-              <TxLink hash={placed.hash} />
-            </p>
+
+            {/* Where the position now lives. Without this the journey ends on a
+                receipt, and the panels that hold the money are below the fold. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <JumpLink to="positions" emphasis>
+                {filled ? "See this position ↓" : "Open Positions ↓"}
+              </JumpLink>
+              {filled && (
+                <JumpLink to="claims" emphasis>
+                  Claim panel ↓
+                </JumpLink>
+              )}
+              <span className="text-[11px] text-slate-400">
+                <TxLink hash={placed.hash} />
+              </span>
+            </div>
+
+            {filled && (
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                Winnings here are <strong className="text-slate-200">not paid automatically</strong>:
+                a settled market pays out only when someone asks it to. If {placed.outcome} wins,
+                these shares redeem for{" "}
+                <span className="mono">
+                  {moneyExact(payoutFor(placed.filledRaw), placed.decimals, COLLATERAL_SYMBOL)}
+                </span>
+                {settlementFeeBps === null ? " before the venue's settlement fee" : ""} — and that
+                amount sits unclaimed until you come back to the Claim panel. If it loses, the
+                shares are worth nothing and there is nothing to claim.
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -770,13 +1239,20 @@ export default function TradeTicket({
             Place another
           </button>
         </div>
-      )}
+        );
+      })()}
 
       <div className="border-t border-white/10 px-4 py-3 text-[11px] leading-relaxed text-slate-500">
         Buying escrows collateral. Selling escrows the outcome tokens themselves and there is no
         naked short here — you can only sell what you hold — so this ticket buys only. To reduce
         exposure before settlement, buy the opposite leg: one YES plus one NO is a complete set,
         always worth exactly 1.
+        <span className="mt-1.5 block">
+          Everything you own and everything owed to you is further down this page:{" "}
+          <JumpLink to="positions">Positions</JumpLink> for open orders and holdings,{" "}
+          <JumpLink to="claims">Claim</JumpLink> for settled windows — winnings are paid only when
+          someone asks for them.
+        </span>
       </div>
     </Card>
   );
