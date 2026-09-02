@@ -35,10 +35,13 @@ READER = SomniaReader(SETTINGS)
 RESOLVER = Resolver(SETTINGS)
 
 # Volatility is expensive to fetch and slow to change; one estimate per asset
-# per minute is plenty and keeps the price feed from being hammered.
+# per minute is plenty and keeps the price feed from being hammered. The level
+# is deliberately NOT on this clock — see `_series`.
 _VOL_TTL_SEC = 60
 _vol_cache: dict[str, tuple[int, list[PricePoint]]] = {}
-_level_cache: dict[str, float | None] = {}
+# Last known good level per asset. A fallback for an empty feed response only;
+# the live path always refreshes it.
+_level_cache: dict[str, float] = {}
 _OPEN_TTL_SEC = 3600
 _open_cache: dict[str, float] = {}
 
@@ -84,16 +87,31 @@ async def _series(
     volatility makes the prior *overconfident*, which is the direction that
     loses money. The two series share the same long-run volatility, so taking
     each quantity from the series that measures it best costs nothing.
+
+    They are also on two different clocks, on purpose. The vol series is a
+    1200-tick read over 40 minutes whose estimate moves on the scale of
+    minutes, so `_VOL_TTL_SEC` staleness is free. The level is one tick, and it
+    is the entire input to the prior's distance-from-strike term: on a 60s
+    window a 60s-old level *is* the opening price, which prices every contract
+    at 0.5 no matter where the asset has since moved. So the level is re-read
+    every call — one cheap query — and only falls back to the cached value when
+    the feed returns nothing.
     """
     now = int(time.time())
     cached = _vol_cache.get(asset)
     if cached and now - cached[0] < _VOL_TTL_SEC:
         points = cached[1]
+        # Vol series still warm, level never is: one tick, ~50 rows.
+        tick = await READER.latest_tick(client, asset)
+        if tick is not None:
+            _level_cache[asset] = tick.mark
     else:
         ticks = await READER.price_series(client, asset, since=now - 2400, limit=1200)
         points = [PricePoint(ts=t.ts, price=t.spot) for t in ticks]
         _vol_cache[asset] = (now, points)
-        _level_cache[asset] = ticks[-1].mark if ticks else None
+        # The cold path already holds the freshest tick; no second round trip.
+        if ticks:
+            _level_cache[asset] = ticks[-1].mark
 
     return points, _level_cache.get(asset)
 
@@ -168,15 +186,19 @@ async def scan_now() -> dict[str, Any]:
     return {"added": len(added), "in_window": len(SCOUT.fresh())}
 
 
-@app.get("/forecasts", response_model=list[ForecastEnvelope])
-async def forecasts(
-    venue: str | None = Query(default=None),
-    asset: str | None = Query(default=None),
-    limit: int = Query(default=12, le=50),
+async def _live_forecasts(
+    venue: str | None = None,
+    asset: str | None = None,
+    limit: int = 12,
 ) -> list[ForecastEnvelope]:
     """A Bayesian posterior for every live event-contract window.
 
-    This is the endpoint the bot polls each cycle.
+    A plain coroutine taking ordinary values, NOT a route. FastAPI resolves
+    `Query(...)` defaults only when it dispatches a request, so one route
+    calling another as a Python function hands it `Query` objects instead of
+    values — `asset.upper()` then raises AttributeError, and any falsy-default
+    check silently passes because a `Query` object is truthy. Both `/forecasts`
+    and `/intent` go through here so neither ever calls the other.
     """
     async with httpx.AsyncClient(timeout=SETTINGS.http_timeout_sec) as client:
         try:
@@ -231,6 +253,16 @@ async def forecasts(
         return out
 
 
+@app.get("/forecasts", response_model=list[ForecastEnvelope])
+async def forecasts(
+    venue: str | None = Query(default=None),
+    asset: str | None = Query(default=None),
+    limit: int = Query(default=12, le=50),
+) -> list[ForecastEnvelope]:
+    """The endpoint the bot polls each cycle."""
+    return await _live_forecasts(venue=venue, asset=asset, limit=limit)
+
+
 @app.get("/intent")
 async def intent(
     market_id: str = Query(...),
@@ -240,7 +272,7 @@ async def intent(
     edge_threshold: float = Query(default=0.04),
 ) -> dict[str, Any]:
     """What to do about one market, given the live book the bot is looking at."""
-    envelopes = await forecasts(venue=venue, limit=50)
+    envelopes = await _live_forecasts(venue=venue, limit=50)
     match = next(
         (e for e in envelopes if e.forecast.market_id == market_id), None
     )

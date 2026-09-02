@@ -156,21 +156,25 @@ class SomniaReader:
         self, client: httpx.AsyncClient, venue_id: str | None = None, limit: int = 25
     ) -> list[MarketRow]:
         """Currently trading binary markets, soonest expiry first."""
+        import time as _t
+
         where = ['marketType: {_eq: "BINARY"}', "expiry: {_gt: $now}"]
+        # Hasura rejects a declared-but-unused variable ("unexpected variables in
+        # variableValues: venue"), so the signature is built to match exactly
+        # what the where clause references — same pattern as `price_series`.
+        signature = "$now: numeric!, $limit: Int!"
+        variables: dict[str, Any] = {"now": int(_t.time()), "limit": limit}
         if venue_id:
             where.append("venueId: {_eq: $venue}")
+            signature += ", $venue: String!"
+            variables["venue"] = venue_id
         query = f"""
-        query Live($now: numeric!, $venue: String, $limit: Int!) {{
+        query Live({signature}) {{
           Market(where: {{{", ".join(where)}}},
                  order_by: {{expiry: asc}}, limit: $limit) {{ {MARKET_FIELDS} }}
         }}
         """
-        import time as _t
-
-        data = await self._query(
-            client, self.indexer_url, query,
-            {"now": int(_t.time()), "venue": venue_id, "limit": limit},
-        )
+        data = await self._query(client, self.indexer_url, query, variables)
         return [_row(n) for n in data.get("Market", [])]
 
     async def settled_markets(
@@ -183,18 +187,19 @@ class SomniaReader:
             "expiry: {_gte: $since}",
             "winningOutcome: {_is_null: false}",
         ]
+        signature = "$since: numeric!, $limit: Int!"
+        variables: dict[str, Any] = {"since": since, "limit": limit}
         if venue_id:
             where.append("venueId: {_eq: $venue}")
+            signature += ", $venue: String!"
+            variables["venue"] = venue_id
         query = f"""
-        query Settled($since: numeric!, $venue: String, $limit: Int!) {{
+        query Settled({signature}) {{
           Market(where: {{{", ".join(where)}}},
                  order_by: {{expiry: desc}}, limit: $limit) {{ {MARKET_FIELDS} }}
         }}
         """
-        data = await self._query(
-            client, self.indexer_url, query,
-            {"since": since, "venue": venue_id, "limit": limit},
-        )
+        data = await self._query(client, self.indexer_url, query, variables)
         return [_row(n) for n in data.get("Market", [])]
 
     async def overdue_markets(
