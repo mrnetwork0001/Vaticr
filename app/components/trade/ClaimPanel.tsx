@@ -20,7 +20,7 @@
  * their own money. Void rows are amber and say so in words.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Hex } from "viem";
 import type { ClaimablePosition } from "@somnia-chain/markets-sdk";
 import { useIndexerQuery, usePortfolio } from "@somnia-chain/markets-sdk/react";
@@ -38,7 +38,26 @@ interface Row extends ClaimablePosition {
   shares: number;
 }
 
-export default function ClaimPanel({ onClaimed }: { onClaimed?: () => void }) {
+/**
+ * The one figure that must reach the top of the page: money the wallet already
+ * owns and has not been handed. Reported from HERE, off the same scan that
+ * renders the rows, so the strip and the panel can never disagree.
+ */
+export interface ClaimSummary {
+  /** Total payout waiting, in human collateral units. */
+  total: number;
+  /** How many settled positions make it up. */
+  count: number;
+  loading: boolean;
+}
+
+export default function ClaimPanel({
+  onClaimed, onSummary,
+}: {
+  onClaimed?: () => void;
+  /** Stable identity only — a `useState` setter or a `useCallback`. */
+  onSummary?: (summary: ClaimSummary) => void;
+}) {
   const { exchange, address, chainOk, canTrade } = useVaticrExchange();
   const balances = useBalances(chainOk ? address : undefined);
   const portfolio = usePortfolio(address);
@@ -84,6 +103,14 @@ export default function ClaimPanel({ onClaimed }: { onClaimed?: () => void }) {
   const total = rows.reduce((acc, r) => acc + r.payout, 0);
   const voidCount = rows.filter((r) => r.voided).length;
 
+  // Primitives only in the dependency list: `rows` is rebuilt on every poll,
+  // so depending on it would push an identical summary up forever.
+  const rowCount = rows.length;
+  const scanning = claimable.loading && !claimable.data;
+  useEffect(() => {
+    onSummary?.({ total, count: rowCount, loading: scanning });
+  }, [onSummary, total, rowCount, scanning]);
+
   async function claim(entries: Row[]) {
     setBusy(true);
     setError(null);
@@ -124,17 +151,26 @@ export default function ClaimPanel({ onClaimed }: { onClaimed?: () => void }) {
   }
 
   return (
+    <div id="claims" tabIndex={-1} className="scroll-mt-24">
     <Card
       id="claims"
       title="Unclaimed winnings"
       subtitle="A settled market pays out only when someone asks — nothing sweeps for you"
       right={
+        /* The total lives in the HEADER, at size, because a user who has
+           winnings must not have to expand or scroll to learn that. Nothing
+           owed is the ordinary state and is said calmly, in grey. */
         rows.length > 0 ? (
-          <Pill tone="up">
-            {total.toFixed(4)} {COLLATERAL_SYMBOL} owed
-          </Pill>
+          <div className="text-right">
+            <div className="mono text-[16px] font-semibold leading-none text-up">
+              {total.toFixed(4)} {COLLATERAL_SYMBOL}
+            </div>
+            <div className="mt-1 text-[10.5px] text-slate-400">
+              owed across {rows.length} settled position{rows.length === 1 ? "" : "s"}
+            </div>
+          </div>
         ) : (
-          <Pill>{claimable.loading ? "scanning…" : "nothing owed"}</Pill>
+          <Pill>{scanning ? "scanning…" : "nothing owed"}</Pill>
         )
       }
     >
@@ -289,5 +325,6 @@ export default function ClaimPanel({ onClaimed }: { onClaimed?: () => void }) {
         </div>
       )}
     </Card>
+    </div>
   );
 }

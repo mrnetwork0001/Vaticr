@@ -11,9 +11,9 @@ import type {
   AuditResponse, BookResponse, BookTop, Calibration, ForecastEnvelope,
   Headline, Health,
 } from "./types";
-import { ConnectButton, useVaticrExchange } from "./wallet";
-import ClaimPanel from "./trade/ClaimPanel";
-import Positions from "./trade/Positions";
+import { COLLATERAL_SYMBOL, ConnectButton, useVaticrExchange } from "./wallet";
+import ClaimPanel, { type ClaimSummary } from "./trade/ClaimPanel";
+import Positions, { type PositionsSummary } from "./trade/Positions";
 import TradeTicket from "./trade/TradeTicket";
 
 const VENUE = process.env.NEXT_PUBLIC_VENUE_ID ?? "";
@@ -83,6 +83,129 @@ function opportunity(
   return { outcome: "NO", edge: no };
 }
 
+/**
+ * One figure on the summary strip, and a jump to the section that explains it.
+ *
+ * These are plain anchors on purpose. A native in-page link is keyboard
+ * reachable, right-clickable, survives JavaScript failing, honours the target's
+ * `scroll-margin-top` under the sticky strip, and respects the user's
+ * reduced-motion setting without asking. `scrollIntoView` from elsewhere on the
+ * page lands on the same ids.
+ */
+function StripStat({
+  href, label, value, tone = "neutral", note,
+}: {
+  href: string;
+  label: string;
+  value: string;
+  tone?: "neutral" | "up";
+  note?: string;
+}) {
+  const money = tone === "up";
+  return (
+    <a
+      href={href}
+      className={`flex min-w-[7rem] flex-col rounded-lg border px-3 py-1.5 transition ${
+        money
+          ? "border-up/40 bg-up/10 hover:bg-up/20"
+          : "border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/[0.07]"
+      }`}
+    >
+      <span className="text-[10px] uppercase tracking-[0.14em] text-slate-500">
+        {label}
+      </span>
+      <span
+        className={`mono text-[14px] font-semibold leading-tight ${
+          money ? "text-up" : "text-slate-100"
+        }`}
+      >
+        {value}
+      </span>
+      <span className="sr-only">
+        {note ? `${note}. ` : ""}Jumps to that section of the dashboard.
+      </span>
+    </a>
+  );
+}
+
+/**
+ * The one row a trader cannot scroll past.
+ *
+ * The panels that own these numbers sit further down the page, and the whole
+ * reason this exists is that a user with settled winnings could not find them:
+ * the payout is CLAIMED, never received, so money the wallet already owns can
+ * sit unswept indefinitely while nothing on screen says so. Every figure here
+ * is reported upward by the panel that renders it, so the strip can never
+ * disagree with the table it links to.
+ */
+function SummaryStrip({
+  positions, claims,
+}: {
+  positions: PositionsSummary | null;
+  claims: ClaimSummary | null;
+}) {
+  const owed = claims?.total ?? 0;
+  const hasMoney = owed > 0;
+  // A panel that has not reported yet is indistinguishable from one that is
+  // still scanning, and both must read as "a number is coming" rather than as
+  // a confident zero — telling someone they have nothing owed when the scan
+  // has not finished is the exact failure this strip exists to prevent.
+  const num = (unsettled: boolean, render: () => string) => (unsettled ? "—" : render());
+  const posPending = positions === null || positions.loading;
+  const claimPending = claims === null || claims.loading;
+
+  return (
+    <nav
+      aria-label="Your account, at a glance"
+      className="card sticky top-0 z-30 mb-6 flex flex-wrap items-center gap-2 bg-ink-900/90 px-4 py-2.5"
+    >
+      <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
+        Your account
+      </span>
+
+      <StripStat
+        href="#positions"
+        label="Open positions"
+        value={num(posPending, () => String(positions?.openWindows ?? 0))}
+        note="Live windows this wallet holds outcome tokens in"
+      />
+      <StripStat
+        href="#positions"
+        label="Net exposure"
+        value={num(posPending, () => `${(positions?.netExposure ?? 0).toFixed(2)} sh`)}
+        note="Shares that are an actual directional bet, after netting complete sets"
+      />
+      <StripStat
+        href="#positions"
+        label="Resting orders"
+        value={num(posPending, () => String(positions?.resting ?? 0))}
+        note="Orders still on the book with escrow committed"
+      />
+      <StripStat
+        href="#claims"
+        label="Claimable"
+        tone={hasMoney ? "up" : "neutral"}
+        value={num(claimPending, () => `${owed.toFixed(4)} ${COLLATERAL_SYMBOL}`)}
+        note={
+          hasMoney
+            ? "Money this wallet has already won and has not been paid — a payout is claimed, never received"
+            : "Nothing settled is waiting to be swept"
+        }
+      />
+
+      {hasMoney && (
+        <a
+          href="#claims"
+          className="ml-auto rounded-lg border border-up/40 bg-up/20 px-3 py-1.5 text-[12px] font-semibold text-up transition hover:bg-up/30"
+        >
+          Claim {claims?.count} position{claims?.count === 1 ? "" : "s"}
+          <span aria-hidden className="ml-1">↓</span>
+        </a>
+      )}
+    </nav>
+  );
+}
+
 export default function Dashboard() {
   const [health, setHealth] = useState<Loaded<Health>>(pending);
   const [forecasts, setForecasts] = useState<Loaded<ForecastEnvelope[]>>(pending);
@@ -95,7 +218,7 @@ export default function Dashboard() {
   const [updated, setUpdated] = useState<number>(0);
 
   // ---- trading surface (only ever mounted for a connected wallet) -------
-  const { isConnected, chainOk, canTrade } = useVaticrExchange();
+  const { isConnected, chainOk, canTrade, address, chainId } = useVaticrExchange();
   /** The window the ticket is open on. `null` means no ticket. */
   const [ticket, setTicket] = useState<string | null>(null);
   /** Set once the user closes the ticket, so the auto-pick does not reopen it. */
@@ -104,6 +227,9 @@ export default function Dashboard() {
   const [tradeNonce, setTradeNonce] = useState(0);
   /** The pool behind the open ticket, watched live by the positions panel. */
   const [focusPool, setFocusPool] = useState<Address | undefined>(undefined);
+  /** Headline figures reported up by the two panels, for the summary strip. */
+  const [posSummary, setPosSummary] = useState<PositionsSummary | null>(null);
+  const [claimSummary, setClaimSummary] = useState<ClaimSummary | null>(null);
 
   const venueQuery = VENUE ? `venue=${VENUE}&` : "";
 
@@ -182,6 +308,10 @@ export default function Dashboard() {
     if (!isConnected) {
       setTicket(null);
       setTicketDismissed(false);
+      // The summaries describe a specific account. Keeping them across a
+      // disconnect would show the next wallet the previous wallet's money.
+      setPosSummary(null);
+      setClaimSummary(null);
     }
   }, [isConnected]);
 
@@ -261,6 +391,33 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Connected, on the right chain, and STILL unable to sign. Without this the
+          trade controls simply never appear and the reason is invisible — the
+          signer binds in an effect, so a wallet client that never resolves looks
+          identical to no wallet at all. Name the failing gate rather than making
+          someone guess. */}
+      {isConnected && chainOk && !canTrade && (
+        <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.07] px-5 py-4">
+          <h2 className="text-sm font-semibold text-amber-300">
+            Wallet connected, but the signer has not bound yet
+          </h2>
+          <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
+            The trading controls stay hidden until the exchange holds a signer for{" "}
+            <span className="mono">{address ?? "this account"}</span>. This is normally a
+            single render; if it persists, the wallet client never resolved &mdash;
+            reconnect from the header, and if that fails, disconnect the site inside the
+            wallet itself and connect again.
+          </p>
+          <div className="mono mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-500">
+            <span>connected <span className="text-up">yes</span></span>
+            <span>chain <span className="text-up">{chainId ?? "?"}</span></span>
+            <span>
+              signer <span className="text-down">not bound</span>
+            </span>
+          </div>
+        </div>
+      )}
+
       {isConnected && !chainOk && (
         <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.07] px-5 py-4">
           <h2 className="text-sm font-semibold text-amber-300">Wrong network</h2>
@@ -273,19 +430,46 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Nothing above the fold used to say a wallet had money waiting. This
+          does, and it stays on screen while the page scrolls. */}
+      {canTrade && <SummaryStrip positions={posSummary} claims={claimSummary} />}
+
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           {/* The ticket, the positions and the claim sweep exist only for a
               wallet that can actually sign. With none attached this column is
-              the same read-only console it has always been. */}
-          {canTrade && ticketRow && (
-            <TradeTicket
-              key={ticketRow.forecast.market_id ?? "ticket"}
-              forecast={ticketRow.forecast}
-              onPool={setFocusPool}
-              onPlaced={() => setTradeNonce((n) => n + 1)}
-              onClose={() => { setTicket(null); setTicketDismissed(true); }}
-            />
+              the same read-only console it has always been.
+
+              Order matters here. For a connected trader their OWN money comes
+              first — ticket, positions, then the claim sweep — and the market
+              list follows. Positions and claims used to sit below a twelve-row
+              live-windows table, which put a settled payout below the fold and
+              made it invisible. Disconnected, none of this mounts and the
+              column opens on "Live windows" exactly as it always has. */}
+          {canTrade && (
+            <>
+              {ticketRow && (
+                <TradeTicket
+                  key={ticketRow.forecast.market_id ?? "ticket"}
+                  forecast={ticketRow.forecast}
+                  onPool={setFocusPool}
+                  onPlaced={() => setTradeNonce((n) => n + 1)}
+                  onClose={() => { setTicket(null); setTicketDismissed(true); }}
+                />
+              )}
+
+              <Positions
+                focusPool={focusPool}
+                refreshToken={tradeNonce}
+                onChanged={() => setTradeNonce((n) => n + 1)}
+                onSummary={setPosSummary}
+              />
+
+              <ClaimPanel
+                onClaimed={() => setTradeNonce((n) => n + 1)}
+                onSummary={setClaimSummary}
+              />
+            </>
           )}
 
           <Card
@@ -420,16 +604,6 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
-
-          {canTrade && (
-            <Positions
-              focusPool={focusPool}
-              refreshToken={tradeNonce}
-              onChanged={() => setTradeNonce((n) => n + 1)}
-            />
-          )}
-
-          {canTrade && <ClaimPanel onClaimed={() => setTradeNonce((n) => n + 1)} />}
 
           <CalibrationPanel
             cal={calibration.data}
