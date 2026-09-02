@@ -16,6 +16,7 @@ import {
   outcomeSymbols,
   resolveVenue,
   shutdown,
+  type EcContext,
 } from "@dreamdex-bot-kit/ec-core";
 
 import { loadVaticrConfig } from "./config.js";
@@ -25,9 +26,33 @@ const ok = (s: string) => console.log(`  ✓ ${s}`);
 const bad = (s: string) => console.log(`  ✗ ${s}`);
 const info = (s: string) => console.log(`    ${s}`);
 
+/**
+ * Open the exchange the way the RUNNER will open it.
+ *
+ * This is the whole reason the preflight exists, and it was the one thing it
+ * did not do. `createExchange()` with no options passes `privateKey: undefined`
+ * to the SDK, so `exchange.walletAddress` is undefined no matter what is in
+ * .env — which made the signer check below report "DRY_RUN=false but no
+ * PRIVATE_KEY" against a perfectly good funded key, and skip the gas and
+ * collateral reads that are the only reason to run this before going live.
+ *
+ * `createExchange({ withSigner: true })` THROWS when the key really is missing,
+ * and a preflight that dies on its last check has told you nothing about the
+ * first four. So catch it, keep the message, and fall back to a read-only
+ * context so the rest of the report still runs.
+ */
+function openExchange(wantSigner: boolean): { ctx: EcContext; signerError: string | null } {
+  if (!wantSigner) return { ctx: createExchange(), signerError: null };
+  try {
+    return { ctx: createExchange({ withSigner: true }), signerError: null };
+  } catch (err) {
+    return { ctx: createExchange(), signerError: (err as Error).message };
+  }
+}
+
 async function main(): Promise<void> {
   const cfg = loadVaticrConfig();
-  const ctx = createExchange();
+  const { ctx, signerError } = openExchange(!cfg.dryRun);
   let failures = 0;
 
   console.log("\nVATICR DOCTOR\n=============\n");
@@ -69,9 +94,12 @@ async function main(): Promise<void> {
     failures++;
   }
 
-  console.log(`\nlive markets`);
+  console.log(`\nlive markets${cfg.underlying ? ` (EC_UNDERLYING=${cfg.underlying})` : ""}`);
   try {
-    const markets = await activeMarkets(ctx, { max: 5 });
+    // Same `asset` scoping the runner uses, and for the same reason: the filter
+    // has to happen before the slice or a configured underlying can vanish
+    // behind markets of the other one.
+    const markets = await activeMarkets(ctx, { asset: cfg.underlying || undefined, max: 5 });
     for (const m of markets) {
       const onchain = await marketOnchain(ctx, m);
       const left = onchain ? Number(onchain.expiry) - Date.now() / 1000 : 0;
@@ -117,8 +145,13 @@ async function main(): Promise<void> {
   console.log(`\nsigner`);
   if (cfg.dryRun) {
     ok("DRY_RUN — no signer needed. Set DRY_RUN=false to trade.");
+  } else if (signerError) {
+    bad(signerError);
+    failures++;
   } else if (!ctx.exchange.walletAddress) {
-    bad("DRY_RUN=false but no PRIVATE_KEY");
+    // With withSigner:true this is unreachable — createExchange throws first —
+    // but an SDK that changed its mind about that should fail loudly, not quietly.
+    bad("no wallet address on a signing exchange — the SDK did not load the key");
     failures++;
   } else {
     const me = ctx.exchange.walletAddress;
@@ -129,12 +162,44 @@ async function main(): Promise<void> {
       const collateral = ctx.config.addresses.collateral;
       const bal = collateral ? await client.getErc20Balance(collateral, me) : 0n;
       const one = 10n ** BigInt(ctx.config.decimals);
+
+      // Gas: "non-zero" is not a passing grade. The SDK signs with a fixed
+      // generous gas ceiling and never estimates, so the balance has to cover
+      // that ceiling or the node rejects the send with an error viem reports as
+      // "Missing or invalid parameters" — the failure vendor/ec-core documents
+      // as taking 24 identical log lines to diagnose.
+      const gasHuman = Number(gas) / 1e18;
       if (gas === 0n) { bad("0 native token — cannot pay gas"); failures++; }
-      else ok(`gas ${(Number(gas) / 1e18).toFixed(4)} native`);
+      else if (gasHuman < 0.01) {
+        bad(`gas ${gasHuman.toFixed(6)} native — too thin for a run; top up the faucet`);
+        failures++;
+      } else ok(`gas ${gasHuman.toFixed(4)} native`);
+
+      // Collateral: enough for one full two-sided quote, which is the smallest
+      // thing this bot ever does. A buy escrows price x size in the leg's OWN
+      // price, so both legs together escrow
+      //     quoteSize x ((p - d) + (1 - p - d)) = quoteSize x (1 - 2d)
+      // — always under one whole `quoteSize`, whatever the posterior. Demand
+      // that much so "funded" means "can rest the quote it is configured for".
+      const balHuman = Number(bal) / Number(one);
+      const needed = cfg.quoteSize;
       if (bal === 0n) {
         bad(`0 collateral — fund ${collateral} or let the testnet faucet run`);
         failures++;
-      } else ok(`collateral ${(Number(bal) / Number(one)).toFixed(2)}`);
+      } else if (balHuman < needed) {
+        bad(
+          `collateral ${balHuman.toFixed(2)} — under one quote (${needed}); ` +
+            `fund ${collateral} → ${me}`,
+        );
+        failures++;
+      } else {
+        ok(`collateral ${balHuman.toFixed(2)} (one two-sided quote escrows under ${needed})`);
+        info(
+          `spend rail VATICR_MAX_NOTIONAL=${cfg.maxNotional} — about ` +
+            `${Math.floor(cfg.maxNotional / Math.max(needed, 1e-9))} two-sided quote(s) ` +
+            `committed at once before writes stop`,
+        );
+      }
     } catch (err) {
       bad(`balance check failed: ${(err as Error).message}`);
       failures++;

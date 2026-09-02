@@ -9,6 +9,35 @@
  * One commitment per market, written while the window is still open. The
  * contract refuses a late one, so a missed window is skipped rather than
  * back-filled.
+ *
+ * SHARING THE KEY WITH THE TRADER
+ *
+ * The registry is not on the Bot Kit's module ABIs, so it cannot go through
+ * `exchange.trader` — that tier only speaks pool/module/settlement calls. It
+ * therefore signs with its own viem wallet client, on the SAME private key the
+ * SDK trader is sending orders from in the same loop, and two senders on one
+ * key race each other's nonce. The Bot Kit says so in as many words
+ * (vendor/ec-core/src/claim.ts): "two senders on one key race each other's
+ * nonce ('nonce too low', one of them lost)", which is why claiming is driven
+ * from the trading loop rather than a timer.
+ *
+ * Two things keep that from happening here, and both are needed:
+ *
+ *   1. ONE nonce source. The SDK's writer derives its account with viem's
+ *      shared `nonceManager` singleton (markets-sdk `writer.ts` ->
+ *      `resolveSigner(config, "createTrader", { nonceManager })`), which
+ *      fetches the chain nonce once and then increments in memory — so during
+ *      a burst its counter is deliberately AHEAD of what the node reports as
+ *      pending. An independent `privateKeyToAccount(pk)` has no nonce manager,
+ *      so viem falls back to `eth_getTransactionCount(pending)` and happily
+ *      reuses a nonce the SDK has already spent. Passing the same singleton in
+ *      makes both signers consume from one counter keyed on (address, chainId)
+ *      — viem dedupes to one module instance, so it really is the same object.
+ *   2. NEVER IN FLIGHT ALONGSIDE A TRADE. `commit()` waits for the receipt
+ *      before it returns, and the runner awaits `commit()` before it places
+ *      anything, so the commitment is mined before the first order of that
+ *      market pass is signed. Belt and braces on top of (1), and it is what
+ *      makes the receipt check below possible at all.
  */
 
 import {
@@ -20,7 +49,7 @@ import {
   type Address,
   type Hex,
 } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
+import { nonceManager, privateKeyToAccount } from "viem/accounts";
 import { makeChain, type EcContext } from "@dreamdex-bot-kit/ec-core";
 import { log, warn } from "./config.js";
 import type { ForecastEnvelope } from "./signal.js";
@@ -54,6 +83,9 @@ const ABI = [
 const ZERO_HASH: Hex =
   "0x0000000000000000000000000000000000000000000000000000000000000000";
 
+/** Don't let a stuck receipt wedge the trading loop behind an audit write. */
+const RECEIPT_TIMEOUT_MS = 30_000;
+
 /** Probability in (0,1) to basis points, clamped to the contract's 1..9999. */
 const toBps = (p: number): number =>
   Math.max(1, Math.min(9999, Math.round(p * 10_000)));
@@ -66,7 +98,15 @@ function evidenceHash(env: ForecastEnvelope): Hex {
 }
 
 export class ForecastRegistry {
-  private readonly seen = new Set<string>();
+  /**
+   * Markets whose commitment is CONFIRMED on chain — never merely attempted.
+   * A market goes in here only after a receipt says success (or `hasForecast`
+   * already says so), because a market recorded on a failed write is a market
+   * that never gets retried: the window is minutes long, this loop runs every
+   * few seconds, and a single dropped transaction would otherwise cost the
+   * whole forecast rather than one cycle.
+   */
+  private readonly committed = new Set<string>();
 
   private constructor(
     private readonly address: Address,
@@ -85,7 +125,10 @@ export class ForecastRegistry {
       return null;
     }
     const chain = makeChain(ctx.config);
-    const account = privateKeyToAccount(pk);
+    // `nonceManager` is viem's module singleton, and it is the very object the
+    // SDK's trader signs through — see the header. Dropping it here is the
+    // whole bug: two independent nonce sources on one key.
+    const account = privateKeyToAccount(pk, { nonceManager });
     return new ForecastRegistry(
       address as Address,
       createWalletClient({ account, chain, transport: http(ctx.config.rpcUrl) }),
@@ -95,13 +138,17 @@ export class ForecastRegistry {
   }
 
   /**
-   * Commit one forecast. Best-effort: publishing a track record must never
-   * interrupt trading, so every failure is logged and swallowed.
+   * Commit one forecast, and return true only when the chain says it landed.
+   *
+   * Best-effort in the sense that publishing a track record must never
+   * interrupt trading: every failure is logged and swallowed. It is NOT
+   * best-effort about what it claims — a reverted or dropped write leaves the
+   * market un-recorded, so the next cycle tries again while the window is open.
    */
   async commit(env: ForecastEnvelope): Promise<boolean> {
     const marketId = env.forecast.market_id;
     if (!marketId) return false;
-    if (this.seen.has(marketId)) return false;
+    if (this.committed.has(marketId)) return false;
     // The contract refuses a forecast on a closed window; don't waste the gas.
     if (env.expiry <= Math.floor(Date.now() / 1000)) return false;
 
@@ -113,7 +160,7 @@ export class ForecastRegistry {
         args: [this.account, marketId as Hex],
       });
       if (already) {
-        this.seen.add(marketId);
+        this.committed.add(marketId);
         return false;
       }
 
@@ -131,7 +178,22 @@ export class ForecastRegistry {
         chain: this.wallet.chain,
         account: this.wallet.account!,
       });
-      this.seen.add(marketId);
+
+      // A transaction hash is a receipt for nothing. `writeContract` sends with
+      // no simulation, so a commit on an already-committed market, a closed
+      // window, or a wrong registry address all resolve with a perfectly good
+      // hash and a reverted receipt — the same trap `assertTxOk` exists for on
+      // the Bot Kit's own writes.
+      const receipt = await this.publicClient.waitForTransactionReceipt({
+        hash,
+        timeout: RECEIPT_TIMEOUT_MS,
+      });
+      if (receipt.status !== "success") {
+        warn(`registry commit REVERTED for ${env.forecast.symbol} (tx ${hash}) — retrying next cycle`);
+        return false;
+      }
+
+      this.committed.add(marketId);
       log(`     registry: committed ${env.forecast.symbol} on-chain — tx ${hash}`);
       return true;
     } catch (err) {

@@ -30,8 +30,23 @@ export interface VaticrConfig {
    * signal bot bleeds: this must clear the spread, not the mid.
    */
   edgeThreshold: number;
+  /**
+   * How far THROUGH the touch an IOC is priced, in probability.
+   *
+   * An IOC at exactly `bestAsk` no-fills the moment the book moves one tick
+   * between the read and the send, and a no-fill IOC still costs gas. One tick
+   * on this venue is 0.001 (MM_TICK 1000 at 6 dp), so 0.005 buys five ticks of
+   * movement. Always capped at the posterior — see `strategy.ts`.
+   */
+  takeBuffer: number;
   /** Stop adding to a market once |net position| exceeds this, in shares. */
   maxNetInventory: number;
+  /**
+   * Hard ceiling on collateral this process may have committed at once —
+   * escrow on resting orders plus notional that has filled. Nothing else in
+   * the bot is a spend limit at all; see `risk.ts`.
+   */
+  maxNotional: number;
   /** Markets acted on per cycle. */
   maxMarkets: number;
   /** Only trade this underlying when set (e.g. "BTC"). */
@@ -51,7 +66,14 @@ export function loadVaticrConfig(): VaticrConfig {
     quoteSize: envNum("VATICR_QUOTE_SIZE", 5),
     halfSpread: envNum("VATICR_HALF_SPREAD", 0.03),
     edgeThreshold: envNum("VATICR_EDGE_THRESHOLD", 0.05),
+    takeBuffer: envNum("VATICR_TAKE_BUFFER", 0.005),
     maxNetInventory: envNum("VATICR_MAX_NET_INVENTORY", 25),
+    // Small on purpose: the rail should bite on a misconfigured run and be
+    // raised deliberately, not discovered after the wallet is empty. A full
+    // cycle at the other defaults escrows about maxMarkets x 2 legs x
+    // quoteSize x ~0.5 = 8 x 2 x 5 x 0.5 ~ 40, so 100 leaves headroom for a
+    // wide book and still stops a runaway inside one cycle.
+    maxNotional: envNum("VATICR_MAX_NOTIONAL", 100),
     maxMarkets: envNum("VATICR_MAX_MARKETS", 8),
     underlying: (process.env.EC_UNDERLYING ?? "").toUpperCase(),
     orderTtlSec: envNum("VATICR_ORDER_TTL_SEC", 90),
