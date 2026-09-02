@@ -28,7 +28,8 @@
     "test": "npm run test:agents && npm run test:bot && npm run test:contracts",
     "setup": "npm install && pip install -r requirements.txt",
     "test:bot": "npm test -w @vaticr/bot",
-    "backtest": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','agents.backtest',...process.argv.slice(1)],{stdio:'inherit'})\" --"
+    "backtest": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','agents.backtest',...process.argv.slice(1)],{stdio:'inherit'})\" --",
+    "go-live": "node scripts/go-live.mjs"
   },
   "dependencies": {
     "next": "14.2.5",
