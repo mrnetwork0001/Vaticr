@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Skeleton } from "./ui";
+import type { AuditResponse, Health } from "./types";
 
 const VENUE = process.env.NEXT_PUBLIC_VENUE_ID ?? "";
 
@@ -24,6 +25,13 @@ interface Stats {
  * first paint says "there is no such number", which is a different and wrong
  * claim from "the number has not arrived yet".
  */
+/** A non-2xx must surface as offline, not parse into a "healthy" strip. */
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json() as Promise<T>;
+}
+
 export default function LiveStats() {
   const [s, setS] = useState<Stats>({
     markets: null, headlines: null, verified: null, network: null,
@@ -37,9 +45,9 @@ export default function LiveStats() {
     const load = async () => {
       try {
         const [health, forecasts, audit] = await Promise.all([
-          fetch("/api/vaticr/health", { cache: "no-store" }).then((r) => r.json()),
-          fetch(`/api/vaticr/forecasts?${q}limit=24`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`/api/vaticr/audit?${q}limit=12`, { cache: "no-store" }).then((r) => r.json()),
+          getJson<Health>("/api/vaticr/health"),
+          getJson<unknown[]>(`/api/vaticr/forecasts?${q}limit=24`),
+          getJson<AuditResponse>(`/api/vaticr/audit?${q}limit=12`),
         ]);
         if (cancelled) return;
         setS({

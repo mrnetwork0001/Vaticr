@@ -23,10 +23,12 @@
     "deploy:registry": "hardhat run scripts/deploy-registry.cjs --network somniaTestnet",
     "backstop": "npm run backstop -w @vaticr/bot",
     "test:contracts": "hardhat test",
-    "test:agents": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','tests.test_pricing'],{stdio:'inherit'})\"",
+    "test:agents": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';const{readdirSync}=require('fs');const ms=readdirSync('tests').filter(f=>/^test_.*\\\\.py$/.test(f)).map(f=>'tests.'+f.slice(0,-3)).sort();let fail=0;for(const m of ms){const r=require('child_process').spawnSync(p,['-m',m],{stdio:'inherit'});if(r.status!==0)fail=1;}process.exit(fail)\"",
     "bot:only": "npm start -w @vaticr/bot",
-    "test": "npm run test:agents && npm run test:contracts",
-    "setup": "npm install && pip install -r requirements.txt"
+    "test": "npm run test:agents && npm run test:bot && npm run test:contracts",
+    "setup": "npm install && pip install -r requirements.txt",
+    "test:bot": "npm test -w @vaticr/bot",
+    "backtest": "node -e \"const{existsSync}=require('fs');const p=existsSync('.venv/bin/python')?'.venv/bin/python':'python3';require('child_process').spawn(p,['-m','agents.backtest',...process.argv.slice(1)],{stdio:'inherit'})\" --"
   },
   "dependencies": {
     "next": "14.2.5",

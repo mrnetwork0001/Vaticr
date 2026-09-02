@@ -73,7 +73,7 @@ export function loadVaticrConfig(): VaticrConfig {
     // cycle at the other defaults escrows about maxMarkets x 2 legs x
     // quoteSize x ~0.5 = 8 x 2 x 5 x 0.5 ~ 40, so 100 leaves headroom for a
     // wide book and still stops a runaway inside one cycle.
-    maxNotional: envNum("VATICR_MAX_NOTIONAL", 100),
+    maxNotional: envNum("VATICR_MAX_NOTIONAL", 50),
     maxMarkets: envNum("VATICR_MAX_MARKETS", 8),
     underlying: (process.env.EC_UNDERLYING ?? "").toUpperCase(),
     orderTtlSec: envNum("VATICR_ORDER_TTL_SEC", 90),
