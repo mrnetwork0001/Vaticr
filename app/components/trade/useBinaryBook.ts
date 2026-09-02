@@ -47,6 +47,17 @@ export interface BookView {
   mid: number | null;
   /** Where the numbers came from. `"none"` means both sources answered empty. */
   source: "live" | "chain" | "none";
+  /**
+   * True once at least one source has actually answered.
+   *
+   * `source === "none"` alone is ambiguous: it is both "this book is empty" and
+   * "no read has landed yet". A ticket that reads the first as the second tells
+   * someone there is nothing to trade against a book it has not looked at, so
+   * the two are separated here rather than guessed at by the caller.
+   */
+  loaded: boolean;
+  /** `Date.now()` of the last successful CHAIN read, or null if none has landed. */
+  asOf: number | null;
   isLoading: boolean;
   error: Error | null;
 }
@@ -71,14 +82,25 @@ export function useBinaryBook(
   const { client } = useVaticrExchange();
   const live = useLiveBinaryOrderBookByMarket(marketId ?? undefined, DEPTH);
   const [chain, setChain] = useState<BinaryOrderBook>(EMPTY);
+  const [chainAt, setChainAt] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!pool) {
       setChain(EMPTY);
+      setChainAt(null);
       return;
     }
+    // Drop the previous pool's book BEFORE fetching the new one. Without this
+    // the old book stays on screen for the whole round-trip, so a ticket that
+    // has just switched markets — or a pool that recycled onto the next window —
+    // renders one market's prices while pointing at another. A user already
+    // filled 0.07/share away from a displayed touch because of a stale book;
+    // showing the wrong market's book entirely is the same failure, worse.
+    setChain(EMPTY);
+    setChainAt(null);
+
     let alive = true;
     const tick = async () => {
       setIsLoading(true);
@@ -89,6 +111,7 @@ export function useBinaryBook(
         const b = await client.getBinaryOrderBook(pool, { depth: DEPTH, decimals });
         if (alive) {
           setChain(b);
+          setChainAt(Date.now());
           setError(null);
         }
       } catch (err) {
@@ -122,6 +145,8 @@ export function useBinaryBook(
     bestAsk,
     mid: bestBid !== null && bestAsk !== null ? (bestBid + bestAsk) / 2 : null,
     source,
+    loaded: liveHas || chainAt !== null,
+    asOf: chainAt,
     isLoading,
     error,
   };
