@@ -37,19 +37,26 @@ Vaticr derives it, trades it, and then proves whether it was any good.
 ## Quickstart
 
 ```bash
-git clone https://github.com/mrnetwork/Vaticr.git && cd Vaticr
+git clone https://github.com/mrnetwork0001/Vaticr.git && cd Vaticr
 
-npm install                       # workspace: bot + vendored Bot Kit ec-core
-pip install -r requirements.txt   # FastAPI intelligence layer
+npm install                              # workspace: bot + vendored Bot Kit ec-core
 
-cp .env.example .env              # works as-is; DRY_RUN=true by default
+python3.11 -m venv .venv                 # the tooling looks for ./.venv first
+./.venv/bin/pip install -r requirements.txt
 
-npm run bot:start                 # one command: starts the brain, then the bot
+cp .env.example .env                     # works as-is; DRY_RUN=true by default
+
+npm run bot:start                        # one command: starts the brain, then the bot
 ```
 
 That is the whole setup. `bot:start` brings up the Python intelligence layer,
 waits for the first news scan, then runs the trading loop — **in dry run**,
 logging every order it would place and sending nothing.
+
+The virtualenv is not optional in practice: `scripts/start.mjs` and the `api` /
+`test:agents` npm scripts all prefer `./.venv/bin/python` and only fall back to
+whatever `python3` is on `PATH`. Any Python 3.11+ interpreter works; put it at
+`./.venv` and everything finds it.
 
 Check everything first:
 
@@ -71,7 +78,42 @@ Watch it on the dashboard:
 npm run dev         # http://localhost:3000
 ```
 
-<sub>If port 8787 is taken: `VATICR_API_PORT=8799 npm run bot:start`.</sub>
+<sub>If port 8787 is taken: `VATICR_API_PORT=8799 npm run bot:start` (and set
+`VATICR_API_URL=http://127.0.0.1:8799` so the bot and the dashboard follow).</sub>
+
+---
+
+## Funding a testnet run
+
+Dry run needs nothing. Trading for real on Somnia testnet needs two assets, and
+only one of them is your problem:
+
+**1. STT for gas — you fetch this.** Somnia's Shannon testnet (chainId **50312**)
+pays gas in STT.
+
+| | |
+|---|---|
+| Faucet | <https://testnet.somnia.network/> |
+| Explorer | <https://shannon-explorer.somnia.network/> |
+| RPC | `https://api.infra.testnet.somnia.network` |
+
+Alternate faucets if that one is dry: [Google Cloud](https://cloud.google.com/application/web3/faucet/somnia/shannon),
+[Stakely](https://stakely.io/faucet/somnia-testnet-stt), [thirdweb](https://thirdweb.com/somnia-shannon-testnet).
+A few STT is plenty — these are cheap transactions.
+
+**2. tUSDC collateral — the Bot Kit fetches this for you.** Test collateral is
+`0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E` (6 decimals) and it exposes a public
+`faucet(uint256)`. `ec-core`'s `seedInventory()` calls it automatically whenever
+the signer's balance drops below 1,000 tUSDC, on any non-mainnet network. You do
+not need to do anything — but it does need gas, which is why STT comes first.
+Set `FAUCET_ENABLED=false` to turn that off.
+
+Confirm both with `npm run doctor`. It prints the wallet's native and collateral
+balances and fails on either being zero — and on gas being merely *thin*, since
+the SDK signs with a fixed gas ceiling rather than estimating, so a balance that
+looks non-zero can still be rejected at send time. On **mainnet** there is no
+faucet: collateral is real USDso and the bot warns and skips rather than
+minting.
 
 ---
 
@@ -98,7 +140,7 @@ BTC 900s @1788269400      up     up           77783.91   77863.42  +10.22bp  mat
 ETH 300s @1788269100      down   up            2439.46    2439.58   +0.48bp  inconclusive
 
   11/12 settlements independently verified
-  1 inconclusive — decided by under 1bp, finer than an off-chain
+  1 inconclusive — decided by under 1.0bp, finer than an off-chain
   reconstruction can resolve
   receipt: https://dev.oracle.somnia.host/questions/48402?view=graph
 ```
@@ -117,46 +159,57 @@ zero genuine mismatches.
 | Command | What it does |
 |---|---|
 | `npm run bot:start` | **One command.** Intelligence layer + trading bot. |
-| `npm run doctor` | Preflight: venue, markets, API, signer, balances. |
+| `npm run bot:dry` | Same, with `DRY_RUN=true` forced regardless of `.env`. |
+| `npm run doctor` | Preflight: network, module bytecode, venue, markets, API, signer, balances. |
 | `npm run dev` | Next.js 14 dashboard on :3000. |
-| `npm run api` | Intelligence layer alone (FastAPI). |
-| `npm run bot:only` | Trading loop alone. |
+| `npm run api` | Intelligence layer alone (uvicorn on `VATICR_API_PORT`, default 8787). |
+| `npm run bot:only` | Trading loop alone — assumes the API is already up. |
 | `npm run backstop` | Poke or void any window stuck past settlement. |
-| `npm test` | Engine property tests + Solidity tests. |
+| `npm test` | 17 engine property tests + 7 Solidity tests. |
+| `npm run typecheck` | `tsc --noEmit` over the app and the bot workspace. |
+| `npm run compile` | Hardhat compile. |
 | `npm run deploy:registry` | Deploy the forecast registry to Somnia testnet. |
 
 Agents can also be driven directly:
 
 ```bash
-python -m agents.scout       # scan feeds, print scored headlines
-python -m agents.resolver    # audit settlements, print calibration
+./.venv/bin/python -m agents.scout       # scan feeds, print scored headlines
+./.venv/bin/python -m agents.resolver    # audit settlements, print calibration
 ```
+
+`agents.resolver` takes `--venue <venueId>`, `--limit <n>`, and `--watch`
+with `--interval <sec>` to keep sweeping.
 
 ---
 
 ## Layout
 
 ```
-agents/        Python 3.11 — read-only. The brain.
-  scout.py       headlines → directional evidence
-  lexicon.py     deterministic scorer (no key required)
-  llm.py         optional Claude classifier — scores surprise, not keywords
-  pricing.py     the Bayesian engine: GBM prior + log-odds evidence
-  resolver.py    settlement audit · Brier scoring · backstops
-  somnia.py      markets indexer + oracle price feed
-  server.py      FastAPI surface the bot polls
+agents/          Python 3.11 — read-only. The brain.
+  scout.py         headlines → directional evidence
+  lexicon.py       deterministic scorer (no key required)
+  llm.py           optional Claude classifier — scores surprise, not keywords
+  pricing.py       the Bayesian engine: GBM prior + log-odds evidence
+  resolver.py      settlement audit · Brier scoring · backstops
+  somnia.py        markets indexer + oracle price feed
+  server.py        FastAPI surface the bot polls
+  store.py         forecast commitments (.vaticr/forecasts.jsonl)
 
-bot/           TypeScript — every on-chain write.
-  runner.ts      the trading loop  (npm run bot:start)
-  strategy.ts    take-vs-quote, mint-a-pair levels, inventory caps
-  backstop.ts    pokeOracle / voidExpired
-  doctor.ts      preflight
-  registry.ts    on-chain forecast commitments
+bot/src/         TypeScript — every on-chain write.
+  runner.ts        the trading loop  (npm run bot:start)
+  strategy.ts      take-vs-quote, mint-a-pair levels, inventory caps
+  backstop.ts      pokeOracle / voidExpired
+  doctor.ts        preflight
+  registry.ts      on-chain forecast commitments
+  signal.ts        typed client for the Python API
 
-contracts/     VaticrForecastRegistry.sol — append-only, no owner
-app/           Next.js 14 dashboard
-vendor/ec-core dreamDEX Bot Kit ec-core, vendored verbatim (MIT) — see SDK feedback
-docs/          ARCHITECTURE.md · SDK_FEEDBACK.md
+contracts/       VaticrForecastRegistry.sol — append-only, no owner
+tests/           Python engine property tests
+test/            Solidity tests (hardhat)
+app/             Next.js 14 landing + dashboard
+vendor/ec-core   dreamDEX Bot Kit ec-core, vendored verbatim (MIT) — see SDK feedback
+docs/            ARCHITECTURE.md · API.md · SDK_FEEDBACK.md
+DEMO.md          runbook for the demo recording
 ```
 
 ---
@@ -190,17 +243,37 @@ npm test
 - **7 Solidity tests** on the registry — append-only, no late commitments,
   agents independent, pagination safe past the end.
 
+Run either half alone with `npm run test:agents` or `npm run test:contracts`.
+
+`npm test` covers those two. Four further Python suites are not yet wired into
+it and are run directly:
+
+```bash
+./.venv/bin/python -m tests.test_lexicon     # 15 — the deterministic scorer
+./.venv/bin/python -m tests.test_resolver    # 17 — audit verdicts, Brier, backstops
+./.venv/bin/python -m tests.test_somnia      # 15 — the two GraphQL readers
+./.venv/bin/python -m tests.test_store       # 11 — commitment durability
+```
+
+The bot's decision layer has **32 vitest tests** on top of that, also outside
+`npm test`:
+
+```bash
+npm run test -w @vaticr/bot   # take-vs-quote, touch pricing, inventory caps
+```
+
 ---
 
-## Deployed contracts
+## Contracts
 
-| Contract | Network | Address |
-|---|---|---|
-| `VaticrForecastRegistry` | Somnia testnet (50312) | *deploy with `npm run deploy:registry`; address is written to `deployments/50312.json`* |
+`VaticrForecastRegistry` is written and tested but **not yet deployed**. Deploy
+it with `npm run deploy:registry`; the script writes the address to
+`deployments/50312.json`, and setting `VATICR_REGISTRY=0x...` in `.env` makes the
+bot publish each forecast on-chain before its window closes.
 
 Vaticr trades the DreamDEX protocol contracts, which it does not own:
 
-| Contract | Address |
+| Contract | Address (Somnia testnet, 50312) |
 |---|---|
 | `BinaryMarketsModule` | `0x3ecC694Cef705358864a646142ac17A90E29e388` |
 | `MarketsCore` | `0x2802504314685D89bF6C992CA5a8e7cC78bc0294` |
@@ -208,6 +281,10 @@ Vaticr trades the DreamDEX protocol contracts, which it does not own:
 | `OutcomeToken6909` | `0xB52c5934113Af5c0Bb20eb3C72290C8215f755b9` |
 | `OracleHub` | `0xe40db387cC98601Dd11bd634fF2f3AD5686dE32b` |
 | tUSDC (testnet collateral, 6 dp) | `0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E` |
+
+These come from `vendor/ec-core/src/addresses.ts`; `npm run doctor` verifies the
+module still has bytecode at that address, because a stale deployment map is the
+most common way a working bot goes quiet.
 
 ---
 

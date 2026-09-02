@@ -34,7 +34,7 @@ for one it rewards.
 
 ---
 
-## The three subsystems
+## The four subsystems
 
 ```
         ┌──────────────────────────────────────────────────────────┐
@@ -223,4 +223,6 @@ registry commitments — is TypeScript, because that is where the Bot Kit and
 `markets-sdk` own signing, nonces and escrow, and because the kit is explicit
 that two senders on one key race each other. Python is **read-only**: it queries
 the two public GraphQL endpoints and does the modelling, which keeps the
-forecasting logic testable in isolation behind one documented HTTP boundary.
+forecasting logic testable in isolation behind one HTTP boundary — specified
+route by route, with response shapes and worked examples, in
+[API.md](./API.md).

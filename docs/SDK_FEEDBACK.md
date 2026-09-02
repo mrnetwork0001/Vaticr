@@ -88,6 +88,16 @@ ones where the probability is most sensitive and most worth trading. A bot
 pricing off `spot` is systematically wrong in the region that matters, and
 nothing tells it so: the orders fill, the settlements just go the other way.
 
+*On the 8/8:* that is a clean sweep on eight windows, not a claim that an
+off-chain reconstruction can adjudicate every settlement. Widened to twenty
+settlements, `mark` reproduces the on-chain winner 19/20, and the single
+exception is a window that closed 0.005% from its open — where the oracle's own
+sampled tick and the tick we recover from the public feed by timestamp differ by
+one. Vaticr's audit therefore reports three counts, not two: **verified**,
+**mismatched**, and **inconclusive** for a disagreement under 1bp, which is
+finer than the reconstruction can resolve. Publishing the settlement series
+would collapse that third bucket for everyone.
+
 **Suggestion:** state the settlement series explicitly in
 [Settlement & Voids](https://docs.dreamdex.io/trading/event-contracts/settlement-and-voids)
 and in the event-contract developer docs.

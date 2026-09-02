@@ -10,10 +10,13 @@ export function Section({
 }: {
   id?: string; eyebrow: string; title: string; lede?: string; children?: ReactNode;
 }) {
+  // A <section> is only a landmark once it has an accessible name, so every
+  // section names itself with its own heading rather than adding a second one.
+  const headingId = `${(id ?? title).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}-heading`;
   return (
-    <section id={id} className="mx-auto max-w-6xl px-5 py-20">
+    <section id={id} aria-labelledby={headingId} className="mx-auto max-w-6xl px-5 py-20">
       <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+      <h2 id={headingId} className="mt-3 max-w-3xl text-balance text-3xl font-semibold tracking-tight text-white sm:text-4xl">
         {title}
       </h2>
       {lede && (
@@ -71,9 +74,9 @@ export function Row({
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-white/5 py-2.5 last:border-0">
       <span className="mono text-[12.5px] text-slate-300">{k}</span>
-      <span className="text-right text-[12.5px] text-slate-500">
+      <span className="text-right text-[12.5px] text-slate-400">
         {v}
-        {note && <span className="ml-2 text-slate-600">{note}</span>}
+        {note && <span className="ml-2 text-slate-400">{note}</span>}
       </span>
     </div>
   );

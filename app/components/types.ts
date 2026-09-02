@@ -82,3 +82,35 @@ export interface Health {
   llm_classifier: string;
   feeds: number;
 }
+
+/** One row of the reliability diagram: does "70%" actually happen 70% of the time? */
+export interface CalibrationBucket {
+  range: string;
+  count: number;
+  mean_forecast: number;
+  observed_up_rate: number;
+}
+
+export interface Calibration {
+  scored: number;
+  brier_score: number | null;
+  baseline_brier: number;
+  // 1 - brier/baseline. Positive means edge over a coin flip — at large n.
+  skill: number | null;
+  accuracy: number | null;
+  buckets: CalibrationBucket[];
+  pending: number;
+  voided: number;
+}
+
+/** Top of the YES book for one market, in YES probability terms. */
+export interface BookTop {
+  market_id: string;
+  best_bid: number | null;
+  best_ask: number | null;
+  mid: number | null;
+}
+
+export interface BookResponse {
+  tops: BookTop[];
+}

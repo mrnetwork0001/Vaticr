@@ -1,44 +1,115 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Card, Pill, ProbabilityBar, ago, countdown } from "./ui";
+import CalibrationPanel from "./Calibration";
+import { Evidence, signed } from "./Evidence";
+import {
+  BackendDown, Card, PanelState, Pill, ProbabilityBar, Skeleton, ago, countdown,
+} from "./ui";
 import type {
-  AuditResponse, ForecastEnvelope, Headline, Health,
+  AuditResponse, BookResponse, BookTop, Calibration, ForecastEnvelope,
+  Headline, Health,
 } from "./types";
 
 const VENUE = process.env.NEXT_PUBLIC_VENUE_ID ?? "";
 
+type Phase = "loading" | "ready" | "error";
+
+/** What one panel knows: its data, whether it arrived, and why it did not. */
+interface Loaded<T> {
+  state: Phase;
+  data: T | null;
+  detail?: string;
+}
+
+const pending = <T,>(): Loaded<T> => ({ state: "loading", data: null });
+
+class ApiError extends Error {
+  /** True only when the proxy could not open a socket to the Python service. */
+  readonly unreachable: boolean;
+  constructor(message: string, unreachable: boolean) {
+    super(message);
+    this.unreachable = unreachable;
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`/api/vaticr/${path}`, { cache: "no-store" });
+  const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.hint ?? body.detail ?? `${res.status} ${res.statusText}`);
+    // A 502 alone is ambiguous — FastAPI also answers 502 when the indexer is
+    // down but the service itself is fine. The proxy's own marker is the only
+    // reliable way to tell "nothing is listening" from "something objected".
+    throw new ApiError(
+      body.detail ?? body.hint ?? `${res.status} ${res.statusText}`,
+      body.error === "intelligence layer unreachable",
+    );
   }
   return res.json() as Promise<T>;
 }
 
+/** Settle one endpoint into panel state without letting it take the others down. */
+function settle<T>(
+  result: PromiseSettledResult<T>,
+  onDown: () => void,
+): Loaded<T> {
+  if (result.status === "fulfilled") return { state: "ready", data: result.value };
+  const err = result.reason as ApiError;
+  if (err?.unreachable) onDown();
+  return { state: "error", data: null, detail: err?.message ?? String(result.reason) };
+}
+
 export default function Dashboard() {
-  const [health, setHealth] = useState<Health | null>(null);
-  const [forecasts, setForecasts] = useState<ForecastEnvelope[]>([]);
-  const [headlines, setHeadlines] = useState<Headline[]>([]);
-  const [audit, setAudit] = useState<AuditResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [health, setHealth] = useState<Loaded<Health>>(pending);
+  const [forecasts, setForecasts] = useState<Loaded<ForecastEnvelope[]>>(pending);
+  const [headlines, setHeadlines] = useState<Loaded<Headline[]>>(pending);
+  const [audit, setAudit] = useState<Loaded<AuditResponse>>(pending);
+  const [calibration, setCalibration] = useState<Loaded<Calibration>>(pending);
+  const [books, setBooks] = useState<Record<string, BookTop>>({});
+  const [down, setDown] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [updated, setUpdated] = useState<number>(0);
 
   const venueQuery = VENUE ? `venue=${VENUE}&` : "";
 
   const refresh = useCallback(async () => {
-    try {
-      const [h, f, n, a] = await Promise.all([
-        get<Health>("health"),
-        get<ForecastEnvelope[]>(`forecasts?${venueQuery}limit=12`),
-        get<Headline[]>("headlines?limit=14"),
-        get<AuditResponse>(`audit?${venueQuery}limit=10`),
-      ]);
-      setHealth(h); setForecasts(f); setHeadlines(n); setAudit(a);
-      setError(null); setUpdated(Date.now());
-    } catch (err) {
-      setError((err as Error).message);
+    // A plain `let` here would be narrowed to null by control-flow analysis,
+    // because the assignment happens inside a callback TypeScript cannot follow.
+    const reach = { down: false };
+    const noteDown = () => { reach.down = true; };
+
+    const [h, f, n, a, c] = await Promise.allSettled([
+      get<Health>("/api/vaticr/health"),
+      get<ForecastEnvelope[]>(`/api/vaticr/forecasts?${venueQuery}limit=12`),
+      get<Headline[]>("/api/vaticr/headlines?limit=14"),
+      get<AuditResponse>(`/api/vaticr/audit?${venueQuery}limit=10`),
+      get<Calibration>(`/api/vaticr/calibration?${venueQuery}`),
+    ]);
+
+    // Each panel settles on its own. One endpoint failing used to blank the
+    // whole page, which made a single broken query look like a dead app.
+    setHealth(settle(h, noteDown));
+    setForecasts(settle(f, noteDown));
+    setHeadlines(settle(n, noteDown));
+    setAudit(settle(a, noteDown));
+    setCalibration(settle(c, noteDown));
+    setDown(
+      reach.down ? "The proxy could not open a socket to the forecasting service." : null,
+    );
+    setUpdated(Date.now());
+
+    if (f.status === "fulfilled") {
+      const ids = f.value.map((e) => e.forecast.market_id).filter(Boolean).join(",");
+      if (ids) {
+        try {
+          const book = await get<BookResponse>(`/api/book?markets=${ids}`);
+          setBooks(Object.fromEntries(book.tops.map((t) => [t.market_id, t])));
+        } catch {
+          // A missing book is a normal state on a quiet testnet venue, and the
+          // bar renders "mid —" for it. Not worth an error banner.
+          setBooks({});
+        }
+      }
     }
   }, [venueQuery]);
 
@@ -48,13 +119,16 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [refresh]);
 
+  const rows = forecasts.data ?? [];
+  const news = headlines.data ?? [];
+
   return (
-    <main className="mx-auto max-w-7xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-7xl px-5 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           <a
             href="/"
-            className="mb-1 inline-flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-slate-300"
+            className="mb-1 inline-flex items-center gap-1.5 text-xs text-slate-400 transition hover:text-slate-200"
           >
             <span aria-hidden>&larr;</span> Back to overview
           </a>
@@ -68,171 +142,244 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          {health && (
+          {health.state === "loading" && (
             <>
-              <Pill tone="up">somnia {health.network}</Pill>
-              <Pill>{health.headlines_in_window} headlines</Pill>
-              <Pill tone={health.llm_classifier.startsWith("on") ? "up" : "neutral"}>
-                classifier {health.llm_classifier.startsWith("on") ? "LLM" : "lexicon"}
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-5 w-20" />
+            </>
+          )}
+          {health.state === "ready" && health.data && (
+            <>
+              <Pill tone="up">somnia {health.data.network}</Pill>
+              <Pill>{health.data.headlines_in_window} headlines</Pill>
+              <Pill tone={health.data.llm_classifier.startsWith("on") ? "up" : "neutral"}>
+                classifier {health.data.llm_classifier.startsWith("on") ? "LLM" : "lexicon"}
               </Pill>
             </>
           )}
           {updated > 0 && (
-            <span className="mono text-[11px] text-slate-600">
+            <span className="mono text-[11px] text-slate-400">
               updated {new Date(updated).toLocaleTimeString()}
             </span>
           )}
         </div>
       </header>
 
-      {error && (
-        <div className="mb-6 rounded-lg border border-down/30 bg-down/10 px-4 py-3 text-sm text-down">
-          {error}
+      {down && (
+        <div className="mb-6">
+          <BackendDown detail={down} />
         </div>
       )}
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="lg:col-span-2">
+        <div className="space-y-5 lg:col-span-2">
           <Card
+            id="windows"
             title="Live windows"
-            subtitle="P(closes at or above its opening price)"
-            right={<Pill>{forecasts.length} markets</Pill>}
+            subtitle="P(closes at or above its opening price), against the top of the YES book"
+            right={
+              forecasts.state === "loading"
+                ? <Skeleton className="h-5 w-20" />
+                : <Pill>{rows.length} markets</Pill>
+            }
           >
-            <div className="divide-y divide-white/5">
-              {forecasts.length === 0 && (
-                <p className="px-4 py-8 text-center text-sm text-slate-500">
-                  No live windows in scope.
-                </p>
-              )}
-              {forecasts.map((e) => {
-                const f = e.forecast;
-                const news = f.evidence_log_odds;
-                return (
-                  <div key={f.market_id} className="flex flex-wrap items-center gap-4 px-4 py-3">
-                    <div className="min-w-[9rem] flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-100">{f.asset}</span>
-                        <Pill>{Math.round(f.window_sec)}s window</Pill>
-                      </div>
-                      <div className="mono mt-1 text-[11px] text-slate-500">
-                        open {f.open_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                        {" · now "}
-                        <span className={f.spot >= f.open_price ? "text-up" : "text-down"}>
-                          {f.spot.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
+            {forecasts.state === "loading" && <PanelState state="loading" />}
+            {forecasts.state === "error" && (
+              <PanelState state="error">{forecasts.detail}</PanelState>
+            )}
+            {forecasts.state === "ready" && rows.length === 0 && (
+              <PanelState
+                state="empty"
+                empty="No live windows in scope. Rolling windows are minted per interval — the next one opens shortly."
+              />
+            )}
+            {forecasts.state === "ready" && rows.length > 0 && (
+              <div className="divide-y divide-white/5">
+                {rows.map((e) => {
+                  const f = e.forecast;
+                  const id = f.market_id ?? f.symbol ?? String(e.expiry);
+                  const panelId = `evidence-${id}`;
+                  const isOpen = Boolean(expanded[id]);
+                  const drift = f.evidence_log_odds;
+                  const top = f.market_id ? books[f.market_id] : undefined;
+                  return (
+                    <div key={id}>
+                      <div className="flex flex-wrap items-center gap-4 px-4 py-3">
+                        <div className="min-w-[9rem] flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-slate-100">{f.asset}</span>
+                            <Pill>{Math.round(f.window_sec)}s window</Pill>
+                          </div>
+                          <div className="mono mt-1 text-[11px] text-slate-400">
+                            open {f.open_price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                            {" · now "}
+                            <span className={f.spot >= f.open_price ? "text-up" : "text-down"}>
+                              {f.spot.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                              <span aria-hidden>{f.spot >= f.open_price ? " ▲" : " ▼"}</span>
+                            </span>
+                          </div>
+                        </div>
 
-                    <ProbabilityBar prior={f.prior} posterior={f.posterior} />
+                        <ProbabilityBar
+                          prior={f.prior}
+                          posterior={f.posterior}
+                          mid={top?.mid ?? null}
+                        />
 
-                    <div className="min-w-[5.5rem] text-right">
-                      <div className="mono text-xs text-slate-400">
-                        {countdown(f.seconds_left)}
-                      </div>
-                      <div className="mono text-[11px] text-slate-600">
-                        vol {(f.annual_vol * 100).toFixed(1)}%
-                      </div>
-                    </div>
+                        <div className="min-w-[5.5rem] text-right">
+                          <div className="mono text-xs text-slate-300">
+                            {countdown(f.seconds_left)}
+                          </div>
+                          <div className="mono text-[11px] text-slate-400">
+                            vol {(f.annual_vol * 100).toFixed(1)}%
+                          </div>
+                        </div>
 
-                    <div className="min-w-[4.5rem] text-right">
-                      {Math.abs(news) > 0.0005 ? (
-                        <Pill tone={news > 0 ? "up" : "down"}>
-                          news {news > 0 ? "+" : ""}{news.toFixed(3)}
-                        </Pill>
-                      ) : (
-                        <Pill>no news</Pill>
+                        <div className="min-w-[4.5rem] text-right">
+                          {Math.abs(drift) > 0.0005 ? (
+                            <Pill tone={drift > 0 ? "up" : "down"}>
+                              news {signed(drift)}
+                            </Pill>
+                          ) : (
+                            <Pill>no news</Pill>
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          aria-expanded={isOpen}
+                          aria-controls={panelId}
+                          onClick={() =>
+                            setExpanded((prev) => ({ ...prev, [id]: !prev[id] }))
+                          }
+                          className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-300 transition hover:border-white/25 hover:bg-white/5 hover:text-white"
+                        >
+                          <span aria-hidden className="mono mr-1">{isOpen ? "−" : "+"}</span>
+                          {f.evidence.length} headline{f.evidence.length === 1 ? "" : "s"}
+                          <span className="sr-only">
+                            {" "}behind the {f.asset} posterior
+                          </span>
+                        </button>
+                      </div>
+                      {isOpen && (
+                        <Evidence forecast={f} headlines={news} panelId={panelId} />
                       )}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
 
-          <div className="mt-5">
-            <Card
-              title="Settlement audit"
-              subtitle="Every settlement recomputed from the public oracle feed"
-              right={
-                audit && (
+          <CalibrationPanel
+            cal={calibration.data}
+            state={calibration.state}
+            detail={calibration.detail}
+          />
+
+          <Card
+            id="audit"
+            title="Settlement audit"
+            subtitle="Every settlement recomputed from the public oracle feed"
+            right={
+              audit.state === "loading" ? (
+                <Skeleton className="h-5 w-28" />
+              ) : (
+                audit.data && (
                   <div className="flex gap-1.5">
-                    <Pill tone={audit.mismatched === 0 ? "up" : "down"}>
-                      {audit.verified}/{audit.total} verified
+                    <Pill tone={audit.data.mismatched === 0 ? "up" : "down"}>
+                      {audit.data.verified}/{audit.data.total} verified
                     </Pill>
-                    {audit.inconclusive > 0 && (
-                      <Pill tone="warn">{audit.inconclusive} too close to call</Pill>
+                    {audit.data.inconclusive > 0 && (
+                      <Pill tone="warn">{audit.data.inconclusive} too close to call</Pill>
                     )}
                   </div>
                 )
-              }
-            >
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="text-slate-500">
-                    <tr className="border-b border-white/5">
-                      <th className="px-4 py-2 font-medium">Window</th>
-                      <th className="px-3 py-2 font-medium">Open</th>
-                      <th className="px-3 py-2 font-medium">Close</th>
-                      <th className="px-3 py-2 font-medium">Margin</th>
-                      <th className="px-3 py-2 font-medium">On-chain</th>
-                      <th className="px-3 py-2 font-medium">Recomputed</th>
-                      <th className="px-3 py-2 font-medium">Receipt</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {audit?.settlements.map((s) => (
-                      <tr key={s.market_id}>
-                        <td className="px-4 py-2 text-slate-300">{s.symbol}</td>
-                        <td className="mono px-3 py-2 text-slate-500">
-                          {s.open_reference?.toFixed(2) ?? "-"}
-                        </td>
-                        <td className="mono px-3 py-2 text-slate-500">
-                          {s.close_reference?.toFixed(2) ?? "-"}
-                        </td>
-                        <td className="mono px-3 py-2 text-slate-500">
-                          {s.margin_bps === null
-                            ? "-"
-                            : `${s.margin_bps > 0 ? "+" : ""}${s.margin_bps.toFixed(2)}bp`}
-                        </td>
-                        <td className="px-3 py-2">
-                          <Pill tone={s.onchain_outcome === "up" ? "up" : "down"}>
-                            {s.onchain_outcome}
-                          </Pill>
-                        </td>
-                        <td className="px-3 py-2">
-                          <Pill
-                            tone={
-                              s.verdict === "match"
-                                ? "up"
-                                : s.verdict === "MISMATCH"
-                                  ? "down"
-                                  : "warn"
-                            }
-                          >
-                            {s.verdict}
-                          </Pill>
-                        </td>
-                        <td className="px-3 py-2">
-                          {s.receipt_url && (
-                            <a
-                              className="text-accent hover:underline"
-                              href={s.receipt_url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
-                              #{s.oracle_question_id}
-                            </a>
-                          )}
-                        </td>
+              )
+            }
+          >
+            {audit.state === "loading" && <PanelState state="loading" />}
+            {audit.state === "error" && (
+              <PanelState state="error">{audit.detail}</PanelState>
+            )}
+            {audit.state === "ready" && audit.data && audit.data.settlements.length === 0 && (
+              <PanelState state="empty" empty="No settled windows to recompute yet." />
+            )}
+            {audit.state === "ready" && audit.data && audit.data.settlements.length > 0 && (
+              <>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <caption className="sr-only">
+                      Settled windows, with the on-chain outcome beside the one
+                      recomputed independently from the oracle price feed.
+                    </caption>
+                    <thead className="text-slate-300">
+                      <tr className="border-b border-white/5">
+                        <th scope="col" className="px-4 py-2 font-medium">Window</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Open</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Close</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Margin</th>
+                        <th scope="col" className="px-3 py-2 font-medium">On-chain</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Recomputed</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Receipt</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {audit && (
-                <div className="border-t border-white/5 px-4 py-2 text-[11px] leading-relaxed text-slate-600">
-                  <p>reference series: {audit.reference}</p>
-                  {audit.inconclusive > 0 && (
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {audit.data.settlements.map((s) => (
+                        <tr key={s.market_id}>
+                          <td className="px-4 py-2 text-slate-200">{s.symbol}</td>
+                          <td className="mono px-3 py-2 text-slate-400">
+                            {s.open_reference?.toFixed(2) ?? "-"}
+                          </td>
+                          <td className="mono px-3 py-2 text-slate-400">
+                            {s.close_reference?.toFixed(2) ?? "-"}
+                          </td>
+                          <td className="mono px-3 py-2 text-slate-400">
+                            {s.margin_bps === null
+                              ? "-"
+                              : `${s.margin_bps > 0 ? "+" : ""}${s.margin_bps.toFixed(2)}bp`}
+                          </td>
+                          <td className="px-3 py-2">
+                            <Pill tone={s.onchain_outcome === "up" ? "up" : "down"}>
+                              {s.onchain_outcome}
+                            </Pill>
+                          </td>
+                          <td className="px-3 py-2">
+                            <Pill
+                              tone={
+                                s.verdict === "match"
+                                  ? "up"
+                                  : s.verdict === "MISMATCH"
+                                    ? "down"
+                                    : "warn"
+                              }
+                            >
+                              {s.verdict}
+                            </Pill>
+                          </td>
+                          <td className="px-3 py-2">
+                            {s.receipt_url && (
+                              <a
+                                className="text-accent hover:underline"
+                                href={s.receipt_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                #{s.oracle_question_id}
+                                <span className="sr-only">
+                                  {" "}oracle receipt for {s.symbol}, opens in a new tab
+                                </span>
+                              </a>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="border-t border-white/5 px-4 py-2 text-[11px] leading-relaxed text-slate-400">
+                  <p>reference series: {audit.data.reference}</p>
+                  {audit.data.inconclusive > 0 && (
                     <p className="mt-1">
                       &ldquo;too close to call&rdquo; means the window was decided by
                       under 1bp &mdash; finer than a reconstruction from the public
@@ -242,55 +389,72 @@ export default function Dashboard() {
                     </p>
                   )}
                 </div>
-              )}
-            </Card>
-          </div>
+              </>
+            )}
+          </Card>
         </div>
 
         <Card
+          id="headlines"
           title="Headline evidence"
           subtitle="Scored for directional impact on BTC / ETH"
-          right={<Pill>{headlines.length}</Pill>}
+          right={
+            headlines.state === "loading"
+              ? <Skeleton className="h-5 w-8" />
+              : <Pill>{news.length}</Pill>
+          }
         >
-          <ul className="max-h-[46rem] divide-y divide-white/5 overflow-y-auto">
-            {headlines.length === 0 && (
-              <li className="px-4 py-8 text-center text-sm text-slate-500">
-                No scored headlines yet.
-              </li>
-            )}
-            {headlines.map((h) => {
-              const tone = h.sentiment > 0.05 ? "up" : h.sentiment < -0.05 ? "down" : "neutral";
-              return (
-                <li key={h.id} className="px-4 py-3">
-                  <a
-                    href={h.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[13px] leading-snug text-slate-200 hover:text-white"
-                  >
-                    {h.title}
-                  </a>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Pill tone={tone}>
-                      {h.sentiment > 0 ? "+" : ""}{h.sentiment.toFixed(2)}
-                    </Pill>
-                    <Pill>sal {h.salience.toFixed(2)}</Pill>
-                    {h.assets.map((a) => <Pill key={a}>{a}</Pill>)}
-                    <span className="mono text-[10px] text-slate-600">
-                      {h.source} · {ago(h.published_at)}
-                    </span>
-                  </div>
-                  {h.rationale && (
-                    <p className="mt-1 text-[11px] text-slate-600">{h.rationale}</p>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+          {headlines.state === "loading" && <PanelState state="loading" />}
+          {headlines.state === "error" && (
+            <PanelState state="error">{headlines.detail}</PanelState>
+          )}
+          {headlines.state === "ready" && news.length === 0 && (
+            <PanelState
+              state="empty"
+              empty="No scored headlines in the window yet — the scout scans on a timer."
+            />
+          )}
+          {headlines.state === "ready" && news.length > 0 && (
+            <ul className="max-h-[46rem] divide-y divide-white/5 overflow-y-auto">
+              {news.map((h) => {
+                const tone = h.sentiment > 0.05 ? "up" : h.sentiment < -0.05 ? "down" : "neutral";
+                return (
+                  <li key={h.id} className="px-4 py-3">
+                    <a
+                      href={h.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[13px] leading-snug text-slate-200 hover:text-white hover:underline"
+                    >
+                      {h.title}
+                      <span className="sr-only"> — opens in a new tab</span>
+                    </a>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                      <Pill tone={tone}>
+                        {/* Direction is spelled out, not only coloured. */}
+                        <span aria-hidden className="mr-0.5">
+                          {tone === "up" ? "▲" : tone === "down" ? "▼" : "•"}
+                        </span>
+                        {h.sentiment > 0 ? "+" : ""}{h.sentiment.toFixed(2)}
+                      </Pill>
+                      <Pill>sal {h.salience.toFixed(2)}</Pill>
+                      {h.assets.map((a) => <Pill key={a}>{a}</Pill>)}
+                      <span className="mono text-[10px] text-slate-400">
+                        {h.source} · {ago(h.published_at)}
+                      </span>
+                    </div>
+                    {h.rationale && (
+                      <p className="mt-1 text-[11px] text-slate-400">{h.rationale}</p>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </Card>
       </div>
 
-      <footer className="mt-8 text-center text-[11px] text-slate-600">
+      <footer className="mt-8 text-center text-[11px] text-slate-400">
         Vaticr · Somnia × DreamDEX Event Contracts Hackathon · Apache-2.0 ·
         markets and settlement are DreamDEX protocol; forecasting is Vaticr.
       </footer>

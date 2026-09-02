@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import LiveStats from "./components/LiveStats";
 import {
   BOT_KIT, DREAMDEX_DOCS, Finding, GITHUB, HACKATHON, Row, Section, Step,
@@ -5,20 +6,37 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Vaticr — DeAI forecasting for DreamDEX Event Contracts",
-  description:
-    "An event contract's YES token has a real, derivable probability. Vaticr derives it from the price process, tilts it with live news, trades it with zero inventory, and proves afterwards whether it was any good.",
+const DESCRIPTION =
+  "An event contract's YES token has a real, derivable probability. Vaticr derives it from the price process, tilts it with live news, trades it with zero inventory, and proves afterwards whether it was any good.";
+
+export const metadata: Metadata = {
+  // `absolute` opts out of the layout's "%s · Vaticr" template: the landing
+  // title already names the project.
+  title: { absolute: "Vaticr — DeAI forecasting for DreamDEX Event Contracts" },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "Vaticr",
+    url: "/",
+    title: "Vaticr — DeAI forecasting for DreamDEX Event Contracts",
+    description: DESCRIPTION,
+  },
+  twitter: {
+    card: "summary",
+    title: "Vaticr — DeAI forecasting for DreamDEX Event Contracts",
+    description: DESCRIPTION,
+  },
 };
 
 export default function Landing() {
   return (
     <div className="min-h-screen">
       {/* ---------------------------------------------------------------- nav */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-ink-950/80 backdrop-blur">
+      <nav aria-label="Primary" className="sticky top-0 z-50 border-b border-white/5 bg-ink-950/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
-          <a href="/" className="flex items-center gap-2.5">
-            <span className="text-lg">🔮</span>
+          <a href="/" aria-label="Vaticr home" className="flex items-center gap-2.5">
+            <span className="text-lg" aria-hidden>🔮</span>
             <span className="text-[15px] font-semibold tracking-tight text-white">
               Vaticr
             </span>
@@ -45,6 +63,7 @@ export default function Landing() {
         </div>
       </nav>
 
+      <main id="main">
       {/* --------------------------------------------------------------- hero */}
       <header className="mx-auto max-w-6xl px-5 pb-6 pt-20 sm:pt-28">
         <div className="rise">
@@ -77,7 +96,7 @@ export default function Landing() {
                className="rounded-lg border border-white/15 px-5 py-2.5 text-[14px] font-medium text-slate-200 transition hover:border-white/30 hover:bg-white/5">
               View source
             </a>
-            <a href="#how" className="px-2 py-2.5 text-[14px] text-slate-500 transition hover:text-slate-300">
+            <a href="#how" className="px-2 py-2.5 text-[14px] text-slate-400 transition hover:text-slate-300">
               How it works
             </a>
           </div>
@@ -111,7 +130,7 @@ export default function Landing() {
           ].map((c) => (
             <div key={c.t} className="card p-5">
               <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 text-down">✕</span>
+                <span className="mt-0.5 text-down" aria-hidden>✕</span>
                 <div>
                   <h3 className="text-[14px] font-semibold text-white">{c.t}</h3>
                   <p className="mt-2 text-[13px] leading-relaxed text-slate-400">{c.d}</p>
@@ -151,13 +170,13 @@ export default function Landing() {
             </p>
             <div className="formula rounded-lg border border-white/10 bg-ink-950/60 p-4">
               P(<em>S_T</em> ≥ <em>S₀</em>) = Φ
-              <span className="text-slate-500">(</span>
+              <span className="text-slate-400">(</span>
               <span className="inline-flex flex-col items-center px-1 align-middle">
                 <span>ln(<em>S</em>/<em>S₀</em>) − <em>σ</em>²<em>τ</em>/2</span>
-                <span className="my-0.5 h-px w-full bg-slate-600" />
+                <span className="my-0.5 h-px w-full bg-slate-400" />
                 <span><em>σ</em>√<em>τ</em></span>
               </span>
-              <span className="text-slate-500">)</span>
+              <span className="text-slate-400">)</span>
             </div>
             <p>
               This is already an edge on its own: it is the honest read of where a
@@ -194,7 +213,7 @@ export default function Landing() {
               Brier-scored against what actually happened. A model that cannot beat
               0.25 is a coin flip with extra steps, and this is the only way to know.
             </p>
-            <p className="text-slate-500">
+            <p className="text-slate-400">
               Commitments can also be published on-chain, so the record is checkable
               by someone who does not trust the agent that produced it.
             </p>
@@ -230,10 +249,10 @@ export default function Landing() {
                   <span className={`mono text-[12.5px] ${hero ? "font-semibold text-accent" : "text-slate-300"}`}>
                     {pair}
                   </span>
-                  <span className={`text-[11px] ${hero ? "text-accent/80" : "text-slate-600"}`}>
+                  <span className={`text-[11px] ${hero ? "text-accent" : "text-slate-400"}`}>
                     {path}
                   </span>
-                  <span className="w-full text-[12px] text-slate-500">{what}</span>
+                  <span className="w-full text-[12px] text-slate-400">{what}</span>
                 </div>
               ))}
             </div>
@@ -289,7 +308,7 @@ export default function Landing() {
             problem="The docs describe the settlement reference only as “a multi-source price reference”, which reads like spot. The feed publishes two series: spot, and mark, its EMA. It settles on mark."
             evidence={
               <div>
-                <p className="mb-3 text-[12px] text-slate-500">
+                <p className="mb-3 text-[12px] text-slate-400">
                   Close-vs-open over the eight most recent settlements:
                 </p>
                 <div className="space-y-2">
@@ -308,7 +327,7 @@ export default function Landing() {
                     <span className="mono w-10 text-right text-[12px] font-semibold text-down">6/8</span>
                   </div>
                 </div>
-                <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
+                <p className="mt-3 text-[12px] leading-relaxed text-slate-400">
                   The two disagreements were exactly the windows where the series
                   drifted apart in direction — the near-the-money ones, where the
                   probability is most sensitive and most worth trading.
@@ -323,27 +342,31 @@ export default function Landing() {
             problem="Because mark is an EMA sampled every second, consecutive increments are heavily autocorrelated. The textbook realised-volatility estimator measures the smoothing, not the process."
             evidence={
               <div>
-                <p className="mb-3 text-[12px] text-slate-500">
+                <p className="mb-3 text-[12px] text-slate-400">
                   Annualised vol by sampling step, live BTC testnet data:
                 </p>
                 <div className="overflow-x-auto">
                   <table className="mono w-full text-[11.5px]">
+                    <caption className="sr-only">
+                      Annualised volatility of the mark and spot series, by
+                      sampling step, from live BTC testnet data.
+                    </caption>
                     <thead>
-                      <tr className="text-slate-600">
-                        <th className="pb-1 text-left font-normal">step</th>
+                      <tr className="text-slate-300">
+                        <th scope="col" className="pb-1 text-left font-normal">step</th>
                         {["1s", "5s", "15s", "30s", "60s"].map((h) => (
-                          <th key={h} className="pb-1 text-right font-normal">{h}</th>
+                          <th scope="col" key={h} className="pb-1 text-right font-normal">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="text-slate-400">
+                      <tr className="text-slate-300">
                         <td className="py-0.5">mark</td>
                         {["0.079", "0.155", "0.234", "0.278", "0.264"].map((v, i) => (
                           <td key={v} className={`py-0.5 text-right ${i === 0 ? "font-semibold text-down" : ""}`}>{v}</td>
                         ))}
                       </tr>
-                      <tr className="text-slate-400">
+                      <tr className="text-slate-300">
                         <td className="py-0.5">spot</td>
                         {["0.248", "0.272", "0.298", "0.303", "0.274"].map((v) => (
                           <td key={v} className="py-0.5 text-right">{v}</td>
@@ -352,7 +375,7 @@ export default function Landing() {
                     </tbody>
                   </table>
                 </div>
-                <p className="mt-3 text-[12px] leading-relaxed text-slate-500">
+                <p className="mt-3 text-[12px] leading-relaxed text-slate-400">
                   Ground truth from the realised 300-second moves is ≈0.33. Fed into
                   a Gaussian model, 0.079 drives P(Up) to 0.0000 on windows that are
                   genuinely a coin flip — maximum confidence exactly where there is
@@ -412,7 +435,7 @@ cp .env.example .env
 
 npm run bot:start   # brain + bot, one command`}
               </pre>
-              <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+              <p className="mt-3 text-[12.5px] leading-relaxed text-slate-400">
                 Starts in <span className="mono text-slate-400">DRY_RUN</span>, logging
                 every order it would place and sending nothing.
               </p>
@@ -427,11 +450,11 @@ npm run bot:start   # brain + bot, one command`}
                 ].map(([n, l]) => (
                   <div key={l} className="rounded-lg border border-white/10 bg-ink-950/50 py-3">
                     <div className="mono text-lg font-semibold text-white">{n}</div>
-                    <div className="mt-0.5 text-[11px] leading-tight text-slate-500">{l}</div>
+                    <div className="mt-0.5 text-[11px] leading-tight text-slate-400">{l}</div>
                   </div>
                 ))}
               </div>
-              <p className="mt-3 text-[12.5px] leading-relaxed text-slate-500">
+              <p className="mt-3 text-[12.5px] leading-relaxed text-slate-400">
                 Including Monte-Carlo recovery of a known volatility, and a regression
                 for the EMA bug above. Settlements are recomputed continuously rather
                 than claimed once &mdash; the live figure is in the strip at the top,
@@ -464,8 +487,10 @@ npm run bot:start   # brain + bot, one command`}
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[14.5px] leading-relaxed text-slate-400">
               The dashboard shows every live BTC and ETH window with its prior, its
-              posterior and the book mid side by side — plus the headline feed moving
-              them and every settlement recomputed from the oracle.
+              posterior and the top-of-book mid side by side — expand a window to see
+              which headlines moved it and by how much, then check the Brier score
+              against the coin-flip baseline and every settlement recomputed from the
+              oracle.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
               <a href="/dashboard"
@@ -481,18 +506,20 @@ npm run bot:start   # brain + bot, one command`}
         </div>
       </section>
 
+      </main>
+
       {/* ---------------------------------------------------------------- footer */}
       <footer className="border-t border-white/5">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-7">
-          <p className="text-[12px] text-slate-600">
+          <p className="text-[12px] text-slate-400">
             Vaticr · Apache-2.0 · Markets and settlement are the DreamDEX protocol;
             the forecasting is Vaticr&rsquo;s.
           </p>
           <div className="flex flex-wrap gap-5 text-[12px]">
-            <a href={GITHUB} target="_blank" rel="noreferrer" className="text-slate-500 transition hover:text-slate-300">GitHub</a>
-            <a href={DREAMDEX_DOCS} target="_blank" rel="noreferrer" className="text-slate-500 transition hover:text-slate-300">DreamDEX docs</a>
-            <a href={BOT_KIT} target="_blank" rel="noreferrer" className="text-slate-500 transition hover:text-slate-300">Bot Kit</a>
-            <a href={HACKATHON} target="_blank" rel="noreferrer" className="text-slate-500 transition hover:text-slate-300">Hackathon</a>
+            <a href={GITHUB} target="_blank" rel="noreferrer" className="text-slate-400 transition hover:text-slate-300">GitHub</a>
+            <a href={DREAMDEX_DOCS} target="_blank" rel="noreferrer" className="text-slate-400 transition hover:text-slate-300">DreamDEX docs</a>
+            <a href={BOT_KIT} target="_blank" rel="noreferrer" className="text-slate-400 transition hover:text-slate-300">Bot Kit</a>
+            <a href={HACKATHON} target="_blank" rel="noreferrer" className="text-slate-400 transition hover:text-slate-300">Hackathon</a>
           </div>
         </div>
       </footer>

@@ -39,7 +39,7 @@ body {
 
 /* Section headings share one treatment. */
 .eyebrow {
-  @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-accent/80;
+  @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-accent;
 }
 
 /* The formula blocks. */
@@ -50,4 +50,47 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .rise, .pulse-dot { animation: none; }
+}
+
+/* --- accessibility --------------------------------------------------- */
+
+/* Keyboard-only escape hatch past the nav. Visible the moment it is focused. */
+.skip-link {
+  @apply sr-only;
+}
+.skip-link:focus {
+  @apply not-sr-only fixed left-4 top-4 z-[100] rounded-lg bg-accent px-4 py-2
+         text-[13px] font-semibold text-ink-950;
+}
+
+/* One focus treatment for everything reachable by keyboard. The default ring
+   is nearly invisible against #07080c. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* --- loading --------------------------------------------------------- */
+
+/* A placeholder that reads as "a value is on its way" rather than "empty".
+   Distinguishing the two is the whole point of having it. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.11) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  from { background-position: 100% 50%; }
+  to   { background-position: 0 50%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
 }

@@ -1,3 +1,9 @@
-# 🔮 VATICR DIRECTIVE REDIRECT
+# 🔮 VATICR — pointer
 
-This file redirects to **[ANTIGRAVITY_VATICR.md](file:///Users/mrnetwork/Vaticr/ANTIGRAVITY_VATICR.md)** for master project directives.
+Project context and the reading order live in
+[ANTIGRAVITY_VATICR.md](ANTIGRAVITY_VATICR.md).
+
+Working on the code? Start with
+[.agents/skills/vaticr-dreamdex/SKILL.md](.agents/skills/vaticr-dreamdex/SKILL.md)
+— it carries the protocol facts and architecture rules that constrain every
+change, and it is short.

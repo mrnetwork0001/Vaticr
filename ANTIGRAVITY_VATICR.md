@@ -1,31 +1,39 @@
-# 🔮 ANTIGRAVITY_VATICR — Persistent Project Context Directive
+# 🔮 ANTIGRAVITY_VATICR — Project Context Directive
 
-> **Project Name:** VATICR  
-> **Target Event:** Somnia × DreamDEX Event Contracts Hackathon (DoraHacks)  
-> **Host:** Somnia Network & DreamDEX (`dorahacks.io/hackathon/event-contracts/detail`)  
-> **Submission Deadline:** September 8, 2026 @ 19:00 UTC  
-> **Target Prize:** 1st Place ($5,000 USDso Prize Pool Target)  
-> **Primary Track:** `Open Track`  
-> **Core Stack:** Somnia Testnet + DreamDEX Event Contracts + `dreamdex-bot-kit` + Solidity + Next.js 14 + Python 3.11  
+> **Project:** VATICR — autonomous Bayesian forecasting and market making on
+> DreamDEX Event Contracts (Somnia testnet)  
+> **Event:** Somnia × DreamDEX Event Contracts Hackathon (DoraHacks)  
+> **Deadline:** September 8, 2026 @ 19:00 UTC · **Track:** Open  
+> **Repo:** <https://github.com/mrnetwork0001/Vaticr> · Apache-2.0  
 
----
+This file exists so an agent dropped into the repo with no context knows where
+to look. It carries no architecture of its own — every claim below would be a
+second copy to drift out of date. **Read these instead:**
 
-## 📌 Core Directives for Vaticr Development
+| Read | For |
+|---|---|
+| [README.md](README.md) | what it does, quickstart, commands, funding a testnet run |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | the four subsystems and why the design is what it is |
+| [docs/API.md](docs/API.md) | the Python ↔ TypeScript HTTP boundary, route by route |
+| [docs/SDK_FEEDBACK.md](docs/SDK_FEEDBACK.md) | what the live protocol actually does, measured |
+| [VATICR_PROJECT_SPEC.md](VATICR_PROJECT_SPEC.md) | the blueprint and the submission checklist |
+| [.agents/skills/vaticr-dreamdex/SKILL.md](.agents/skills/vaticr-dreamdex/SKILL.md) | the rules that constrain any change |
+| [DEMO.md](DEMO.md) | the runbook for the demo recording |
 
-1. **Master Spec Source of Truth:**  
-   Always consult [VATICR_PROJECT_SPEC.md](file:///Users/mrnetwork/Vaticr/VATICR_PROJECT_SPEC.md).
+## The three rules that are easiest to break
 
-2. **Technical Architecture Guidelines:**
-   - **DreamDEX Bot Kit:** Integrate `dreamdex-bot-kit` in `bot/runner.ts` for automated trading.
-   - **AI Scout Factory:** Implement headline-to-contract deployment in `agents/scout.py`.
-   - **Somnia Deployments:** Deploy custom market contracts to Somnia Testnet.
+1. **Vaticr does not create or resolve markets.** Event Contracts are
+   protocol-minted rolling Up/Down windows on BTC/ETH; settlement is automatic
+   via the OracleHub. Anything that reads like a "headline-to-contract factory"
+   is describing a design that was abandoned because the protocol forbids it.
+2. **Python is read-only; TypeScript owns every on-chain write.** Orders,
+   claims, backstops and registry commitments are all in `bot/src/`.
+3. **`vendor/ec-core` is the official Bot Kit, vendored verbatim under MIT.**
+   Never edit it. Vaticr code lives in `bot/` and imports it as any in-repo
+   DreamDEX strategy would.
 
-3. **Submission Requirements Checklist:**
-   - Public GitHub repository under Apache 2.0 / MIT License.
-   - Deployed smart contract addresses on Somnia Testnet.
-   - 2-3 Minute Demo Video walkthrough.
+## Submission requirements
 
-4. **Repository Key Files:**
-   - Master Spec: `VATICR_PROJECT_SPEC.md`
-   - Directives: `ANTIGRAVITY_VATICR.md`
-   - Skill Instructions: `.agents/skills/vaticr-dreamdex/SKILL.md`
+Tracked in one place — the checklist at the bottom of
+[VATICR_PROJECT_SPEC.md](VATICR_PROJECT_SPEC.md), mirrored in `SKILL.md`. Two
+items are still open: the repo is private, and the demo video is not recorded.

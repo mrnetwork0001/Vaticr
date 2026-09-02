@@ -8,7 +8,9 @@ description: Architecture, protocol constraints, and integration rules for Vatic
 Use this when working on **Vaticr**. Read
 [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) and
 [docs/SDK_FEEDBACK.md](../../../docs/SDK_FEEDBACK.md) before changing anything
-in `agents/` or `bot/`.
+in `agents/` or `bot/`. The HTTP seam between the two halves is specified
+endpoint by endpoint in [docs/API.md](../../../docs/API.md) — change a route
+there and here in the same commit.
 
 ## Protocol facts that constrain every design decision
 
@@ -73,8 +75,14 @@ Both must pass before claiming anything works.
 
 ## Submission checklist
 
-- [x] Public repo, Apache-2.0 (`vendor/ec-core` MIT, attributed).
+Mirrors `VATICR_PROJECT_SPEC.md` — keep the two in step; a checklist that
+disagrees with itself is worse than no checklist.
+
+- [x] Repo `mrnetwork0001/Vaticr`, Apache-2.0 (`vendor/ec-core` MIT, attributed)
+      — still **private**; make it public before submitting.
 - [x] Official DreamDEX Bot Kit integration (`vendor/ec-core` + `markets-sdk`).
-- [x] `VaticrForecastRegistry.sol` — deploy with `npm run deploy:registry`.
-- [ ] 2–3 minute demo video.
 - [x] SDK feedback report — `docs/SDK_FEEDBACK.md`.
+- [ ] Deployed contract on Somnia testnet. `VaticrForecastRegistry.sol` is
+      written and tested but **not deployed**; `npm run deploy:registry` writes
+      the address to `deployments/50312.json`, which does not exist yet.
+- [ ] 2–3 minute demo video — **not recorded**. Runbook: `DEMO.md`.
