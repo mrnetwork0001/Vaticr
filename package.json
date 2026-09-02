@@ -32,11 +32,13 @@
     "go-live": "node scripts/go-live.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
+    "framer-motion": "^11.3.19",
+    "lucide-react": "^0.427.0",
     "next": "14.2.5",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "framer-motion": "^11.3.19",
-    "lucide-react": "^0.427.0"
+    "wagmi": "^2.19.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",

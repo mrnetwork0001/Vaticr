@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import Providers from "./providers";
 
 /**
  * A crystal ball, inline.
@@ -74,7 +75,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Both pages anchor their <main> at #main, so this reaches content on
             either one without a per-page skip target. */}
         <a href="#main" className="skip-link">Skip to main content</a>
-        {children}
+        {/* Wallet + market-data context. Everything below still renders with no
+            wallet connected — connecting only unlocks the write paths. */}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

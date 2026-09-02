@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import type { Address } from "viem";
 import CalibrationPanel from "./Calibration";
 import { Evidence, signed } from "./Evidence";
 import {
@@ -10,6 +11,10 @@ import type {
   AuditResponse, BookResponse, BookTop, Calibration, ForecastEnvelope,
   Headline, Health,
 } from "./types";
+import { ConnectButton, useVaticrExchange } from "./wallet";
+import ClaimPanel from "./trade/ClaimPanel";
+import Positions from "./trade/Positions";
+import TradeTicket from "./trade/TradeTicket";
 
 const VENUE = process.env.NEXT_PUBLIC_VENUE_ID ?? "";
 
@@ -59,6 +64,25 @@ function settle<T>(
   return { state: "error", data: null, detail: err?.message ?? String(result.reason) };
 }
 
+/**
+ * The best trade the top of book offers on one window, against the model.
+ *
+ * Buying YES costs the ask, so its edge is `posterior − ask`. Buying NO costs
+ * `1 − bid`, so its edge is `(1 − posterior) − (1 − bid)`, which reduces to
+ * `bid − posterior`. Both are per share, in collateral.
+ */
+function opportunity(
+  posterior: number,
+  top: BookTop | undefined,
+): { outcome: "YES" | "NO"; edge: number } | null {
+  if (!top) return null;
+  const yes = top.best_ask !== null ? posterior - top.best_ask : null;
+  const no = top.best_bid !== null ? top.best_bid - posterior : null;
+  if (yes === null && no === null) return null;
+  if (no === null || (yes !== null && yes >= no)) return { outcome: "YES", edge: yes! };
+  return { outcome: "NO", edge: no };
+}
+
 export default function Dashboard() {
   const [health, setHealth] = useState<Loaded<Health>>(pending);
   const [forecasts, setForecasts] = useState<Loaded<ForecastEnvelope[]>>(pending);
@@ -69,6 +93,17 @@ export default function Dashboard() {
   const [down, setDown] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [updated, setUpdated] = useState<number>(0);
+
+  // ---- trading surface (only ever mounted for a connected wallet) -------
+  const { isConnected, chainOk, canTrade } = useVaticrExchange();
+  /** The window the ticket is open on. `null` means no ticket. */
+  const [ticket, setTicket] = useState<string | null>(null);
+  /** Set once the user closes the ticket, so the auto-pick does not reopen it. */
+  const [ticketDismissed, setTicketDismissed] = useState(false);
+  /** Bumped after any confirmed write, to pull fresh positions and balances. */
+  const [tradeNonce, setTradeNonce] = useState(0);
+  /** The pool behind the open ticket, watched live by the positions panel. */
+  const [focusPool, setFocusPool] = useState<Address | undefined>(undefined);
 
   const venueQuery = VENUE ? `venue=${VENUE}&` : "";
 
@@ -121,6 +156,36 @@ export default function Dashboard() {
 
   const rows = forecasts.data ?? [];
   const news = headlines.data ?? [];
+  const tradable = rows.filter((e) => Boolean(e.forecast.market_id));
+
+  /**
+   * When a wallet connects, open the ticket on the window where the model and
+   * the book disagree most — that comparison is the whole product, and making
+   * someone hunt for it buries it. This only SELECTS a market; nothing is
+   * pre-filled beyond the model's own price and nothing is ever submitted.
+   */
+  useEffect(() => {
+    if (!canTrade || ticket !== null || ticketDismissed || tradable.length === 0) return;
+    let best: { id: string; edge: number } | null = null;
+    for (const e of tradable) {
+      const id = e.forecast.market_id!;
+      const opp = opportunity(e.forecast.posterior, books[id]);
+      if (opp && (best === null || opp.edge > best.edge)) best = { id, edge: opp.edge };
+    }
+    setTicket(best && best.edge > 0 ? best.id : tradable[0].forecast.market_id!);
+  }, [canTrade, ticket, ticketDismissed, tradable, books]);
+
+  // Disconnecting takes the trading surface away with it, including whichever
+  // window was selected — leaving a stale ticket behind would invite a click
+  // that cannot be signed.
+  useEffect(() => {
+    if (!isConnected) {
+      setTicket(null);
+      setTicketDismissed(false);
+    }
+  }, [isConnected]);
+
+  const ticketRow = ticket ? tradable.find((e) => e.forecast.market_id === ticket) : undefined;
 
   return (
     <main id="main" className="mx-auto max-w-7xl px-5 py-8">
@@ -141,27 +206,32 @@ export default function Dashboard() {
             quoted against the live on-chain book.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {health.state === "loading" && (
-            <>
-              <Skeleton className="h-5 w-24" />
-              <Skeleton className="h-5 w-20" />
-            </>
-          )}
-          {health.state === "ready" && health.data && (
-            <>
-              <Pill tone="up">somnia {health.data.network}</Pill>
-              <Pill>{health.data.headlines_in_window} headlines</Pill>
-              <Pill tone={health.data.llm_classifier.startsWith("on") ? "up" : "neutral"}>
-                classifier {health.data.llm_classifier.startsWith("on") ? "LLM" : "lexicon"}
-              </Pill>
-            </>
-          )}
-          {updated > 0 && (
-            <span className="mono text-[11px] text-slate-400">
-              updated {new Date(updated).toLocaleTimeString()}
-            </span>
-          )}
+        <div className="flex flex-col items-end gap-2.5">
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {health.state === "loading" && (
+              <>
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-5 w-20" />
+              </>
+            )}
+            {health.state === "ready" && health.data && (
+              <>
+                <Pill tone="up">somnia {health.data.network}</Pill>
+                <Pill>{health.data.headlines_in_window} headlines</Pill>
+                <Pill tone={health.data.llm_classifier.startsWith("on") ? "up" : "neutral"}>
+                  classifier {health.data.llm_classifier.startsWith("on") ? "LLM" : "lexicon"}
+                </Pill>
+              </>
+            )}
+            {updated > 0 && (
+              <span className="mono text-[11px] text-slate-400">
+                updated {new Date(updated).toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+          {/* The only thing on this page that can spend money. Everything above
+              and below it renders identically with no wallet attached. */}
+          <ConnectButton />
         </div>
       </header>
 
@@ -171,8 +241,53 @@ export default function Dashboard() {
         </div>
       )}
 
+      {!isConnected && (
+        <div className="mb-6 rounded-xl border border-accent/25 bg-accent/[0.06] px-5 py-4">
+          <h2 className="text-sm font-semibold text-accent">
+            You are reading. You can also trade.
+          </h2>
+          <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
+            Everything below is a live, read-only view and stays exactly as it is with no
+            wallet attached. Connect one and each window gains a ticket that prices your
+            order at the Vaticr posterior, states the edge against the resting book before
+            you sign, and sweeps the winnings that settled markets will otherwise hold
+            indefinitely &mdash; on this protocol a payout is <em className="not-italic text-slate-100">claimed</em>,
+            never received.
+          </p>
+          <p className="mt-1.5 text-[11px] text-slate-400">
+            Somnia Shannon testnet (50312) &middot; collateral is tUSDC &middot; every
+            transaction is shown in full before it is signed.
+          </p>
+        </div>
+      )}
+
+      {isConnected && !chainOk && (
+        <div className="mb-6 rounded-xl border border-amber-400/30 bg-amber-400/[0.07] px-5 py-4">
+          <h2 className="text-sm font-semibold text-amber-300">Wrong network</h2>
+          <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
+            Vaticr trades only on Somnia Shannon testnet (50312). The forecasts below are
+            unaffected, but nothing can be signed until the wallet switches &mdash; use the
+            button in the header, which will offer to add the network if your wallet has
+            never seen it.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
+          {/* The ticket, the positions and the claim sweep exist only for a
+              wallet that can actually sign. With none attached this column is
+              the same read-only console it has always been. */}
+          {canTrade && ticketRow && (
+            <TradeTicket
+              key={ticketRow.forecast.market_id ?? "ticket"}
+              forecast={ticketRow.forecast}
+              onPool={setFocusPool}
+              onPlaced={() => setTradeNonce((n) => n + 1)}
+              onClose={() => { setTicket(null); setTicketDismissed(true); }}
+            />
+          )}
+
           <Card
             id="windows"
             title="Live windows"
@@ -260,6 +375,41 @@ export default function Dashboard() {
                             {" "}behind the {f.asset} posterior
                           </span>
                         </button>
+
+                        {/* Only a connected wallet gets this control. Disconnected,
+                            the row is byte-for-byte the read-only row it always was. */}
+                        {canTrade && f.market_id && (() => {
+                          const opp = opportunity(f.posterior, top);
+                          const active = ticket === f.market_id;
+                          return (
+                            <button
+                              type="button"
+                              aria-pressed={active}
+                              onClick={() => {
+                                setTicketDismissed(false);
+                                setTicket(active ? null : f.market_id);
+                              }}
+                              className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition ${
+                                active
+                                  ? "border-accent/60 bg-accent/25 text-accent"
+                                  : "border-accent/30 bg-accent/10 text-accent hover:bg-accent/20"
+                              }`}
+                            >
+                              {active ? "Trading" : "Trade"}
+                              {opp && opp.edge > 0.001 && (
+                                <span className="mono ml-1.5 text-up">
+                                  +{opp.edge.toFixed(3)} {opp.outcome}
+                                </span>
+                              )}
+                              <span className="sr-only">
+                                {" "}the {f.asset} window
+                                {opp && opp.edge > 0.001
+                                  ? `, where buying ${opp.outcome} is ${opp.edge.toFixed(3)} under the model's price`
+                                  : ""}
+                              </span>
+                            </button>
+                          );
+                        })()}
                       </div>
                       {isOpen && (
                         <Evidence forecast={f} headlines={news} panelId={panelId} />
@@ -270,6 +420,16 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
+
+          {canTrade && (
+            <Positions
+              focusPool={focusPool}
+              refreshToken={tradeNonce}
+              onChanged={() => setTradeNonce((n) => n + 1)}
+            />
+          )}
+
+          {canTrade && <ClaimPanel onClaimed={() => setTradeNonce((n) => n + 1)} />}
 
           <CalibrationPanel
             cal={calibration.data}
