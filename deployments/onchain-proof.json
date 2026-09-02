@@ -1,0 +1,23 @@
+{
+  "errors": [],
+  "faucet": {
+    "hash": "0x7f977e6137bb8f802a4666301d97704d53622f6f3ff72660771db1ed6f85b132",
+    "explorer": "https://shannon-explorer.somnia.network/tx/0x7f977e6137bb8f802a4666301d97704d53622f6f3ff72660771db1ed6f85b132"
+  },
+  "forecast": {
+    "marketId": "0x0000000000000000000000000000000000000000000000000000000000010c5e",
+    "posteriorBps": 7326,
+    "priorBps": 7326,
+    "hash": "0xcaf0964062a26a2dd38ceeb28283e37c8e92504a16fea3a28967e7f47a3119a2",
+    "explorer": "https://shannon-explorer.somnia.network/tx/0xcaf0964062a26a2dd38ceeb28283e37c8e92504a16fea3a28967e7f47a3119a2"
+  },
+  "order": {
+    "symbol": "ETH-0-02SEP26-0330/tUSDC",
+    "outcome": "YES",
+    "price": 0.713,
+    "size": 1,
+    "rested": true,
+    "hash": "0x5a6afb0c19e85bdc409152900b88e187cbf423e005b283a4e9e11033e47a67d8",
+    "explorer": "https://shannon-explorer.somnia.network/tx/0x5a6afb0c19e85bdc409152900b88e187cbf423e005b283a4e9e11033e47a67d8"
+  }
+}

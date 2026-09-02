@@ -309,10 +309,35 @@ npm run test -w @vaticr/bot   # take-vs-quote, touch pricing, inventory caps
 
 ## Contracts
 
-`VaticrForecastRegistry` is written and tested but **not yet deployed**. Deploy
-it with `npm run deploy:registry`; the script writes the address to
-`deployments/50312.json`, and setting `VATICR_REGISTRY=0x...` in `.env` makes the
-bot publish each forecast on-chain before its window closes.
+**`VaticrForecastRegistry` is live on Somnia Shannon testnet:**
+
+[`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A)
+
+### On-chain proof
+
+Vaticr is not a dry-run demo. One command — `npm run go-live -- --send` — put the
+whole loop on testnet, and every step is independently verifiable:
+
+| Step | Transaction |
+|---|---|
+| Registry deployed | [`0x34aacd003fee407156…`](https://shannon-explorer.somnia.network/tx/0x34aacd003fee40715641f770c559cfc8ce57a0c912578087c07199251c3fcf5f) |
+| tUSDC minted from the public faucet | [`0x7f977e6137bb8f802a…`](https://shannon-explorer.somnia.network/tx/0x7f977e6137bb8f802a4666301d97704d53622f6f3ff72660771db1ed6f85b132) |
+| Forecast committed **before** settlement | [`0xcaf0964062a26a2dd3…`](https://shannon-explorer.somnia.network/tx/0xcaf0964062a26a2dd38ceeb28283e37c8e92504a16fea3a28967e7f47a3119a2) |
+| Real order resting on the book | [`0x5a6afb0c19e85bdc40…`](https://shannon-explorer.somnia.network/tx/0x5a6afb0c19e85bdc409152900b88e187cbf423e005b283a4e9e11033e47a67d8) |
+
+Read the commitment back off the chain and it still says what it said at the
+time: posterior **73.26%** on
+`ETH-0-02SEP26-0330/tUSDC`, stamped **318 seconds before that window expired**.
+That is the entire point of the registry — the forecast was public and immutable
+while the outcome was still unknown, so the track record cannot be edited after
+the fact.
+
+The order was a post-only `BUY_YES 1 @ 0.713` against a book
+showing 0.852/0.876, deliberately resting inside the touch rather than crossing.
+Collateral escrow confirms it landed: the account holds 9999.287 tUSDC, exactly
+10000 minted minus the 0.713 the resting order locked up.
+
+Account activity: [`0xEac2828E82…`](https://shannon-explorer.somnia.network/address/0xEac2828E829F77a1815A023660C160f14486242a)
 
 Vaticr trades the DreamDEX protocol contracts, which it does not own:
 

@@ -1,0 +1,9 @@
+{
+  "chainId": 50312,
+  "network": "somniaTestnet",
+  "forecastRegistry": "0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A",
+  "deployer": "0xEac2828E829F77a1815A023660C160f14486242a",
+  "deployedAt": "2026-09-02T03:24:31.382Z",
+  "txHash": "0x34aacd003fee40715641f770c559cfc8ce57a0c912578087c07199251c3fcf5f",
+  "explorer": "https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A"
+}
