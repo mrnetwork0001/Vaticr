@@ -154,6 +154,49 @@ zero genuine mismatches.
 
 ---
 
+## Does the model actually work?
+
+The project's claim is that an event contract's probability can be *derived*.
+That is testable, so it is tested — not asserted. Every input is public and
+historical, so `npm run backtest` replays settled windows the model never saw:
+
+```
+sample size    360 forecasts across 120 settled windows
+Brier          0.15774   (coin flip 0.25)
+skill          +0.3690   1 - Brier/0.25
+accuracy       0.7861
+climatology    0.24993   always quoting the sample's own up-rate
+log loss       0.47544   (coin flip 0.69315)
+
+reliability            n   forecast   observed
+  0.0-0.1             39     0.0384     0.0256
+  0.4-0.5             43     0.4474     0.3023
+  0.9-1.0             33     0.9622     0.9697
+
+by time elapsed        n      Brier      skill    accuracy
+  25% into window    120    0.22124    +0.1150      0.6500
+  50% into window    120    0.16359    +0.3457      0.7833
+  75% into window    120    0.08839    +0.6464      0.9250
+```
+
+**Skill rises as the window closes** — +0.115 a quarter of the way in, +0.646
+three-quarters in. That is the signature of a model that is genuinely reading the
+price process rather than fitting noise: information accumulates, and the
+posterior sharpens with it.
+
+Two honesty notes, both enforced in the code rather than promised:
+
+- **No lookahead.** Volatility and level at each decision point use only ticks at
+  or before that instant. All 360 cases assert it, and 120 are re-run against a
+  history physically truncated at the decision to prove the assertion is not
+  vacuous. A lookahead bug is the classic way a backtest lies.
+- **Prior only.** The headline layer is excluded, because a historical scout
+  window cannot be reconstructed without leaking the future. So this measures the
+  price-process prior alone — the news layer's contribution is unproven, and the
+  number above does not claim otherwise.
+
+---
+
 ## Commands
 
 | Command | What it does |
