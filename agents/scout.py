@@ -35,6 +35,7 @@ log = logging.getLogger("vaticr.scout")
 # RSS and Atom in one pass.
 _TITLE = ("title", "{http://www.w3.org/2005/Atom}title")
 _LINK = ("link", "{http://www.w3.org/2005/Atom}link")
+_SOURCE = ("source", "{http://www.w3.org/2005/Atom}source")
 _DATE = (
     "pubDate",
     "published",
@@ -59,21 +60,61 @@ def _first_text(node: ET.Element, names: tuple[str, ...]) -> str:
     return ""
 
 
+# An item whose date we cannot read must not masquerade as breaking news.
+# Defaulting to now() is the dangerous choice: evidence decays on a 30 min
+# half-life, so one feed with a format `parsedate_to_datetime` chokes on gets
+# full weight on every scan, forever, and the engine treats week-old copy as a
+# reason to cross the spread. Four half-lives back is the safe default — the
+# item still sits inside the 24 h window and is still visible in /headlines,
+# but it enters at 2^-4 = 6% weight and can corroborate without deciding.
+# (Dropping it outright would silently delete a whole feed over a date bug.)
+_UNDATED_AGE_SEC = 7_200
+
+
+def _attribution(entry: ET.Element) -> tuple[str, str]:
+    """(originating outlet URL, display name) for aggregator feeds that name it.
+
+    A search aggregator republishes everything under its own host, so every item
+    it carries — Reuters or a content farm — would enter at the 0.5 default
+    weight because the aggregator itself is not in SOURCE_CREDIBILITY. RSS
+    `<source url>` names the real publisher, so credibility can be graded again.
+    Absent on ordinary feeds, where the link host is already the publisher.
+    """
+    for name in _SOURCE:
+        el = entry.find(name)
+        if el is None:
+            continue
+        url = (el.get("url") or "").strip()
+        if url:
+            return url, (el.text or "").strip()
+    return "", ""
+
+
 def _parse_ts(raw: str) -> int:
+    """Unix seconds for a feed date, never in the future, never falsely fresh."""
+    now = int(time.time())
     if not raw:
-        return int(time.time())
+        return now - _UNDATED_AGE_SEC
+    parsed: int | None = None
     try:
-        return int(parsedate_to_datetime(raw).timestamp())
+        parsed = int(parsedate_to_datetime(raw).timestamp())
     except (TypeError, ValueError):
-        pass
-    try:
-        return int(
-            datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            .astimezone(timezone.utc)
-            .timestamp()
-        )
-    except ValueError:
-        return int(time.time())
+        try:
+            parsed = int(
+                datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                .astimezone(timezone.utc)
+                .timestamp()
+            )
+        except ValueError:
+            parsed = None
+    if parsed is None:
+        return now - _UNDATED_AGE_SEC
+    # A future pubDate — a timezone the publisher got backwards, or a CMS clock
+    # that drifted — otherwise never ages: `_prune` keeps it (published_at is
+    # always >= cutoff) and the decay term reads a negative age, so a single bad
+    # row would pin itself at full weight in the window permanently. Clamping to
+    # now keeps the item usable and lets it decay like everything else.
+    return min(parsed, now)
 
 
 def _entries(xml_text: str) -> list[ET.Element]:
@@ -84,8 +125,15 @@ def _entries(xml_text: str) -> list[ET.Element]:
     return root.findall(".//{http://www.w3.org/2005/Atom}entry")
 
 
-def score_headline(title: str, url: str, source: str, published_at: int) -> Headline:
-    """Turn a raw news item into a scored `Headline` (lexicon path)."""
+def score_headline(
+    title: str, url: str, source: str, published_at: int, attribution: str = ""
+) -> Headline:
+    """Turn a raw news item into a scored `Headline` (lexicon path).
+
+    `attribution`, when given, is the originating outlet's URL and is what
+    credibility is read from; `url` stays the link the reader follows and the
+    identity the dedupe hash is built on.
+    """
     sentiment, rationale = score_sentiment(title)
     return Headline(
         id=hashlib.sha256(url.encode("utf-8")).hexdigest()[:16],
@@ -96,7 +144,7 @@ def score_headline(title: str, url: str, source: str, published_at: int) -> Head
         assets=assets_for(title),
         sentiment=sentiment,
         salience=salience_for(title),
-        credibility=credibility_for(url),
+        credibility=credibility_for(attribution or url),
         scorer="lexicon",
         rationale=rationale,
     )
@@ -112,15 +160,24 @@ async def _fetch_feed(client: httpx.AsyncClient, url: str) -> list[Headline]:
         log.warning("feed failed %s: %s", url, exc)
         return []
 
-    source = url.split("/")[2] if "//" in url else url
+    feed_host = url.split("/")[2] if "//" in url else url
     out: list[Headline] = []
     for entry in entries:
         title = _first_text(entry, _TITLE)
         link = _first_text(entry, _LINK)
         if not title or not link:
             continue
+        attribution, outlet = _attribution(entry)
+        # Aggregators append " - Outlet" to every title. That tail is not part
+        # of the claim and its tokens reach the scorer: "…rejects the deal -
+        # Fortune" would put an outlet name inside a negator's scope.
+        if outlet and title.endswith(f" - {outlet}"):
+            title = title[: -len(outlet) - 3].rstrip()
+        source = attribution.split("/")[2] if "//" in attribution else feed_host
         out.append(
-            score_headline(title, link, source, _parse_ts(_first_text(entry, _DATE)))
+            score_headline(
+                title, link, source, _parse_ts(_first_text(entry, _DATE)), attribution
+            )
         )
     return out
 
@@ -185,7 +242,7 @@ class Scout:
         """Fetch every source once and merge new items into the window."""
         s = self.settings
         timeout = httpx.Timeout(s.http_timeout_sec)
-        headers = {"User-Agent": "Vaticr/1.0 (+https://github.com/mrnetwork/Vaticr)"}
+        headers = {"User-Agent": "Vaticr/1.0 (+https://github.com/mrnetwork0001/Vaticr)"}
 
         async with httpx.AsyncClient(timeout=timeout, headers=headers) as client:
             tasks = [_fetch_feed(client, u) for u in s.feeds]
