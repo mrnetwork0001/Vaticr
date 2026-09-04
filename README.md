@@ -160,7 +160,7 @@ The project's claim is that an event contract's probability can be *derived*.
 That is testable, so it is tested. Every input is public and historical, so
 `npm run backtest` replays settled windows the model never saw.
 
-The run below is **frozen** in [`artifacts/backtest-2026-09-04.json`](artifacts/backtest-2026-09-04.json),
+The run below is **frozen** in [`docs/evidence/backtest-2026-09-04.json`](docs/evidence/backtest-2026-09-04.json),
 produced by `npm run backtest -- --limit 300 --json`. Re-running it will not
 reproduce these exact figures — it replays a rolling window of recent
 settlements, so the sample moves every day. The frozen file is what the numbers
