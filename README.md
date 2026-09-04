@@ -169,21 +169,21 @@ below quote.
 ```
 sample        900 forecasts across 300 settled windows
               (3 decision points each, at 25% / 50% / 75% elapsed)
-span          2026-09-03 12:00 -> 2026-09-04 08:55 UTC
+span          2026-09-04 00:00 -> 2026-09-04 09:05 UTC
 
-Brier         0.16432   (coin flip 0.25)
-skill         +0.3427     1 - Brier/0.25
-accuracy      0.7489
-log loss      0.49156   (coin flip 0.69315)
+Brier         0.15522   (coin flip 0.25)
+skill         +0.3791     1 - Brier/0.25
+accuracy      0.7622
+log loss      0.46816   (coin flip 0.69315)
 
 by time elapsed        n      Brier      skill   accuracy
-  25% into window    300    0.20965    +0.1614     0.6667
-  50% into window    300    0.17229    +0.3109     0.74
-  75% into window    300    0.11103    +0.5559     0.84
+  25% into window    300    0.2046    +0.1816     0.6733
+  50% into window    300    0.16327    +0.3469     0.7533
+  75% into window    300    0.09779    +0.6088     0.86
 ```
 
-**Skill rises as the window closes** — +0.1614 a quarter of the way in,
-+0.5559 three-quarters in. That is the signature of a model reading the price
+**Skill rises as the window closes** — +0.1816 a quarter of the way in,
++0.6088 three-quarters in. That is the signature of a model reading the price
 process rather than fitting noise: information accumulates and the posterior
 sharpens with it.
 
@@ -198,7 +198,7 @@ volunteering them:
   window cannot be reconstructed without leaking the future. This measures the
   price-process prior alone; the news layer's contribution is unproven.
 - **The edge is concentrated in the short windows** — where the bot actually
-  trades. 300s scores +0.3383 over n=606, while the long windows are thin
+  trades. 300s scores +0.3865 over n=597, while the long windows are thin
   and closer to a coin flip on small samples. The frozen JSON carries the full
   per-window breakdown.
 

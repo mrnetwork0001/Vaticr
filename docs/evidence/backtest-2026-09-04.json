@@ -1,0 +1,204 @@
+{
+  "network": "testnet",
+  "venue_id": "0x679795a0195a1b76cdebb7c51d74e058aee92919b8c3389af86ef24535e8a28c",
+  "markets_requested": 300,
+  "markets_usable": 300,
+  "markets_skipped": 0,
+  "skip_reasons": {},
+  "fractions": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "window_from": 1788480000,
+  "window_to": 1788512700,
+  "ticks_per_asset": {
+    "BTC": 32413,
+    "ETH": 32413
+  },
+  "lookahead_checked": 900,
+  "truncation_checked": 120,
+  "truncation_matched": 120,
+  "overall": {
+    "n": 900,
+    "brier": 0.15522,
+    "skill": 0.3791,
+    "accuracy": 0.7622,
+    "log_loss": 0.46816,
+    "base_rate": 0.49
+  },
+  "clamped_log_loss": 0.46689,
+  "climatology": {
+    "n": 900,
+    "brier": 0.2499,
+    "skill": null,
+    "accuracy": null,
+    "log_loss": null,
+    "base_rate": 0.49
+  },
+  "reliability": [
+    {
+      "range": "0.0-0.1",
+      "count": 98,
+      "mean_forecast": 0.0466,
+      "observed_up_rate": 0.051
+    },
+    {
+      "range": "0.1-0.2",
+      "count": 72,
+      "mean_forecast": 0.1454,
+      "observed_up_rate": 0.0972
+    },
+    {
+      "range": "0.2-0.3",
+      "count": 68,
+      "mean_forecast": 0.2477,
+      "observed_up_rate": 0.1765
+    },
+    {
+      "range": "0.3-0.4",
+      "count": 82,
+      "mean_forecast": 0.3499,
+      "observed_up_rate": 0.2805
+    },
+    {
+      "range": "0.4-0.5",
+      "count": 101,
+      "mean_forecast": 0.4479,
+      "observed_up_rate": 0.4059
+    },
+    {
+      "range": "0.5-0.6",
+      "count": 99,
+      "mean_forecast": 0.5515,
+      "observed_up_rate": 0.4848
+    },
+    {
+      "range": "0.6-0.7",
+      "count": 114,
+      "mean_forecast": 0.6513,
+      "observed_up_rate": 0.6228
+    },
+    {
+      "range": "0.7-0.8",
+      "count": 78,
+      "mean_forecast": 0.7493,
+      "observed_up_rate": 0.7308
+    },
+    {
+      "range": "0.8-0.9",
+      "count": 69,
+      "mean_forecast": 0.8485,
+      "observed_up_rate": 0.8696
+    },
+    {
+      "range": "0.9-1.0",
+      "count": 119,
+      "mean_forecast": 0.9657,
+      "observed_up_rate": 0.9832
+    }
+  ],
+  "by_asset": {
+    "BTC": {
+      "n": 450,
+      "brier": 0.15294,
+      "skill": 0.3882,
+      "accuracy": 0.7689,
+      "log_loss": 0.45954,
+      "base_rate": 0.5
+    },
+    "ETH": {
+      "n": 450,
+      "brier": 0.15751,
+      "skill": 0.37,
+      "accuracy": 0.7556,
+      "log_loss": 0.47677,
+      "base_rate": 0.48
+    }
+  },
+  "by_window_sec": {
+    "298": {
+      "n": 27,
+      "brier": 0.14264,
+      "skill": 0.4295,
+      "accuracy": 0.7778,
+      "log_loss": 0.4337,
+      "base_rate": 0.2222
+    },
+    "300": {
+      "n": 597,
+      "brier": 0.15337,
+      "skill": 0.3865,
+      "accuracy": 0.7504,
+      "log_loss": 0.46017,
+      "base_rate": 0.5126
+    },
+    "898": {
+      "n": 6,
+      "brier": 0.32536,
+      "skill": -0.3014,
+      "accuracy": 0.5,
+      "log_loss": 0.88118,
+      "base_rate": 1.0
+    },
+    "900": {
+      "n": 204,
+      "brier": 0.14588,
+      "skill": 0.4165,
+      "accuracy": 0.8088,
+      "log_loss": 0.45781,
+      "base_rate": 0.4853
+    },
+    "3598": {
+      "n": 3,
+      "brier": 0.21899,
+      "skill": 0.124,
+      "accuracy": 0.6667,
+      "log_loss": 0.63074,
+      "base_rate": 0.0
+    },
+    "3600": {
+      "n": 51,
+      "brier": 0.1771,
+      "skill": 0.2916,
+      "accuracy": 0.7843,
+      "log_loss": 0.51821,
+      "base_rate": 0.4706
+    },
+    "14400": {
+      "n": 12,
+      "brier": 0.24059,
+      "skill": 0.0376,
+      "accuracy": 0.5833,
+      "log_loss": 0.65885,
+      "base_rate": 0.0
+    }
+  },
+  "by_fraction": {
+    "0.25": {
+      "n": 300,
+      "brier": 0.2046,
+      "skill": 0.1816,
+      "accuracy": 0.6733,
+      "log_loss": 0.59717,
+      "base_rate": 0.49
+    },
+    "0.50": {
+      "n": 300,
+      "brier": 0.16327,
+      "skill": 0.3469,
+      "accuracy": 0.7533,
+      "log_loss": 0.48814,
+      "base_rate": 0.49
+    },
+    "0.75": {
+      "n": 300,
+      "brier": 0.09779,
+      "skill": 0.6088,
+      "accuracy": 0.86,
+      "log_loss": 0.31915,
+      "base_rate": 0.49
+    }
+  },
+  "verdict": "skill +0.3791 over 900 forecasts \u2014 the derived prior beat the coin flip on 300 settled windows it never saw."
+}
