@@ -68,7 +68,7 @@ import { useBinaryBook } from "./useBinaryBook";
 import { useOnchainMarket } from "./useOnchainMarket";
 import {
   Hint, JumpLink, MARKET_STATUS, Notice, NoticeAction, ReviewRow, TxLink, WriteError,
-  bpsPct, moneyExact, pct, price as fmtPrice, rawToNumber, signedFixed,
+  bpsPct, estimateWithBuffer, moneyExact, pct, price as fmtPrice, rawToNumber, signedFixed,
   statusExplanation, statusName,
 } from "./shared";
 
@@ -612,12 +612,32 @@ export default function TradeTicket({
         });
         if (allowance < need) {
           setPhase("approving");
+          // ESTIMATE, do not guess. A hardcoded ceiling is wrong in both
+          // directions and this code has now been wrong in both: 10,000,000
+          // (the SDK default) makes a wallet quote a worst case so large it
+          // refuses to sign at all, and 120,000 — a textbook ERC-20 approve —
+          // is 11x too small here, because this collateral is not a textbook
+          // ERC-20. Measured on the live venue, a COLD approve estimates at
+          // 1,389,617 gas, so the tight cap reverted every first-time wallet
+          // while the demo wallet, which already held an allowance, sailed past
+          // it. Estimate against the real chain and add headroom for the
+          // difference between a cold and a warm storage slot.
+          const approveGas = await estimateWithBuffer(
+            () => viem.estimateContractGas({
+              address: fresh.collateral as Address,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [spender, need],
+              account: owner,
+            }),
+            2_000_000n,
+          );
           const approveHash = await walletClient.writeContract({
             address: fresh.collateral as Address,
             abi: erc20Abi,
             functionName: "approve",
             args: [spender, need],
-            gas: 120_000n,
+            gas: approveGas,
           });
           const approveReceipt = await viem.waitForTransactionReceipt({ hash: approveHash, timeout: 90_000 });
           if (approveReceipt.status !== "success") {
@@ -638,10 +658,12 @@ export default function TradeTicket({
         collateral: fresh.collateral,
         orderType: p.orderType,
         expireTimestampNs: BigInt(expirySec) * 1_000_000_000n,
-        // Same reason as the approval above: the 10M default makes a wallet
-        // quote a worst case that dwarfs the real cost. 2M is far more than a
-        // small order's matching ever needs and still leaves ample headroom.
-        gas: 2_000_000n,
+        // Not estimable ahead of time: the SDK builds this calldata itself and
+        // skips simulation, and the cost depends on how many resting levels an
+        // IOC sweeps. 6M sits well under the 10M default that makes wallets
+        // balk, and well over the ~830k a single-level match was measured at,
+        // with room for a deep sweep. Unused gas is refunded.
+        gas: 6_000_000n,
       });
 
       // The SDK signs with fixed fees and does not simulate, so a REVERTED

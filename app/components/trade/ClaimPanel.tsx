@@ -126,6 +126,11 @@ export default function ClaimPanel({
           outcomeIdx: r.outcomeIdx,
           amount: r.amount,
         })),
+        // Bounded rather than inheriting the SDK's 10,000,000 default, which a
+        // wallet prices as the worst case and may refuse. Scaled to the batch:
+        // redeeming ten settled positions genuinely costs more than one, and a
+        // claim that reverts for want of gas strands money the user has won.
+        gas: 1_500_000n + BigInt(entries.length) * 600_000n,
       });
       if (res.receipt?.status === "reverted") {
         throw new Error(

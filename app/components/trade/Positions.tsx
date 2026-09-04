@@ -265,7 +265,15 @@ export default function Positions({
     setCancelError(null);
     setCancelled(null);
     try {
-      const res = await exchange.trader.cancelOrder({ pool: row.pool, orderId: row.orderId });
+      // Without an explicit ceiling this inherits the SDK's 10,000,000 default,
+      // and a wallet prices that worst case and can refuse to sign outright —
+      // the same failure that made the trade ticket unusable. A cancel is a
+      // small, bounded write.
+      const res = await exchange.trader.cancelOrder({
+        pool: row.pool,
+        orderId: row.orderId,
+        gas: 1_500_000n,
+      });
       // A reverted receipt resolves rather than throws on this SDK, so an
       // unchecked cancel would report success on an order that is still resting.
       if (res.receipt?.status === "reverted") {

@@ -480,3 +480,25 @@ export function NoticeAction({
     </button>
   );
 }
+
+/**
+ * A gas limit taken from the chain rather than from a guess, with headroom.
+ *
+ * Estimation runs against current state, so it prices a WARM storage slot when
+ * the real transaction may touch a cold one. The buffer covers that gap. If the
+ * node cannot estimate at all — a common outcome when a call would revert for a
+ * reason the caller is about to handle anyway — fall back rather than block.
+ */
+export async function estimateWithBuffer(
+  estimate: () => Promise<bigint>,
+  fallback: bigint,
+  bufferPct = 60n,
+): Promise<bigint> {
+  try {
+    const raw = await estimate();
+    const padded = (raw * (100n + bufferPct)) / 100n;
+    return padded > fallback ? padded : fallback;
+  } catch {
+    return fallback;
+  }
+}
