@@ -157,43 +157,50 @@ zero genuine mismatches.
 ## Does the model actually work?
 
 The project's claim is that an event contract's probability can be *derived*.
-That is testable, so it is tested — not asserted. Every input is public and
-historical, so `npm run backtest` replays settled windows the model never saw:
+That is testable, so it is tested. Every input is public and historical, so
+`npm run backtest` replays settled windows the model never saw.
+
+The run below is **frozen** in [`artifacts/backtest-2026-09-04.json`](artifacts/backtest-2026-09-04.json),
+produced by `npm run backtest -- --limit 300 --json`. Re-running it will not
+reproduce these exact figures — it replays a rolling window of recent
+settlements, so the sample moves every day. The frozen file is what the numbers
+below quote.
 
 ```
-sample size    360 forecasts across 120 settled windows
-Brier          0.15774   (coin flip 0.25)
-skill          +0.3690   1 - Brier/0.25
-accuracy       0.7861
-climatology    0.24993   always quoting the sample's own up-rate
-log loss       0.47544   (coin flip 0.69315)
+sample        900 forecasts across 300 settled windows
+              (3 decision points each, at 25% / 50% / 75% elapsed)
+span          2026-09-03 12:00 -> 2026-09-04 08:55 UTC
 
-reliability            n   forecast   observed
-  0.0-0.1             39     0.0384     0.0256
-  0.4-0.5             43     0.4474     0.3023
-  0.9-1.0             33     0.9622     0.9697
+Brier         0.16432   (coin flip 0.25)
+skill         +0.3427     1 - Brier/0.25
+accuracy      0.7489
+log loss      0.49156   (coin flip 0.69315)
 
-by time elapsed        n      Brier      skill    accuracy
-  25% into window    120    0.22124    +0.1150      0.6500
-  50% into window    120    0.16359    +0.3457      0.7833
-  75% into window    120    0.08839    +0.6464      0.9250
+by time elapsed        n      Brier      skill   accuracy
+  25% into window    300    0.20965    +0.1614     0.6667
+  50% into window    300    0.17229    +0.3109     0.74
+  75% into window    300    0.11103    +0.5559     0.84
 ```
 
-**Skill rises as the window closes** — +0.115 a quarter of the way in, +0.646
-three-quarters in. That is the signature of a model that is genuinely reading the
-price process rather than fitting noise: information accumulates, and the
-posterior sharpens with it.
+**Skill rises as the window closes** — +0.1614 a quarter of the way in,
++0.5559 three-quarters in. That is the signature of a model reading the price
+process rather than fitting noise: information accumulates and the posterior
+sharpens with it.
 
-Two honesty notes, both enforced in the code rather than promised:
+Three things worth disclosing, because being asked about them is worse than
+volunteering them:
 
-- **No lookahead.** Volatility and level at each decision point use only ticks at
-  or before that instant. All 360 cases assert it, and 120 are re-run against a
-  history physically truncated at the decision to prove the assertion is not
-  vacuous. A lookahead bug is the classic way a backtest lies.
+- **No lookahead.** Volatility and level at each decision point use only ticks
+  at or before that instant. All 900 cases assert it, and 120 are re-run
+  against a history physically truncated at the decision, so the assertion is
+  not vacuous. A lookahead bug is the classic way a backtest lies.
 - **Prior only.** The headline layer is excluded, because a historical scout
-  window cannot be reconstructed without leaking the future. So this measures the
-  price-process prior alone — the news layer's contribution is unproven, and the
-  number above does not claim otherwise.
+  window cannot be reconstructed without leaking the future. This measures the
+  price-process prior alone; the news layer's contribution is unproven.
+- **The edge is concentrated in the short windows** — where the bot actually
+  trades. 300s scores +0.3383 over n=606, while the long windows are thin
+  and closer to a coin flip on small samples. The frozen JSON carries the full
+  per-window breakdown.
 
 ---
 
@@ -280,7 +287,9 @@ measures volatility off `spot`. That finding and five others are written up in
 npm test
 ```
 
-- **17 property tests** on the Bayesian engine — including Monte-Carlo recovery
+- **114 tests** — 75 Python (engine, news scorer, store, resolver, indexer
+  clients), 32 TypeScript (the trading decision layer), 7 Solidity (the
+  registry). The engine's property tests include Monte-Carlo recovery
   of a known volatility, and a regression for the EMA-smoothing bug that drove
   live priors to 0.0000.
 - **7 Solidity tests** on the registry — append-only, no late commitments,

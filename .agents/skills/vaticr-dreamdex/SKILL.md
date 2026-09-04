@@ -83,6 +83,7 @@ disagrees with itself is worse than no checklist.
 - [x] Official DreamDEX Bot Kit integration (`vendor/ec-core` + `markets-sdk`).
 - [x] SDK feedback report — `docs/SDK_FEEDBACK.md`.
 - [ ] Deployed contract on Somnia testnet. `VaticrForecastRegistry.sol` is
-      written and tested but **not deployed**; `npm run deploy:registry` writes
-      the address to `deployments/50312.json`, which does not exist yet.
+      DEPLOYED at 0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A on Somnia testnet.
+      Addresses and tx hashes are in deployments/50312.json and
+      deployments/onchain-proof.json. Redeploy with `npm run deploy:registry`.
 - [ ] 2–3 minute demo video — **not recorded**. Runbook: `DEMO.md`.

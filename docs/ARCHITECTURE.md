@@ -143,7 +143,8 @@ run the posterior into a corner.
   volatility, and reads ~4× too low. See
   [SDK_FEEDBACK §5](./SDK_FEEDBACK.md#5-the-oracle-feed-is-an-ema-at-1-second-resolution--naive-volatility-is-4-too-low).
 
-Seventeen property tests cover this, including Monte-Carlo recovery of a known
+Seventeen property tests cover the engine specifically (114 across the repo),
+including Monte-Carlo recovery of a known
 σ and a regression for the EMA bug: [`tests/test_pricing.py`](../tests/test_pricing.py).
 
 ## 3. Bot — trading the view

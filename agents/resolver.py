@@ -490,6 +490,11 @@ async def _main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    # httpx logs a line per request at INFO. This command's whole output is a
+    # table meant to be read (and filmed); 28 lines of "HTTP/1.1 200 OK" push it
+    # off a 1080p terminal before anyone can see it.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     resolver = Resolver()
     if args.watch:
         await _watch(resolver, args.venue, args.interval, args.limit)
@@ -497,5 +502,37 @@ async def _main() -> None:
     _report(await resolver.sweep(args.venue), args.limit)
 
 
+def _run() -> int:
+    """Entry point that fails like a tool, not like a stack trace.
+
+    Every read here crosses a public network to two GraphQL endpoints, and the
+    audit issues a price query per settled window, so a slow leg is a routine
+    outcome rather than an exceptional one. Dumping ninety lines of httpx
+    traceback at an operator — or into a demo recording — hides the one line
+    that says what to do about it.
+    """
+    try:
+        asyncio.run(_main())
+        return 0
+    except KeyboardInterrupt:
+        print("\ninterrupted.")
+        return 130
+    except (httpx.TimeoutException, httpx.TransportError) as exc:
+        kind = type(exc).__name__
+        print(
+            f"\nThe Somnia indexer or price feed did not answer in time ({kind}).\n"
+            f"  Nothing was written and nothing is inconsistent — the sweep is\n"
+            f"  idempotent, so simply run it again.\n"
+            f"  If it keeps timing out, raise VATICR_HTTP_TIMEOUT (currently "
+            f"{get_settings().http_timeout_sec:.0f}s) or reduce --limit."
+        )
+        return 1
+    except RuntimeError as exc:
+        # The venue-scope guard raises this by design when live markets span
+        # several venues; its message already names the fix.
+        print(f"\n{exc}")
+        return 1
+
+
 if __name__ == "__main__":
-    asyncio.run(_main())
+    raise SystemExit(_run())

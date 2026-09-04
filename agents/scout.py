@@ -301,6 +301,11 @@ class Scout:
 
 async def _main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
+    # httpx logs a line per request at INFO. This command's whole output is a
+    # table meant to be read (and filmed); 28 lines of "HTTP/1.1 200 OK" push it
+    # off a 1080p terminal before anyone can see it.
+    for noisy in ("httpx", "httpcore"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
     scout = Scout()
     await scout.scan()
     await scout.enrich(scout.fresh())

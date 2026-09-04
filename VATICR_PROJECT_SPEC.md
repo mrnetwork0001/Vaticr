@@ -164,7 +164,7 @@ it can rewrite it. 7 Solidity tests.
 - [x] GitHub repository (`mrnetwork0001/Vaticr`), Apache 2.0 — **currently private; must be made public before submission.**
 - [x] Integration with official DreamDEX Bot Kit (`vendor/ec-core` + `markets-sdk`).
 - [x] DreamDEX SDK Feedback Report — [docs/SDK_FEEDBACK.md](docs/SDK_FEEDBACK.md).
-- [ ] Deployed smart contracts on Somnia Testnet — `VaticrForecastRegistry.sol` is written and tested; deploy with `npm run deploy:registry`, which writes the address to `deployments/50312.json`. **Not yet deployed.**
+- [x] Deployed smart contracts on Somnia Testnet — `VaticrForecastRegistry` is live at [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A), with a forecast committed on-chain 318s before its window closed and a real order placed. Addresses and transaction hashes in `deployments/`.
 - [ ] 2–3 minute demo video URL — **not yet recorded.** Runbook: [DEMO.md](DEMO.md).
 
 ---
