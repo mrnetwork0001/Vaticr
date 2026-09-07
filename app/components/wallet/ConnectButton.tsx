@@ -121,7 +121,10 @@ export default function ConnectButton() {
         {pickerOpen && !only && (
           <div
             role="menu"
-            className="card absolute right-0 z-30 mt-2 w-52 overflow-hidden p-1"
+            // Anchored to the BOTTOM of the trigger and opening upward: this control
+            // sits at the foot of the sidebar, where a downward menu would render
+            // off the bottom of the viewport.
+            className="card absolute bottom-full left-0 right-0 z-40 mb-2 min-w-[11rem] overflow-hidden p-1"
           >
             {connectors.map((c) => (
               <button

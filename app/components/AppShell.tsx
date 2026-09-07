@@ -79,8 +79,16 @@ export default function AppShell({
         }`}
         aria-label="Sections"
       >
-        <div className="flex h-16 items-center gap-2.5 px-4">
-          <a href="/" aria-label="Vaticr — back to the overview" className="group flex items-center gap-2.5">
+        <div
+          className={`flex shrink-0 items-center gap-2 ${
+            collapsed ? "h-auto flex-col px-2 pb-2 pt-4" : "h-16 px-4"
+          }`}
+        >
+          <a
+            href="/"
+            aria-label="Vaticr — back to the overview"
+            className="group flex min-w-0 flex-1 items-center gap-2.5"
+          >
             <span
               aria-hidden
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded border-2 border-model text-base transition group-hover:border-model/70"
@@ -98,6 +106,20 @@ export default function AppShell({
               </span>
             )}
           </a>
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={collapsed ? "Expand the sidebar" : "Collapse the sidebar"}
+            aria-expanded={!collapsed}
+            title={collapsed ? "Expand" : "Collapse"}
+            className="shrink-0 rounded p-1 text-gray-600 transition hover:bg-ink-800 hover:text-gray-200"
+          >
+            <ChevronLeft
+              size={16}
+              aria-hidden
+              className={`transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
+            />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-1 px-2.5 py-3">
@@ -139,20 +161,6 @@ export default function AppShell({
 
         {footer && <div className="px-2.5 pb-3">{footer(collapsed)}</div>}
 
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label={collapsed ? "Expand the sidebar" : "Collapse the sidebar"}
-          aria-expanded={!collapsed}
-          className="flex h-11 items-center gap-2 border-t border-ink-700/70 px-4 text-gray-500 transition hover:text-gray-200"
-        >
-          <ChevronLeft
-            size={16}
-            aria-hidden
-            className={`shrink-0 transition-transform duration-200 ${collapsed ? "rotate-180" : ""}`}
-          />
-          {!collapsed && <span className="font-mono text-[11px]">Collapse</span>}
-        </button>
       </aside>
 
       {/* The offset is applied only from md up, because the rail itself only
