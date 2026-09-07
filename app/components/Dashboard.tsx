@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
-import AppShell, { ViewTabs, type View } from "./AppShell";
+import AppShell, { type View } from "./AppShell";
 import CalibrationPanel from "./Calibration";
 import { Evidence, signed } from "./Evidence";
 import {
@@ -158,7 +158,7 @@ function SummaryStrip({
   return (
     <nav
       aria-label="Your account, at a glance"
-      className="card sticky top-0 z-30 mb-6 flex flex-wrap items-center gap-2 bg-ink-900/90 px-4 py-2.5"
+      className="card sticky top-14 z-20 mb-6 md:top-0 md:z-30 flex flex-wrap items-center gap-2 bg-ink-900/90 px-4 py-2.5"
     >
       <span className="mr-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-accent">
         Your account
@@ -493,8 +493,6 @@ export default function Dashboard() {
       {/* Nothing above the fold used to say a wallet had money waiting. This
           does, and it stays on screen while the page scrolls. */}
       {canTrade && <SummaryStrip positions={posSummary} claims={claimSummary} />}
-
-      <ViewTabs view={view} onView={setView} canTrade={canTrade} />
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className={`space-y-5 ${view === "markets" ? "lg:col-span-2" : "lg:col-span-3"}`}>

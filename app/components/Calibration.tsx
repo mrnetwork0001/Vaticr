@@ -153,8 +153,8 @@ function Reliability({ cal }: { cal: Calibration }) {
         </text>
       </svg>
 
-      <div className="min-w-0 flex-1">
-        <table className="w-full text-left text-[11.5px]">
+      <div className="min-w-0 flex-1 overflow-x-auto">
+        <table className="w-full min-w-[22rem] text-left text-[11.5px]">
           <caption className="sr-only">
             Reliability by forecast bucket: mean forecast against the observed
             rate of upward closes.

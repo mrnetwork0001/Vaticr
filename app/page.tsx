@@ -259,22 +259,27 @@ export default function Landing() {
               <div className="border-b border-ink-700 px-5 py-3">
                 <h3 className="text-[13px] font-semibold text-gray-200">How orders cross</h3>
               </div>
-              <table className="w-full text-[12.5px]">
-                <tbody className="divide-y divide-ink-700/70">
-                  {[
-                    ["Buy YES × Sell YES", "direct", "tokens ↔ collateral", false],
-                    ["Buy NO × Sell NO", "direct", "tokens ↔ collateral", false],
-                    ["Buy YES × Buy NO", "mint-a-pair", "the pool mints a fresh pair - no seller needed", true],
-                    ["Sell YES × Sell NO", "burn-a-pair", "both positions burn", false],
-                  ].map(([pair, path, what, hero]) => (
-                    <tr key={pair as string} className={hero ? "bg-model/[0.08]" : ""}>
-                      <td className={`px-5 py-2.5 font-mono ${hero ? "font-bold text-model" : "text-gray-300"}`}>{pair}</td>
-                      <td className={`px-3 py-2.5 font-mono text-[11px] ${hero ? "text-model/80" : "text-gray-600"}`}>{path}</td>
-                      <td className="px-5 py-2.5 text-[11.5px] text-gray-500">{what}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="divide-y divide-ink-700/70 text-[12.5px]">
+                {[
+                  ["Buy YES × Sell YES", "direct", "tokens ↔ collateral", false],
+                  ["Buy NO × Sell NO", "direct", "tokens ↔ collateral", false],
+                  ["Buy YES × Buy NO", "mint-a-pair", "the pool mints a fresh pair - no seller needed", true],
+                  ["Sell YES × Sell NO", "burn-a-pair", "both positions burn", false],
+                ].map(([pair, path, what, hero]) => (
+                  <li
+                    key={pair as string}
+                    className={`px-5 py-2.5 sm:flex sm:items-baseline sm:gap-3 ${hero ? "bg-model/[0.08]" : ""}`}
+                  >
+                    <span className={`block font-mono sm:w-[9.5rem] sm:shrink-0 ${hero ? "font-bold text-model" : "text-gray-300"}`}>
+                      {pair}
+                    </span>
+                    <span className={`mt-0.5 block font-mono text-[11px] sm:mt-0 sm:w-[5.5rem] sm:shrink-0 ${hero ? "text-model/80" : "text-gray-600"}`}>
+                      {path}
+                    </span>
+                    <span className="mt-0.5 block text-[11.5px] text-gray-500 sm:mt-0">{what}</span>
+                  </li>
+                ))}
+              </ul>
             </Panel>
 
             <div className="space-y-4">
@@ -405,24 +410,25 @@ export default function Landing() {
               <div className="border-b border-ink-700 px-5 py-3">
                 <h3 className="text-[13px] font-semibold text-gray-200">Modules</h3>
               </div>
-              <table className="w-full text-[12.5px]">
-                <tbody className="divide-y divide-ink-700/70">
-                  {[
-                    ["agents/scout.py", "headlines → directional evidence"],
-                    ["agents/pricing.py", "GBM prior + log-odds evidence"],
-                    ["agents/resolver.py", "audit · Brier · backstops"],
-                    ["agents/server.py", "FastAPI surface the bot polls"],
-                    ["bot/src/runner.ts", "the trading loop"],
-                    ["bot/src/strategy.ts", "take-vs-quote, mint-a-pair levels"],
-                    ["VaticrForecastRegistry", "append-only commitments"],
-                  ].map(([k, v]) => (
-                    <tr key={k}>
-                      <td className="px-5 py-2 font-mono text-gray-300">{k}</td>
-                      <td className="px-5 py-2 text-right text-gray-500">{v}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <ul className="divide-y divide-ink-700/70 text-[12.5px]">
+                {[
+                  ["agents/scout.py", "headlines → directional evidence"],
+                  ["agents/pricing.py", "GBM prior + log-odds evidence"],
+                  ["agents/resolver.py", "audit · Brier · backstops"],
+                  ["agents/server.py", "FastAPI surface the bot polls"],
+                  ["bot/src/runner.ts", "the trading loop"],
+                  ["bot/src/strategy.ts", "take-vs-quote, mint-a-pair levels"],
+                  ["VaticrForecastRegistry", "append-only commitments"],
+                ].map(([k, v]) => (
+                  <li
+                    key={k}
+                    className="flex flex-col gap-0.5 px-5 py-2.5 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:py-2"
+                  >
+                    <span className="break-all font-mono text-gray-300">{k}</span>
+                    <span className="text-gray-500 sm:text-right">{v}</span>
+                  </li>
+                ))}
+              </ul>
             </Panel>
 
             <div className="space-y-4">

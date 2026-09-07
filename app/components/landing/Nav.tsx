@@ -1,5 +1,7 @@
 /** Sticky top nav: wordmark, section anchors, and the way into the app. */
-const LINKS = [
+import MobileMenu from "./MobileMenu";
+
+export const LINKS = [
   { id: "how", label: "How it works" },
   { id: "evidence", label: "Evidence" },
   { id: "mint", label: "Mint-a-pair" },
@@ -33,6 +35,9 @@ export default function Nav() {
             </li>
           ))}
         </ul>
+        <div className="ml-auto lg:hidden">
+          <MobileMenu links={LINKS} />
+        </div>
       </div>
     </nav>
   );
