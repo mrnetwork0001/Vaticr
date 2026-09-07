@@ -170,7 +170,64 @@ prominent. The documented testnet id was still correct at time of writing.
 
 ---
 
-## 7. Smaller things
+## 7. A write reserves 0.6 STT of gas to spend 0.008, and the failure says the wrong thing
+
+**Impact: high.** Every SDK-signed write is sent with `DEFAULT_GAS = 10_000_000`
+and `DEFAULT_FEES.maxFeePerGas = 60 gwei`. Somnia's mempool admits a
+transaction only if the sender can cover `gas_limit x maxFeePerGas` up front,
+so each write demands:
+
+```
+10,000,000 x 60 gwei = 0.600 STT reserved
+```
+
+Measured on the same testnet at the same moment, the actual cost of the write
+being reserved for was about **75x smaller**:
+
+| | |
+|---|---|
+| Reserved up front | 0.600 STT |
+| Real gas price | 6 gwei |
+| Cold ERC-20 approve, measured | 1,389,617 gas |
+| Actually spent | ~0.008 STT |
+
+A market-making wallet holding **0.533 STT** - comfortably funded for hundreds
+of these transactions - could not send a single one. Every order failed at the
+approve, 12% short of a ceiling it would never have touched.
+
+**And the error names the wrong cause.** The rejection arrives as JSON-RPC
+`-32000`, which viem renders as its generic short message:
+
+```
+approve reverted: Missing or invalid parameters.
+```
+
+The payload was correct throughout. The real text - `insufficient balance`,
+with mempool status byte `3` - is reachable only through
+`getSomniaRpcError()`, which the SDK ships and documents but which nothing in
+the quickstart path uses. Anyone hitting this reads "invalid parameters" and
+goes looking through their order arguments, which is the one place the fault
+is not. We lost an evening to it, and the SDK's own source comments record
+someone losing an hour to the same thing on 2026-07-31.
+
+**Suggestions.**
+
+1. Expose `gas` as a `SomniaMarkets` constructor option. `fees` already is, so
+   the fee ceiling can be lowered, but the 10M limit cannot be touched without
+   patching the SDK - and vendored copies are meant to stay verbatim.
+2. Size the reserve from the write being made. A cold approve needs ~1.4M and a
+   `placeOrder` ~6M; a flat 10M for both, at a 10x fee ceiling, is what turns a
+   funded wallet into an unfunded one.
+3. Say the funding requirement out loud in the docs: **a signer needs
+   `0.6 STT` free per in-flight write**, not "some gas". The testnet faucet
+   drips less than a single transaction's reserve, so the first thing a new
+   integrator does cannot work.
+4. Wrap the RPC error in the write path, or re-export the unwrapper from the
+   package root. A ceiling problem should not present as a payload problem.
+
+---
+
+## 8. Smaller things
 
 - **Doc link 404.** `/developers/event-contracts/market-structure-and-lifecycle`
   is linked from the developer overview but 404s; the live page is

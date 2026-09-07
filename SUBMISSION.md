@@ -125,7 +125,7 @@ ecosystem needs: more resting liquidity, on more windows, from more participants
 
 ## Optional deliverable: SDK and documentation feedback
 
-Submitted as [`docs/SDK_FEEDBACK.md`](docs/SDK_FEEDBACK.md) - six substantive
+Submitted as [`docs/SDK_FEEDBACK.md`](docs/SDK_FEEDBACK.md) - seven substantive
 findings plus smaller notes, every one hit while building and verified against
 live testnet data, with suggested fixes and what each cost us:
 
@@ -135,6 +135,8 @@ live testnet data, with suggested fixes and what each cost us:
 4. `fetchPriceCandles` is broken on the testnet price feed.
 5. The oracle feed is a 1-second EMA, so naive volatility reads ~4× too low.
 6. Several venues run concurrently on one deployment.
+7. Every write reserves 0.6 STT of gas to spend 0.008, and the rejection is
+   reported as a parameter error rather than a funding one.
 
 It also records what worked well, because a feedback report that only complains
 is not useful to the team receiving it.
