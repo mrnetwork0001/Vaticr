@@ -76,3 +76,46 @@ html, body { background: #07090f; color: #e5e7eb; }
     opacity: 1; transform: none; transition: none;
   }
 }
+
+/* ---- restored: dropped when this file was rewritten for the new palette -----
+   Every class below is still referenced by a component. Losing them was silent:
+   .skip-link with no rule simply renders as plain visible text in the corner,
+   which is how it was noticed. */
+
+/* Visible only to screen readers until it is tabbed to — which is the whole
+   point of a skip link. It should never be on screen for a mouse user. */
+.skip-link { @apply sr-only; }
+.skip-link:focus {
+  @apply not-sr-only fixed left-4 top-4 z-[100] rounded bg-model px-4 py-2
+         text-[13px] font-semibold text-ink-950;
+}
+
+/* One focus treatment for everything reachable by keyboard. The browser default
+   ring is nearly invisible against #07090f. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid #a5b4fc;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 255, 255, 0.11) 37%,
+    rgba(255, 255, 255, 0.05) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+@keyframes shimmer { from { background-position: 100% 50%; } to { background-position: 0 50%; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .rise, .pulse-dot, .skeleton { animation: none; }
+}
