@@ -234,7 +234,45 @@ someone losing an hour to the same thing on 2026-07-31.
 
 ---
 
-## 8. Smaller things
+## 8. The indexer trails the chain by minutes, and every portfolio hook reads it
+
+**Impact: high for anything user-facing.** `usePortfolio`, `useLiveUserOrders`
+and the rest of `@somnia-chain/markets-sdk/react` read the Envio indexer. On
+testnet, measured while writing this:
+
+```
+chain head          block 482130599
+newest indexed Fill block 482126666
+lag                 493 seconds - 8.2 minutes
+```
+
+A user places an order, the fill confirms on-chain in about a second, and the
+portfolio panel shows nothing at all for the next eight minutes. There is no
+signal distinguishing "you hold nothing" from "we cannot see it yet", so the
+honest reading of the screen is that the trade failed. Ours said, in that
+state, *"place one from the ticket above"* - to someone who just had.
+
+The data is correct when it arrives; `OutcomeBalance` is populated and keyed
+sensibly on `tokenId_outcomeIndex_account`. The problem is purely that a
+trading UI cannot be built on a source this far behind without saying so.
+
+**Suggestions.**
+
+1. Expose the indexer's head block or timestamp in the hook result, so a UI
+   can say "as of 8 minutes ago" instead of implying it is live. This is the
+   cheapest fix and it removes the whole class of confusion.
+2. Offer a chain-backed read for the small, hot queries - outcome balances and
+   open orders for one account. We already had to do this for the order book
+   (finding 4's neighbour: `Order` rows were not usable for a live book, so
+   Vaticr reads `getBinaryOrderBook` from the chain instead) and the same
+   reasoning applies to positions.
+3. Failing both, document the expected lag prominently. An integrator who
+   knows it is eight minutes designs around it; one who assumes it is seconds
+   ships something that looks broken.
+
+---
+
+## 9. Smaller things
 
 - **Doc link 404.** `/developers/event-contracts/market-structure-and-lifecycle`
   is linked from the developer overview but 404s; the live page is

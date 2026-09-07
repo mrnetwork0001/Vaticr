@@ -348,7 +348,12 @@ export default function Positions({
       {portfolio.data && holdings.length === 0 && resting.length === 0 && (
         <PanelState
           state="empty"
-          empty="No outcome tokens and no resting orders. Place one from the ticket above and it will appear here."
+          // This panel reads the indexer, which trails the chain - measured at
+          // roughly eight minutes on testnet. So "nothing here" and "you have
+          // not traded" are different statements, and telling a user who just
+          // filled an order to go and place one reads as a broken app. Say
+          // which of the two it is, and that waiting is the fix.
+          empty="Nothing indexed for this wallet yet. If you have just traded, the indexer runs several minutes behind the chain - your fill is on-chain already and will appear here shortly. Otherwise, place an order from the ticket above."
         />
       )}
 
