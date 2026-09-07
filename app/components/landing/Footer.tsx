@@ -64,21 +64,15 @@ export default function Footer() {
         <div className="grid gap-y-9 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8">
           {/* brand */}
           <div className="max-w-md">
-            <a href="#top" className="inline-flex items-center gap-3" aria-label="Vaticr, back to top">
-              <span
-                aria-hidden
-                className="flex h-12 w-12 items-center justify-center rounded border-2 border-model text-xl"
-              >
-                🔮
-              </span>
-              <span>
-                <span className="block font-mono text-2xl font-bold tracking-[0.2em] text-gray-100">
-                  VATICR
-                </span>
-                <span className="block font-mono text-[9px] tracking-[0.18em] text-gray-500">
-                  PRICE THE WINDOW. TRADE THE GAP.
-                </span>
-              </span>
+            <a href="#top" className="inline-block" aria-label="Vaticr, back to top">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/vaticr-header.png"
+                alt="Vaticr - price the window, trade the gap"
+                width={720}
+                height={148}
+                className="h-12 w-auto sm:h-14"
+              />
             </a>
 
             <p className="mt-8 text-[15px] leading-relaxed text-gray-400">

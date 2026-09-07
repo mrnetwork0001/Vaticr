@@ -11,9 +11,15 @@ export default function Nav() {
   return (
     <nav className="sticky top-0 z-40 border-b border-ink-700/80 bg-ink-950/90 backdrop-blur" aria-label="Sections">
       <div className="mx-auto flex h-14 max-w-nav items-center gap-3 px-4 sm:px-6">
-        <a href="#top" className="flex items-center gap-2" aria-label="Vaticr, back to top">
-          <span aria-hidden className="text-base">🔮</span>
-          <span className="font-mono text-[15px] font-bold tracking-tight text-gray-100">vaticr</span>
+        <a href="#top" className="flex items-center" aria-label="Vaticr, back to top">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/vaticr-header.png"
+            alt="Vaticr - price the window, trade the gap"
+            width={720}
+            height={148}
+            className="h-7 w-auto"
+          />
         </a>
         <ul className="ml-auto hidden items-center gap-1 lg:flex">
           {LINKS.map((l) => (

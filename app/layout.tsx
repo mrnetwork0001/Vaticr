@@ -9,16 +9,6 @@ import Providers from "./providers";
  * assets: the icon is diffable, and it inherits the palette from the same
  * tokens the site uses (ink-950 ground, accent violet).
  */
-const FAVICON =
-  "data:image/svg+xml," +
-  encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">` +
-      `<rect width="32" height="32" rx="7" fill="#07080c"/>` +
-      `<circle cx="16" cy="13.5" r="8" fill="#818cf8" fill-opacity="0.18" stroke="#818cf8" stroke-width="2"/>` +
-      `<path d="M9.5 26.5c1.6-2.6 3.9-3.9 6.5-3.9s4.9 1.3 6.5 3.9z" fill="#818cf8"/>` +
-      `<circle cx="12.8" cy="10.6" r="2.1" fill="#e0e7ff"/>` +
-      `</svg>`,
-  );
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
@@ -42,8 +32,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "Vaticr" }],
   icons: {
-    icon: [{ url: FAVICON, type: "image/svg+xml" }],
-    shortcut: [{ url: FAVICON, type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon-32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-512.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   openGraph: {
     type: "website",

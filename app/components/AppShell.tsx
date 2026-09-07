@@ -89,12 +89,15 @@ export default function AppShell({
             aria-label="Vaticr - back to the overview"
             className="group flex min-w-0 flex-1 items-center gap-2.5"
           >
-            <span
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/brand/vaticr-mark.png"
+              alt=""
               aria-hidden
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded border-2 border-model text-base transition group-hover:border-model/70"
-            >
-              🔮
-            </span>
+              width={128}
+              height={101}
+              className="h-8 w-auto shrink-0"
+            />
             {!collapsed && (
               <span className="min-w-0">
                 <span className="block truncate font-mono text-[15px] font-bold tracking-[0.16em] text-gray-100">
