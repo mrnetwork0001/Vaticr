@@ -82,12 +82,10 @@ export default function Footer() {
             </a>
 
             <p className="mt-8 text-[15px] leading-relaxed text-gray-400">
-              A Bayesian forecasting and market-making agent for DreamDEX Event
-              Contracts on Somnia. It derives the fair probability of every Up/Down
-              window from the price process, tilts it with live news, trades the gap
-              through the official Bot Kit, and commits each forecast on-chain before
-              the window settles — so the track record can be checked by someone who
-              does not trust it.
+              Derives the fair probability of every DreamDEX Up/Down window on
+              Somnia from the price process and the news, trades the gap, and
+              commits each forecast on-chain before it settles — so the record
+              can be checked, not taken on trust.
             </p>
 
             <div className="mt-8 flex items-center gap-4">
