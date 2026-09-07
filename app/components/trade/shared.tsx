@@ -6,7 +6,7 @@
  * Two things live here rather than in any one panel:
  *
  *  1. **The on-chain market status.** Only `Trading` accepts orders, and the
- *     indexer lags the chain by seconds — so every write re-reads the status
+ *     indexer lags the chain by seconds - so every write re-reads the status
  *     from chain immediately before signing. The names and the explanations of
  *     each state belong next to each other so the UI can never say "Locked"
  *     without also saying what Locked means for the user's money.
@@ -50,13 +50,13 @@ export function statusExplanation(status: number): string {
     case MARKET_STATUS.Trading:
       return "Open for orders.";
     case MARKET_STATUS.Locked:
-      return "Trading has closed for this window and the outcome is being decided. No orders are accepted; nothing is lost — positions settle from here.";
+      return "Trading has closed for this window and the outcome is being decided. No orders are accepted; nothing is lost - positions settle from here.";
     case MARKET_STATUS.Settling:
       return "The oracle is resolving this window. No orders are accepted. Your position becomes claimable once it resolves.";
     case MARKET_STATUS.Resolved:
-      return "This window has settled. Winnings are not paid automatically — claim them below.";
+      return "This window has settled. Winnings are not paid automatically - claim them below.";
     case MARKET_STATUS.Voided:
-      return "This window was voided. Both YES and NO redeem at 0.5 — claim below. A void is not a loss.";
+      return "This window was voided. Both YES and NO redeem at 0.5 - claim below. A void is not a loss.";
     default:
       return "This market is not accepting orders.";
   }
@@ -70,7 +70,7 @@ export interface Explained {
   /** What it means and what to do next. */
   detail: string;
   /**
-   * True for outcomes that are a normal part of trading rather than a fault —
+   * True for outcomes that are a normal part of trading rather than a fault -
    * a post-only that would have crossed, a user-dismissed wallet prompt. These
    * render amber rather than red, because scaring someone with a red banner
    * over an ordinary requote teaches them to ignore red banners.
@@ -98,7 +98,7 @@ export function explainError(err: unknown): Explained {
         return {
           headline: "Your quote would have crossed the book",
           detail:
-            "A post-only order is only allowed to rest. Between the preview and the send, the other side moved through your price, so resting it would have taken liquidity instead — the pool refused rather than fill you at a price you did not choose. Nothing was placed. Move your price away from the touch, or switch to IOC to cross on purpose.",
+            "A post-only order is only allowed to rest. Between the preview and the send, the other side moved through your price, so resting it would have taken liquidity instead - the pool refused rather than fill you at a price you did not choose. Nothing was placed. Move your price away from the touch, or switch to IOC to cross on purpose.",
           routine: true,
           raw,
         };
@@ -106,7 +106,7 @@ export function explainError(err: unknown): Explained {
         return {
           headline: "An IOC found nothing to take at your price",
           detail:
-            "An IOC buy only takes offers at or BELOW your limit. Nothing was resting there, so the pool cancelled the whole order rather than resting it — that is what IOC means. No shares were bought and no collateral was escrowed; the gas for the reverted transaction is the only cost. Raise the limit to the best offer to cross, or switch to post-only and rest at your price.",
+            "An IOC buy only takes offers at or BELOW your limit. Nothing was resting there, so the pool cancelled the whole order rather than resting it - that is what IOC means. No shares were bought and no collateral was escrowed; the gas for the reverted transaction is the only cost. Raise the limit to the best offer to cross, or switch to post-only and rest at your price.",
           routine: true,
           raw,
         };
@@ -139,7 +139,7 @@ export function explainError(err: unknown): Explained {
         return {
           headline: "The window stopped accepting orders",
           detail:
-            "It moved out of Trading between the on-chain check and the send — windows are short. Nothing was placed.",
+            "It moved out of Trading between the on-chain check and the send - windows are short. Nothing was placed.",
           routine: true,
           raw,
         };
@@ -148,7 +148,7 @@ export function explainError(err: unknown): Explained {
         return {
           headline: "Price is off the venue's tick grid",
           detail:
-            "The pool only accepts prices that are an exact multiple of its tick. This is a bug in the ticket rather than something you did — please report the price you typed.",
+            "The pool only accepts prices that are an exact multiple of its tick. This is a bug in the ticket rather than something you did - please report the price you typed.",
           routine: false,
           raw,
         };
@@ -208,7 +208,7 @@ export function explainError(err: unknown): Explained {
             ? `The contract rejected this: ${err.errorName}`
             : "The contract rejected this transaction",
           detail:
-            "The chain refused the call. The Solidity reason is printed below verbatim — nothing was interpreted away.",
+            "The chain refused the call. The Solidity reason is printed below verbatim - nothing was interpreted away.",
           routine: false,
           raw,
         };
@@ -249,7 +249,7 @@ export function rawToNumber(raw: bigint, decimals: number): number {
   return Number(formatUnits(raw, decimals));
 }
 
-/** A probability as a percentage with one decimal — the site's existing idiom. */
+/** A probability as a percentage with one decimal - the site's existing idiom. */
 export function pct(p: number): string {
   return `${(p * 100).toFixed(1)}%`;
 }
@@ -281,7 +281,7 @@ export function TxLink({ hash, label = "receipt" }: { hash: string; label?: stri
       className="mono text-accent hover:underline"
     >
       {hash.slice(0, 10)}…{hash.slice(-8)}
-      <span className="sr-only"> — {label} on the Shannon explorer, opens in a new tab</span>
+      <span className="sr-only"> - {label} on the Shannon explorer, opens in a new tab</span>
     </a>
   );
 }
@@ -343,8 +343,8 @@ export function Hint({ children }: { children: ReactNode }) {
  * `money` above rounds to four places, which is the right call for a balance
  * read but the wrong one for a number that is about to be signed: at six
  * decimals it can differ from the amount the pool actually escrows in the fifth
- * and sixth place. Anywhere the figure IS the transaction — total cost, max
- * loss, the amount on the confirm button — use this one, so what is printed and
+ * and sixth place. Anywhere the figure IS the transaction - total cost, max
+ * loss, the amount on the confirm button - use this one, so what is printed and
  * what is escrowed are the same number.
  */
 export function moneyExact(raw: bigint, decimals: number, symbol = "tUSDC"): string {
@@ -365,8 +365,8 @@ export function bpsPct(bps: number): string {
  * Scroll to a section of the dashboard by DOM id, smoothly where the viewer has
  * not asked for reduced motion.
  *
- * This exists because the panels a trader needs AFTER a fill — Positions, and
- * the Claim panel that settled winnings sit in until someone asks for them —
+ * This exists because the panels a trader needs AFTER a fill - Positions, and
+ * the Claim panel that settled winnings sit in until someone asks for them -
  * live below the fold. A receipt that names them without going there is a
  * receipt that ends the journey in the wrong place.
  *
@@ -401,8 +401,8 @@ export function scrollToId(id: string): boolean {
 }
 
 /**
- * A link to another section of the dashboard. A real `href` first — so it works
- * with middle-click, with keyboard, and if the JS handler ever throws — with the
+ * A link to another section of the dashboard. A real `href` first - so it works
+ * with middle-click, with keyboard, and if the JS handler ever throws - with the
  * smooth scroll layered on top only when the target actually exists.
  */
 export function JumpLink({
@@ -432,8 +432,8 @@ export function JumpLink({
 
 /**
  * A pre-flight notice: something the page already knows that would otherwise be
- * learned by paying gas for a revert. Amber, never red — nothing has failed
- * yet — and never a block: it states the problem, offers the two real fixes,
+ * learned by paying gas for a revert. Amber, never red - nothing has failed
+ * yet - and never a block: it states the problem, offers the two real fixes,
  * and leaves the decision where it belongs.
  */
 export function Notice({
@@ -458,7 +458,7 @@ export function Notice({
   );
 }
 
-/** A button offered by a `Notice` — the user's fix, applied only if they click it. */
+/** A button offered by a `Notice` - the user's fix, applied only if they click it. */
 export function NoticeAction({
   onClick, children, primary = false,
 }: {
@@ -486,8 +486,8 @@ export function NoticeAction({
  *
  * Estimation runs against current state, so it prices a WARM storage slot when
  * the real transaction may touch a cold one. The buffer covers that gap. If the
- * node cannot estimate at all — a common outcome when a call would revert for a
- * reason the caller is about to handle anyway — fall back rather than block.
+ * node cannot estimate at all - a common outcome when a call would revert for a
+ * reason the caller is about to handle anyway - fall back rather than block.
  */
 export async function estimateWithBuffer(
   estimate: () => Promise<bigint>,

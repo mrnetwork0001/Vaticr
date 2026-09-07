@@ -2,7 +2,7 @@
 
 Nothing here touches the network. `SettlementAudit` is handed fabricated
 `MarketRow`s and reference prices, and `calibration()` reads a temporary
-commitment log — so the audit's judgement and the Brier arithmetic are pinned
+commitment log - so the audit's judgement and the Brier arithmetic are pinned
 independently of whatever the testnet indexer happens to be serving.
 
 These two surfaces are the project's honesty claim. If the audit calls a
@@ -94,7 +94,7 @@ def test_brier_excludes_a_voided_market() -> None:
     """A void is a feed outage, not a forecasting error.
 
     Scoring it as an outcome would punish a correct 0.95 with a 0.9025 the model
-    had no way to avoid — the window never resolved on price at all. `None`
+    had no way to avoid - the window never resolved on price at all. `None`
     means "not scored", and calibration drops it rather than averaging it in.
     """
     assert brier(0.95, "void") is None
@@ -105,7 +105,7 @@ def test_brier_excludes_a_voided_market() -> None:
 
 
 def test_derived_outcome_treats_the_boundary_as_a_yes() -> None:
-    """"Closes at or above its opening price" — equality is an Up."""
+    """"Closes at or above its opening price" - equality is an Up."""
     assert audit(100_000.0, 100_050.0).derived == "up"
     assert audit(100_000.0, 99_950.0).derived == "down"
     assert audit(100_000.0, 100_000.0).derived == "up"
@@ -151,11 +151,11 @@ def test_a_hairline_disagreement_is_inconclusive_not_a_mismatch() -> None:
 
     The oracle settles on its own sampled tick; we recover the reference from
     the public feed by timestamp, and the two can differ by a tick. On a window
-    that moved 0.009% that difference flips the sign — so reporting MISMATCH
+    that moved 0.009% that difference flips the sign - so reporting MISMATCH
     there would cry wolf on every near-flat window and bury a real divergence.
     """
     assert INCONCLUSIVE_BPS == 1.0
-    # +0.9bp: we derive Up, the chain says Down — inside our resolution.
+    # +0.9bp: we derive Up, the chain says Down - inside our resolution.
     assert audit(100_000.0, 100_009.0, winning_outcome=1).verdict == "inconclusive"
     # -0.9bp the other way, same call.
     assert audit(100_000.0, 99_991.0, winning_outcome=0).verdict == "inconclusive"
@@ -226,7 +226,7 @@ def test_voids_and_pendings_are_counted_but_never_scored() -> None:
                 scored_record("0x1", 0.9, "up", 0.01),
                 scored_record("0x2", 0.9, "void", None),
                 scored_record("0x3", 0.9, None, None),
-                # Settled but never scored — it must not count as a free 0.0.
+                # Settled but never scored - it must not count as a free 0.0.
                 scored_record("0x4", 0.9, "up", None),
             ]
         )

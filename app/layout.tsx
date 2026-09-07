@@ -22,13 +22,13 @@ const FAVICON =
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-const TITLE = "Vaticr — DeAI market maker for DreamDEX Event Contracts";
+const TITLE = "Vaticr - DeAI market maker for DreamDEX Event Contracts";
 const DESCRIPTION =
   "An event contract's YES token has a real, derivable probability. Vaticr derives it from the price process, tilts it with live news, trades it with zero inventory, and Brier-scores itself afterwards.";
 
 export const metadata: Metadata = {
   // Without a metadataBase Next emits relative og:url values, which every
-  // unfurler drops — the shared link then renders as a bare URL.
+  // unfurler drops - the shared link then renders as a bare URL.
   metadataBase: new URL(SITE),
   title: {
     default: TITLE,
@@ -76,7 +76,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             either one without a per-page skip target. */}
         <a href="#main" className="skip-link">Skip to main content</a>
         {/* Wallet + market-data context. Everything below still renders with no
-            wallet connected — connecting only unlocks the write paths. */}
+            wallet connected - connecting only unlocks the write paths. */}
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -16,7 +16,7 @@
  *   3. commit one real forecast on-chain, taken from the live Vaticr API
  *   4. place ONE small real order on a live event contract
  *
- * The only thing it cannot do for you is obtain native STT for gas — every
+ * The only thing it cannot do for you is obtain native STT for gas - every
  * Somnia faucet is captcha- or human-gated. Fund the address it prints, then
  * re-run.
  */
@@ -74,7 +74,7 @@ async function main() {
 
   log(`account   ${account.address}`);
   log(`network   Somnia Shannon testnet (50312)`);
-  log(`mode      ${SEND ? "\x1b[1mSEND — real transactions\x1b[0m" : "dry run (pass --send to execute)"}`);
+  log(`mode      ${SEND ? "\x1b[1mSEND - real transactions\x1b[0m" : "dry run (pass --send to execute)"}`);
 
   step(0, "Gas check");
   const gas = await pub.getBalance({ address: account.address });
@@ -82,7 +82,7 @@ async function main() {
   if (gas === 0n) {
     bad("This address has no STT, so nothing on-chain can happen.");
     console.log(`
-   Fund it — every Somnia faucet is captcha-gated, so this step needs a human:
+   Fund it - every Somnia faucet is captcha-gated, so this step needs a human:
      https://testnet.somnia.network/
      https://cloud.google.com/application/web3/faucet/somnia/shannon
      https://stakely.io/faucet/somnia-testnet-stt
@@ -124,7 +124,7 @@ async function main() {
     console.log("   (faucet -> on-chain forecast commit -> one small real order)");
   } else {
     const r = spawnSync("npx", ["tsx", "scripts/go-live-onchain.ts"], { stdio: "inherit", env: process.env });
-    if (r.status !== 0) bad("on-chain step reported a failure — see output above");
+    if (r.status !== 0) bad("on-chain step reported a failure - see output above");
     if (existsSync("deployments/onchain-proof.json")) {
       out.steps.onchain = JSON.parse(readFileSync("deployments/onchain-proof.json", "utf8"));
     }

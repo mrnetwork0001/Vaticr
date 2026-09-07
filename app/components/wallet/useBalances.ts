@@ -8,7 +8,7 @@
  *
  *  1. **Decimals are read, never assumed.** tUSDC on testnet is 6; USDso on
  *     mainnet is 18. A hardcoded 6 would render a mainnet balance a trillion
- *     times too large — and a trade sized off it would be a trillion times too
+ *     times too large - and a trade sized off it would be a trillion times too
  *     large too. The `decimals()` read is cached indefinitely (a token's
  *     decimals are immutable) and only falls back to 6 while it is in flight.
  *
@@ -28,7 +28,7 @@ import {
 import { exactAmount, shortAmount } from "./format";
 
 /** How often balances re-read from chain. Somnia blocks in ~100ms; 12s is a
- *  dashboard refresh rate, not a trading loop — writes should refetch on
+ *  dashboard refresh rate, not a trading loop - writes should refetch on
  *  success rather than wait for this. */
 export const DEFAULT_BALANCE_REFRESH_MS = 12_000;
 
@@ -41,14 +41,14 @@ export interface TokenBalance {
   exact: string;
   /** Short form for a pill, rounded DOWN (e.g. `"12.3456"`, or `"< 0.0001"`). */
   short: string;
-  /** True when `short` dropped digits — pair it with `exact` in a title. */
+  /** True when `short` dropped digits - pair it with `exact` in a title. */
   isTruncated: boolean;
 }
 
 export interface VaticrBalances {
-  /** Native STT — gas. `undefined` until the first read lands. */
+  /** Native STT - gas. `undefined` until the first read lands. */
   native: TokenBalance | undefined;
-  /** tUSDC — what orders escrow and what settlement pays out in. */
+  /** tUSDC - what orders escrow and what settlement pays out in. */
   collateral: TokenBalance | undefined;
   /** Collateral decimals as read from chain (falls back to 6 while loading). */
   collateralDecimals: number;
@@ -57,7 +57,7 @@ export interface VaticrBalances {
   isError: boolean;
   /** The first real error, for display. Not swallowed. */
   error: Error | null;
-  /** Re-read both balances now — call this after a trade or a claim. */
+  /** Re-read both balances now - call this after a trade or a claim. */
   refetch: () => void;
 }
 

@@ -1,4 +1,4 @@
-# Vaticr — the Python ↔ TypeScript HTTP boundary
+# Vaticr - the Python ↔ TypeScript HTTP boundary
 
 Every write in Vaticr is TypeScript; every model is Python. The two halves meet
 at exactly one place: this FastAPI service, defined in
@@ -8,7 +8,7 @@ route `app/api/vaticr/[...path]/route.ts`.
 
 **Everything here is read-only with respect to the chain.** `POST /scan` and
 `POST /commit` write to local process state and a JSON Lines file
-(`.vaticr/forecasts.jsonl`) respectively — neither touches a wallet. That is the
+(`.vaticr/forecasts.jsonl`) respectively - neither touches a wallet. That is the
 whole point of the split: a compromised or wrong brain can produce a bad number,
 never a bad transaction.
 
@@ -22,7 +22,7 @@ CORS is open (`allow_origins=["*"]`, methods `GET` and `POST`) because the data
 is public and the UI is served from a different origin.
 
 The wire types are pydantic models in [`agents/schemas.py`](../agents/schemas.py)
-— that file, not this page, is the normative contract. This page is the map.
+- that file, not this page, is the normative contract. This page is the map.
 
 ---
 
@@ -62,7 +62,7 @@ No parameters.
 `llm_classifier` is `"on"` only when `ANTHROPIC_API_KEY` is set **and**
 `VATICR_LLM_ENABLED` is true; otherwise `"off (lexicon only)"`, which is a
 fully working configuration, not a degraded one. `last_scan` is `null` until the
-scout's first pass lands — `scripts/start.mjs` polls this endpoint and holds the
+scout's first pass lands - `scripts/start.mjs` polls this endpoint and holds the
 bot back until it does.
 
 ---
@@ -74,7 +74,7 @@ exposed on its own so the dashboard can show *why* a number moved.
 
 | param | type | default | notes |
 |---|---|---|---|
-| `asset` | string | — | filter to headlines bearing on one asset |
+| `asset` | string | - | filter to headlines bearing on one asset |
 | `limit` | int | `40` | max `200` |
 
 Returns a JSON array of `Headline` (newest first):
@@ -99,7 +99,7 @@ Returns a JSON array of `Headline` (newest first):
 
 `sentiment` is direction in `[-1, +1]`, `salience` is how market-moving at all in
 `[0, 1]`, `credibility` is the source weight in `[0, 1]`. `scorer` is `"lexicon"`
-or `"llm"`. All three multiply into the log-likelihood ratio the engine applies —
+or `"llm"`. All three multiply into the log-likelihood ratio the engine applies -
 a headline can be strongly directional and still barely move the posterior if it
 is stale or from a weak source.
 
@@ -117,7 +117,7 @@ No body, no parameters.
 { "added": 3, "in_window": 29 }
 ```
 
-`added` counts genuinely new items — the scout deduplicates by URL hash, so
+`added` counts genuinely new items - the scout deduplicates by URL hash, so
 re-scanning a quiet minute legitimately returns `0`.
 
 ---
@@ -130,8 +130,8 @@ whether it is even worth quoting.
 
 | param | type | default | notes |
 |---|---|---|---|
-| `venue` | string | — | venueId to scope to |
-| `asset` | string | — | `BTC` / `ETH` |
+| `venue` | string | - | venueId to scope to |
+| `asset` | string | - | `BTC` / `ETH` |
 | `limit` | int | `12` | max `50` |
 
 Returns an array of envelopes: the `Forecast` plus the on-chain window facts.
@@ -174,7 +174,7 @@ last second and the level above its open, the raw prior is `1.0`, and the
 posterior is capped at `VATICR_PROB_CEIL` (0.98) because certainty is never a
 tradable claim.
 
-`evidence` is empty whenever no headline in the window bears on that asset — the
+`evidence` is empty whenever no headline in the window bears on that asset - the
 common case, and the honest one. When populated, each item is an `EvidenceItem`:
 
 | field | meaning |
@@ -189,14 +189,14 @@ common case, and the honest one. When populated, each item is an `EvidenceItem`:
 (`VATICR_EVIDENCE_CAP`), so it is not always the plain total of the list.
 
 `oracle_question_id` is passed through verbatim from the indexer's
-`oracleQuestionId`. It is a decimal string, and its width is not stable — short
+`oracleQuestionId`. It is a decimal string, and its width is not stable - short
 ids (`48380`) and full 77-digit uint256s both occur on live testnet rows. Treat
 it as an opaque identifier, never as a number, and build receipt links by
 concatenation rather than by parsing it.
 
 Notes that matter for anyone reading these numbers:
 
-- `spot` is the **`mark`** series (the EMA), not the raw spot — because `mark` is
+- `spot` is the **`mark`** series (the EMA), not the raw spot - because `mark` is
   what settlement compares. `annual_vol` is measured from the raw `spot` series
   resampled onto a 30-second grid, because differencing an EMA at tick resolution
   reads about 4× too low. Two series, on purpose; see
@@ -222,9 +222,9 @@ The bot passes its own top-of-book in; the service does not fetch order books.
 | param | type | default | notes |
 |---|---|---|---|
 | `market_id` | string | **required** | |
-| `best_bid` | float | — | top-of-book YES bid |
-| `best_ask` | float | — | top-of-book YES ask |
-| `venue` | string | — | venueId to scope to |
+| `best_bid` | float | - | top-of-book YES bid |
+| `best_ask` | float | - | top-of-book YES ask |
+| `venue` | string | - | venueId to scope to |
 | `edge_threshold` | float | `0.04` | minimum edge over the **touch** |
 
 ```
@@ -244,7 +244,7 @@ GET /intent?market_id=0x…106e2&best_bid=0.096&best_ask=0.118&edge_threshold=0.
 ```
 
 `action` is one of `take_yes`, `take_no`, `quote`, `skip`. The gate is the
-**touch**, never the mid — clearing the mid but not the spread is the standard
+**touch**, never the mid - clearing the mid but not the spread is the standard
 way a bot with genuine edge still loses money. `404` if `market_id` has no live
 forecast (expired, out of venue scope, or its opening price could not be
 recovered).
@@ -280,7 +280,7 @@ Response:
 Idempotent per `market_id`: a second commit for the same market returns
 `{"recorded": false, "reason": "already committed"}` rather than overwriting.
 Commitments land in `.vaticr/forecasts.jsonl`. This is the *off-chain* record;
-the on-chain equivalent — same discipline, but tamper-evident — is
+the on-chain equivalent - same discipline, but tamper-evident - is
 `bot/src/registry.ts` writing to `VaticrForecastRegistry.sol`, and it is the bot
 that makes that call, not this service.
 
@@ -293,7 +293,7 @@ well the posteriors have actually tracked reality.
 
 | param | type | default |
 |---|---|---|
-| `venue` | string | — |
+| `venue` | string | - |
 
 ```json
 {
@@ -314,7 +314,7 @@ well the posteriors have actually tracked reality.
 `brier_score` is the mean squared error of the posterior against the realised
 outcome; **0.25 is a coin flip and lower is better**, so `skill = 1 −
 brier/0.25` is positive only when there is real edge. `buckets` is the
-reliability diagram — does "70%" actually happen 70% of the time? Voided markets
+reliability diagram - does "70%" actually happen 70% of the time? Voided markets
 are excluded from scoring rather than counted as losses: nothing was forecast
 about a feed outage. With no settled commitments yet the report is
 `{"scored": 0, "brier_score": null, "skill": null, "accuracy": null,
@@ -332,7 +332,7 @@ and compares the result to the on-chain winner.
 
 | param | type | default | notes |
 |---|---|---|---|
-| `venue` | string | — | |
+| `venue` | string | - | |
 | `limit` | int | `12` | max `50` |
 
 ```json
@@ -341,7 +341,7 @@ and compares the result to the on-chain winner.
   "mismatched": 0,
   "inconclusive": 1,
   "total": 12,
-  "reference": "mark (EMA) — empirically the settlement series; see docs/SDK_FEEDBACK.md",
+  "reference": "mark (EMA) - empirically the settlement series; see docs/SDK_FEEDBACK.md",
   "settlements": [
     {
       "market_id": "0x0000000000000000000000000000000000000000000000000000000000010bd5",
@@ -372,8 +372,8 @@ The three counters are the whole point, and they are deliberately not two:
 | `match` | `verified` | our reconstruction agrees with the chain |
 | `MISMATCH` | `mismatched` | genuine disagreement, decided by **≥ 1bp** |
 | `inconclusive` | `inconclusive` | disagreement under **1bp** (`INCONCLUSIVE_BPS` in `agents/resolver.py`) |
-| `voided` | — | the market was voided; nothing to verify |
-| `unverifiable` | — | the feed could not supply one of the two references |
+| `voided` | - | the market was voided; nothing to verify |
+| `unverifiable` | - | the feed could not supply one of the two references |
 
 The 1bp floor is not a fudge. The oracle settles on its own sampled tick and we
 recover the reference from the public feed by timestamp; the two can differ by a
@@ -381,7 +381,7 @@ tick, which is irrelevant on a normal window and decisive on one that closed
 0.005% from its open. Measured over twenty settlements, both "nearest tick" and
 "last tick at or before the boundary" reproduce the on-chain winner 19/20,
 failing on the *same* window. Below that margin the honest statement is that our
-resolution ran out — not that the chain is wrong. Anything at or above it is
+resolution ran out - not that the chain is wrong. Anything at or above it is
 reported as a real mismatch.
 
 `verdict` values `voided` and `unverifiable` appear in `settlements` but are in
@@ -396,7 +396,7 @@ with the permissionless call that unsticks it.
 
 | param | type | default |
 |---|---|---|
-| `venue` | string | — |
+| `venue` | string | - |
 
 ```json
 {
@@ -417,7 +417,7 @@ with the permissionless call that unsticks it.
 
 `suggested_call` is `pokeOracle` while the window is only modestly overdue and
 `voidExpired` once it has lapsed far past the grace period (4× the 300s grace).
-This service only *names* the call — it holds no key. Execution is
+This service only *names* the call - it holds no key. Execution is
 [`bot/src/backstop.ts`](../bot/src/backstop.ts), run with `npm run backstop`.
 
 ---
@@ -432,5 +432,5 @@ This service only *names* the call — it holds no key. Execution is
 | `app/components/Dashboard.tsx` | `/health`, `/forecasts`, `/headlines`, `/audit` |
 | `app/components/LiveStats.tsx` | `/health`, `/forecasts`, `/audit` |
 
-The browser never calls this service directly — Next.js proxies it through
+The browser never calls this service directly - Next.js proxies it through
 `/api/vaticr/<path>` so the API URL stays server-side and there is one origin.

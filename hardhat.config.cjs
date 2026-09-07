@@ -9,7 +9,7 @@ module.exports = {
   },
   paths: { sources: "./contracts", tests: "./test", cache: "./.hardhat-cache", artifacts: "./artifacts" },
   networks: {
-    // Somnia Shannon testnet — the network DreamDEX event contracts run on.
+    // Somnia Shannon testnet - the network DreamDEX event contracts run on.
     somniaTestnet: {
       url: process.env.RPC_URL || "https://api.infra.testnet.somnia.network",
       chainId: 50312,

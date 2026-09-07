@@ -18,7 +18,7 @@ interface Stats {
  *
  * Everything here is real: it reads the same endpoints the dashboard does.
  * When the intelligence layer is not running the numbers fall back to em
- * dashes rather than zeros — a landing page claiming "0 markets verified"
+ * dashes rather than zeros - a landing page claiming "0 markets verified"
  * would be worse than one admitting it cannot reach the backend.
  *
  * Before the first response lands the cells shimmer instead. An em dash on
@@ -88,7 +88,7 @@ export default function LiveStats() {
             {loading ? (
               <Skeleton className="h-6 w-16" />
             ) : (
-              it.value ?? <span className="text-slate-400" aria-label="unavailable">—</span>
+              it.value ?? <span className="text-slate-400" aria-label="unavailable">-</span>
             )}
           </div>
           <div className="mt-1 text-[12px] font-medium text-slate-300">{it.label}</div>
@@ -108,7 +108,7 @@ export default function LiveStats() {
         />
         <span className="text-[11px] text-slate-300">
           {online === false
-            ? "Intelligence layer offline — start it with `npm run api`"
+            ? "Intelligence layer offline - start it with `npm run api`"
             : online
               ? "Live from Somnia testnet, refreshed every 15s"
               : "Connecting to the intelligence layer…"}

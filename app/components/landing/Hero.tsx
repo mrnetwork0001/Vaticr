@@ -14,7 +14,7 @@ export default function Hero() {
           <p className="hero-in mt-5 max-w-xl text-pretty text-[16px] leading-relaxed text-gray-400">
             A DreamDEX event contract asks one question: does this window close at
             or above the price it opened at? That makes the fair value of its YES
-            token a real probability — so Vaticr derives it from the price process,
+            token a real probability - so Vaticr derives it from the price process,
             tilts it with live news, and lets you trade the difference.
           </p>
 

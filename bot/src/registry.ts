@@ -3,7 +3,7 @@
  *
  * Opt-in: set `VATICR_REGISTRY` to the deployed address. When it is unset the
  * bot still records forecasts off-chain through the Python API, which is enough
- * to score itself — the registry is what makes that record checkable by someone
+ * to score itself - the registry is what makes that record checkable by someone
  * who does not trust the agent.
  *
  * One commitment per market, written while the window is still open. The
@@ -13,7 +13,7 @@
  * SHARING THE KEY WITH THE TRADER
  *
  * The registry is not on the Bot Kit's module ABIs, so it cannot go through
- * `exchange.trader` — that tier only speaks pool/module/settlement calls. It
+ * `exchange.trader` - that tier only speaks pool/module/settlement calls. It
  * therefore signs with its own viem wallet client, on the SAME private key the
  * SDK trader is sending orders from in the same loop, and two senders on one
  * key race each other's nonce. The Bot Kit says so in as many words
@@ -26,13 +26,13 @@
  *   1. ONE nonce source. The SDK's writer derives its account with viem's
  *      shared `nonceManager` singleton (markets-sdk `writer.ts` ->
  *      `resolveSigner(config, "createTrader", { nonceManager })`), which
- *      fetches the chain nonce once and then increments in memory — so during
+ *      fetches the chain nonce once and then increments in memory - so during
  *      a burst its counter is deliberately AHEAD of what the node reports as
  *      pending. An independent `privateKeyToAccount(pk)` has no nonce manager,
  *      so viem falls back to `eth_getTransactionCount(pending)` and happily
  *      reuses a nonce the SDK has already spent. Passing the same singleton in
  *      makes both signers consume from one counter keyed on (address, chainId)
- *      — viem dedupes to one module instance, so it really is the same object.
+ *      - viem dedupes to one module instance, so it really is the same object.
  *   2. NEVER IN FLIGHT ALONGSIDE A TRADE. `commit()` waits for the receipt
  *      before it returns, and the runner awaits `commit()` before it places
  *      anything, so the commitment is mined before the first order of that
@@ -99,7 +99,7 @@ function evidenceHash(env: ForecastEnvelope): Hex {
 
 export class ForecastRegistry {
   /**
-   * Markets whose commitment is CONFIRMED on chain — never merely attempted.
+   * Markets whose commitment is CONFIRMED on chain - never merely attempted.
    * A market goes in here only after a receipt says success (or `hasForecast`
    * already says so), because a market recorded on a failed write is a market
    * that never gets retried: the window is minutes long, this loop runs every
@@ -115,18 +115,18 @@ export class ForecastRegistry {
     private readonly account: Address,
   ) {}
 
-  /** Returns null when unconfigured — the caller simply skips on-chain commits. */
+  /** Returns null when unconfigured - the caller simply skips on-chain commits. */
   static create(ctx: EcContext): ForecastRegistry | null {
     const address = (process.env.VATICR_REGISTRY ?? "").trim();
     if (!address) return null;
     const pk = ctx.config.privateKey;
     if (!pk) {
-      warn("VATICR_REGISTRY is set but there is no PRIVATE_KEY — skipping on-chain commits");
+      warn("VATICR_REGISTRY is set but there is no PRIVATE_KEY - skipping on-chain commits");
       return null;
     }
     const chain = makeChain(ctx.config);
     // `nonceManager` is viem's module singleton, and it is the very object the
-    // SDK's trader signs through — see the header. Dropping it here is the
+    // SDK's trader signs through - see the header. Dropping it here is the
     // whole bug: two independent nonce sources on one key.
     const account = privateKeyToAccount(pk, { nonceManager });
     return new ForecastRegistry(
@@ -142,7 +142,7 @@ export class ForecastRegistry {
    *
    * Best-effort in the sense that publishing a track record must never
    * interrupt trading: every failure is logged and swallowed. It is NOT
-   * best-effort about what it claims — a reverted or dropped write leaves the
+   * best-effort about what it claims - a reverted or dropped write leaves the
    * market un-recorded, so the next cycle tries again while the window is open.
    */
   async commit(env: ForecastEnvelope): Promise<boolean> {
@@ -182,19 +182,19 @@ export class ForecastRegistry {
       // A transaction hash is a receipt for nothing. `writeContract` sends with
       // no simulation, so a commit on an already-committed market, a closed
       // window, or a wrong registry address all resolve with a perfectly good
-      // hash and a reverted receipt — the same trap `assertTxOk` exists for on
+      // hash and a reverted receipt - the same trap `assertTxOk` exists for on
       // the Bot Kit's own writes.
       const receipt = await this.publicClient.waitForTransactionReceipt({
         hash,
         timeout: RECEIPT_TIMEOUT_MS,
       });
       if (receipt.status !== "success") {
-        warn(`registry commit REVERTED for ${env.forecast.symbol} (tx ${hash}) — retrying next cycle`);
+        warn(`registry commit REVERTED for ${env.forecast.symbol} (tx ${hash}) - retrying next cycle`);
         return false;
       }
 
       this.committed.add(marketId);
-      log(`     registry: committed ${env.forecast.symbol} on-chain — tx ${hash}`);
+      log(`     registry: committed ${env.forecast.symbol} on-chain - tx ${hash}`);
       return true;
     } catch (err) {
       warn(`registry commit failed (continuing): ${(err as Error).message}`);

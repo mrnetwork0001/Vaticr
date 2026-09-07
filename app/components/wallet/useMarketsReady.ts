@@ -28,7 +28,7 @@ export function loadVaticrMarkets(reload = false): Promise<unknown> {
   cache[CACHE_KEY] ??= getVaticrExchange()
     .loadMarkets(reload)
     .catch((err: unknown) => {
-      // A failed load must not be cached as "done" — the next caller has to be
+      // A failed load must not be cached as "done" - the next caller has to be
       // able to retry, or a single indexer blip disables trading until reload.
       delete cache[CACHE_KEY];
       throw err;
@@ -43,7 +43,7 @@ export interface MarketsReadyState {
   isLoading: boolean;
   /** Why it failed, verbatim. Not swallowed. */
   error: Error | null;
-  /** Force a fresh load — e.g. after a pool is recycled onto a new window. */
+  /** Force a fresh load - e.g. after a pool is recycled onto a new window. */
   reload: () => void;
 }
 

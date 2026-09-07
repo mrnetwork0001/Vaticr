@@ -54,7 +54,7 @@ BEARISH: dict[str, float] = {
     # NOTE: "denies"/"rejected" used to live here *and* in the negator set. A
     # word cannot be both the signal and the operator that inverts the signal:
     # "SEC denies Bitcoin ETF" matched -0.50 here, then the global negation rule
-    # multiplied the running total by -0.45 and returned +0.225 — the single
+    # multiplied the running total by -0.45 and returned +0.225 - the single
     # most bearish headline shape in crypto, read as a buy. Every rejection verb
     # now lives in REJECTORS below and is scored exactly once.
     # Price / structure
@@ -84,7 +84,7 @@ INTENSIFIERS = {"massive": 1.4, "record": 1.35, "sharp": 1.25, "surprise": 1.3,
 # REJECTORS are transitive rejection verbs. They carry their own bearish weight,
 # because "SEC rejects the filing" is a bearish event even when the thing being
 # rejected names no term in the tables. HEDGES are pure function words with no
-# directional content — they can only invert something else.
+# directional content - they can only invert something else.
 REJECTORS: dict[str, float] = {
     "denies": -0.50, "denied": -0.50, "denial": -0.50,
     "rejects": -0.60, "rejected": -0.60, "rejection": -0.60,
@@ -106,12 +106,12 @@ HEDGES: frozenset[str] = frozenset({
 NEGATION_DAMP = 0.45
 # Scope, in tokens. English negation is forward-scoping ("will not cut rates"),
 # so the forward window is wide; the backward window covers only the passive
-# tail ("ETF approval denied", "rate cut delayed") and is deliberately tight —
+# tail ("ETF approval denied", "rate cut delayed") and is deliberately tight -
 # widening it to 3 starts eating "the rally is not over".
 NEG_SPAN_FORWARD = 5
 NEG_SPAN_BACK = 2
 # Negation does not cross a clause boundary.
-_CLAUSE_BREAK = re.compile(r"[;:,—]|--")
+_CLAUSE_BREAK = re.compile(r"[;:,-]|--")
 
 # How market-moving a topic is, independent of direction.
 SALIENCE_TERMS = {
@@ -129,7 +129,7 @@ ASSET_TERMS: dict[str, tuple[str, ...]] = {
 MACRO_TERMS = ("fed", "fomc", "federal reserve", "cpi", "inflation", "rate",
                "powell", "treasury yield", "jobs report", "payrolls", "pce",
                "recession", "tariff", "ecb",
-               # Market-wide crypto terms — these move BTC and ETH together.
+               # Market-wide crypto terms - these move BTC and ETH together.
                "crypto market", "crypto markets", "digital asset", "digital assets",
                "crypto rally", "crypto selloff", "crypto sell-off", "risk assets",
                "total market cap", "liquidations", "stablecoin")
@@ -166,7 +166,7 @@ def _tokens(text: str) -> list[str]:
 
 
 def _token_spans(text: str) -> list[tuple[str, int, int]]:
-    """Tokens with their character offsets — negation needs the positions."""
+    """Tokens with their character offsets - negation needs the positions."""
     return [(m.group(), m.start(), m.end()) for m in _WORD.finditer(text)]
 
 
@@ -311,7 +311,7 @@ def _apply_negation(matched: list[list], spans: list[tuple[str, int, int]],
         if intrinsic is not None and weight > 0:
             # Rejecting a bullish event is a bearish event in its own right, so
             # the verb reads at least as strongly as its own weight. Counted
-            # once, in whichever role reads stronger — never in both.
+            # once, in whichever role reads stronger - never in both.
             flipped = min(flipped, intrinsic)
         matched[target][1] = flipped
         matched[target][0] = f"{tok} {matched[target][0]}"
@@ -319,17 +319,17 @@ def _apply_negation(matched: list[list], spans: list[tuple[str, int, int]],
 
 
 # Phrase tables cannot catch productive constructions like "buys 1,800 Bitcoin"
-# or "adds $370 million of BTC" — the quantity sits between the verb and the
+# or "adds $370 million of BTC" - the quantity sits between the verb and the
 # asset. These patterns cover the categories that literal matching misses.
 PATTERNS: tuple[tuple[re.Pattern[str], float, str], ...] = (
-    # Corporate / institutional accumulation — a dominant bullish category.
+    # Corporate / institutional accumulation - a dominant bullish category.
     (re.compile(r"\b(buy|buys|bought|purchas\w+|acquir\w+|adds?|added|accumulat\w+)\b"
                 r"[^.]{0,40}?\b(bitcoin|btc|ether(?:eum)?|eth)\b"), 0.60, "accumulation"),
     (re.compile(r"\b(bitcoin|btc|ether(?:eum)?|eth)\b[^.]{0,30}?"
                 r"\b(purchase|buying|accumulation|treasury|holdings? (?:rise|grow|increase))\b"),
      0.45, "accumulation"),
     (re.compile(r"\blargest\b[^.]{0,30}\b(purchase|buy|acquisition)\b"), 0.55, "large-buy"),
-    # Distribution — the mirror image.
+    # Distribution - the mirror image.
     (re.compile(r"\b(sell|sells|sold|dump\w*|offload\w*|transfers?|moves?)\b"
                 r"[^.]{0,40}?\b(bitcoin|btc|ether(?:eum)?|eth)\b[^.]{0,30}"
                 r"\b(to|into)\b[^.]{0,20}\b(exchange|coinbase|binance|kraken)\b"),

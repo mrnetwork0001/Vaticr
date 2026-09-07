@@ -1,4 +1,4 @@
-"""Subsystem 2 — the Bayesian probability engine.
+"""Subsystem 2 - the Bayesian probability engine.
 
 A DreamDEX event contract asks one question: *will this window close at or
 above the price it opened at?* That makes the fair value of the YES token a
@@ -6,7 +6,7 @@ genuine probability, and it can be derived rather than guessed.
 
 The engine works in two stages.
 
-**Prior — the price process.** Over a horizon of seconds to an hour, a driftless
+**Prior - the price process.** Over a horizon of seconds to an hour, a driftless
 geometric Brownian motion is a defensible model of BTC/ETH. With S the current
 price, S0 the window's opening price ("the line to beat"), tau the seconds
 remaining and sigma the per-second volatility:
@@ -19,7 +19,7 @@ This alone is a real edge: it is the honest read of where the window sits
 relative to its own open, and it is what an order book full of humans watching
 a candle chart tends to misprice near the extremes.
 
-**Posterior — the headlines.** Each scored headline contributes a
+**Posterior - the headlines.** Each scored headline contributes a
 log-likelihood ratio, and Bayes' rule is additive in log-odds:
 
     logit(posterior) = logit(prior) + sum_i LLR_i
@@ -30,7 +30,7 @@ left (a headline cannot move a contract that expires in four seconds). The
 total is hard-capped so a burst of correlated stories cannot run the posterior
 into a corner.
 
-Fresh, genuinely market-moving headlines are rare — the scout typically holds
+Fresh, genuinely market-moving headlines are rare - the scout typically holds
 only a couple at a time. That is by design: the prior carries most of the
 weight, and the news layer is a tilt on top of it, not a replacement for it.
 """
@@ -102,7 +102,7 @@ def realized_vol_per_sec(
     """Per-second volatility from a tick series, or None if too thin.
 
     The series is resampled onto a `sample_step_sec` grid before differencing,
-    and this is not a detail — it is the difference between a usable number and
+    and this is not a detail - it is the difference between a usable number and
     a badly wrong one.
 
     The oracle publishes the settlement reference as an EMA (`mark`) at
@@ -118,7 +118,7 @@ def realized_vol_per_sec(
     against a ground truth of ~0.33 annualised implied by the actual realised
     300-second moves. At one second the estimate is roughly four times too low,
     which drives the prior to 0.0000 on windows that are genuinely close to a
-    coin flip — the exact windows worth trading. By 30 seconds the
+    coin flip - the exact windows worth trading. By 30 seconds the
     autocorrelation has washed out and both series agree.
     """
     grid = resample(points, max(1, sample_step_sec))
@@ -285,7 +285,7 @@ def decide(
     """Compare the posterior to the live YES book and pick an action.
 
     `best_bid` / `best_ask` are YES probabilities. Taking is only worthwhile
-    when the posterior clears the *touch* we would actually pay, not the mid —
+    when the posterior clears the *touch* we would actually pay, not the mid -
     paying the spread is the most common way a "positive edge" signal loses
     money.
     """
@@ -300,7 +300,7 @@ def decide(
         # An empty book is the cold-start case: mint-a-pair lets us quote both
         # sides with no inventory and no counterparty.
         return TradeIntent(
-            action="quote", edge=0.0, reason="empty book — seed both sides",
+            action="quote", edge=0.0, reason="empty book - seed both sides",
             target_probability=p,
         )
 
@@ -331,6 +331,6 @@ def decide(
     return TradeIntent(
         action="quote",
         edge=round(edge, 5),
-        reason=f"no takeable edge (mid {mid:.3f}) — quote around posterior",
+        reason=f"no takeable edge (mid {mid:.3f}) - quote around posterior",
         target_probability=p,
     )

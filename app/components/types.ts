@@ -95,7 +95,7 @@ export interface Calibration {
   scored: number;
   brier_score: number | null;
   baseline_brier: number;
-  // 1 - brier/baseline. Positive means edge over a coin flip — at large n.
+  // 1 - brier/baseline. Positive means edge over a coin flip - at large n.
   skill: number | null;
   accuracy: number | null;
   buckets: CalibrationBucket[];

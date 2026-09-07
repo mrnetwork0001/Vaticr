@@ -1,11 +1,11 @@
 """Query-construction and row-decoding tests for the GraphQL readers.
 
 No network. `_query` is intercepted, so what is asserted is the exact document
-and variable map that would have gone over the wire — which is where the bugs
+and variable map that would have gone over the wire - which is where the bugs
 actually live. Hasura is a strict GraphQL validator: a document that declares
 `$venue` and never references it is rejected outright, and the indexer returns
 that rejection as a 502 rather than a GraphQL error body. That is what took the
-live reader down whenever it ran unscoped — the common case, since the venue is
+live reader down whenever it ran unscoped - the common case, since the venue is
 optional on every one of these calls.
 
 Runs standalone (`python -m tests.test_somnia`) or under pytest.
@@ -124,7 +124,7 @@ def test_a_supplied_venue_is_both_declared_and_referenced() -> None:
 
 
 def test_both_price_bounds_go_in_one_timestamp_comparator() -> None:
-    """Repeating `blockTimestamp` twice in the same object is not valid GraphQL —
+    """Repeating `blockTimestamp` twice in the same object is not valid GraphQL -
     the second key silently wins and the lower bound is lost."""
     _, query, variables = build(
         lambda r: r.price_series(None, "eth", since=100, until=200)

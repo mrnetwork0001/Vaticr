@@ -6,11 +6,11 @@
  * Order matters, and it is the order the libraries require rather than a
  * preference:
  *
- *   WagmiProvider          — owns the wallet connection and the viem clients.
- *     QueryClientProvider  — wagmi v2 stores every connector/read result here,
+ *   WagmiProvider          - owns the wallet connection and the viem clients.
+ *     QueryClientProvider  - wagmi v2 stores every connector/read result here,
  *                            so it must be INSIDE Wagmi's provider tree.
  *       SomniaMarketsProvider
- *                          — hands the SDK's live-tail engine to the
+ *                          - hands the SDK's live-tail engine to the
  *                            `useLive*` / `usePortfolio` hooks.
  *
  * The page was read-only until now, so this wraps `app/layout.tsx` rather than

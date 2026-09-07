@@ -1,7 +1,7 @@
 /**
  * Client for the Vaticr intelligence layer (`agents/server.py`).
  *
- * The bot never computes a probability itself — it asks. Keeping the model on
+ * The bot never computes a probability itself - it asks. Keeping the model on
  * one side of a documented HTTP boundary means the forecasting logic is
  * testable in isolation and the trading loop stays about execution.
  */

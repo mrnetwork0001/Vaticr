@@ -6,12 +6,12 @@
  * The SDK documents exactly one shape for this, on `SomniaMarkets.setSigner`:
  *
  *   "Browser apps construct the exchange at boot for public reads, then call
- *    this when the user's wallet connects — and again with `{}` on disconnect,
+ *    this when the user's wallet connects - and again with `{}` on disconnect,
  *    which returns the exchange to unauthenticated reads."
  *
  * So there is ONE exchange for the tab's lifetime (see `exchange.ts`) and this
  * hook only ever rebinds its signer. It never constructs a second one, because
- * a second one would mean a second WebSocket and a second live-tail store — and
+ * a second one would mean a second WebSocket and a second live-tail store - and
  * a signer bound to whichever of the two the caller happened to hold.
  *
  * The case that is easy to get wrong is not connect or disconnect but the
@@ -33,7 +33,7 @@ import { getVaticrExchange } from "./exchange";
 export interface VaticrExchange {
   /** The shared exchange. Reads always work; writes need `canTrade`. */
   readonly exchange: SomniaMarkets;
-  /** The SDK's native engine — bigint-exact reads. `exchange.client`. */
+  /** The SDK's native engine - bigint-exact reads. `exchange.client`. */
   readonly client: SomniaMarketsClient;
   /** The connected account, or `undefined`. */
   readonly address: Address | undefined;
@@ -62,7 +62,7 @@ export function useVaticrExchange(): VaticrExchange {
   const exchange = getVaticrExchange();
   // `useAccount().chainId` is the chain the CONNECTION reports. `useChainId()`
   // is wagmi's configured chain, which on a single-chain config answers 50312
-  // no matter what network the wallet is actually on — it cannot detect a
+  // no matter what network the wallet is actually on - it cannot detect a
   // wrong network, which is the one thing this needs to detect.
   const { address, isConnected, chainId } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -79,7 +79,7 @@ export function useVaticrExchange(): VaticrExchange {
 
     // Bind only when every source agrees: wagmi says connected, the chain is
     // ours, and the wallet client's own account is the account wagmi reports.
-    // A mismatch means we are mid-switch and the client is stale — signing with
+    // A mismatch means we are mid-switch and the client is stale - signing with
     // it would sign as an address the UI is not showing.
     const ready =
       isConnected &&
@@ -99,7 +99,7 @@ export function useVaticrExchange(): VaticrExchange {
 
     // Disconnected, wrong chain, or mid-switch: hand the exchange back to
     // unauthenticated reads. Note this runs in the effect BODY, not in a
-    // cleanup — a cleanup would clear the signer whenever any one of several
+    // cleanup - a cleanup would clear the signer whenever any one of several
     // components using this hook unmounted, even though the wallet is still
     // connected for the rest of them.
     exchange.setSigner({});

@@ -4,7 +4,7 @@
  *
  * The strategy is built around **mint-a-pair**, the cold-start mechanic of the
  * DreamDEX binary book. Four crossing paths exist; the interesting one is
- * `Buy YES x Buy NO`, where two opposite-side *buyers* need no seller at all —
+ * `Buy YES x Buy NO`, where two opposite-side *buyers* need no seller at all -
  * the pool mints a fresh YES/NO pair and hands one leg to each.
  *
  * Two consequences drive everything below:
@@ -14,7 +14,7 @@
  *    A conventional maker must hold what it sells; this one never sells.
  * 2. Because Vaticr only ever buys, its inventory is complete sets plus an
  *    imbalance. A complete set is worth exactly 1 collateral at settlement
- *    whatever the outcome, so the *only* risk carried is the net imbalance —
+ *    whatever the outcome, so the *only* risk carried is the net imbalance -
  *    which is what `maxNetInventory` caps.
  */
 
@@ -44,7 +44,7 @@ export interface BookTop {
 
 /**
  * One tick, in probability. `MM_TICK` is 1000 raw units on the 6-decimal
- * testnet venue and 1e15 on the 18-decimal mainnet one — both 0.001 — but the
+ * testnet venue and 1e15 on the 18-decimal mainnet one - both 0.001 - but the
  * runner passes the live grid rather than trusting that to stay true.
  */
 export const DEFAULT_TICK_PROB = 0.001;
@@ -131,16 +131,16 @@ export function decide(
   //     p - bestAsk >  e      (YES)            bestBid - p >  e      (NO)
   //
   // With the shipped defaults d = VATICR_HALF_SPREAD = 0.03 and
-  // e = VATICR_EDGE_THRESHOLD = 0.05 that leaves d <= |p - touch| <= e — a band
-  // 0.02 wide — where the bot is too timid to take and too aggressive to rest:
+  // e = VATICR_EDGE_THRESHOLD = 0.05 that leaves d <= |p - touch| <= e - a band
+  // 0.02 wide - where the bot is too timid to take and too aggressive to rest:
   // the post-only reverts with PostOnlyWouldCross every single cycle, and the
   // bot posts nothing at exactly the prices its own model likes most. On a book
   // tighter than 0.04 the mid and the touch coincide, which is why it shows up
   // as "posterior 0.04-0.05 from the mid".
   //
   // Clamping inside the touch is the fix, not forcing d > e. Forcing d > e does
-  // close the band, but only by quoting 0.06+ wide — wider than the threshold
-  // at which the bot would rather cross — which gives up the fills the maker
+  // close the band, but only by quoting 0.06+ wide - wider than the threshold
+  // at which the bot would rather cross - which gives up the fills the maker
   // exists for. One tick inside the touch is the most aggressive price that
   // still rests, and it is still comfortably inside fair value:
   //
@@ -169,11 +169,11 @@ export function decide(
     edge: mid === undefined ? 0 : round(p - mid),
     reason:
       mid === undefined
-        ? "empty book — seeding both sides via mint-a-pair"
+        ? "empty book - seeding both sides via mint-a-pair"
         : clamped
-          ? `no takeable edge (mid ${mid.toFixed(3)}) — quote clamped one tick inside the touch ` +
+          ? `no takeable edge (mid ${mid.toFixed(3)}) - quote clamped one tick inside the touch ` +
             `to rest at ${p.toFixed(3)} +/- ${cfg.halfSpread}`
-          : `no takeable edge (mid ${mid.toFixed(3)}) — quoting around ${p.toFixed(3)}`,
+          : `no takeable edge (mid ${mid.toFixed(3)}) - quoting around ${p.toFixed(3)}`,
   };
   // Past the cap, quote only the leg that brings inventory back toward flat.
   if (!longCapped) decision.yesBid = yesBid;
@@ -206,10 +206,10 @@ export function skipReason(
   if (secondsLeft < minLeft) {
     return `only ${Math.round(secondsLeft)}s left (need ${Math.round(minLeft)}s)`;
   }
-  // A posterior pinned at a bound carries no tradable information — it means
+  // A posterior pinned at a bound carries no tradable information - it means
   // the window is already decided, and the book will agree.
   if (posterior <= 0.02 || posterior >= 0.98) {
-    return `posterior ${posterior.toFixed(3)} is pinned — window already decided`;
+    return `posterior ${posterior.toFixed(3)} is pinned - window already decided`;
   }
   return null;
 }

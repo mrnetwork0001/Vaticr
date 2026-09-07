@@ -24,7 +24,7 @@ async function main() {
 
   if (balance === 0n) {
     throw new Error(
-      `${deployer.address} holds no native token on ${network.name} — ` +
+      `${deployer.address} holds no native token on ${network.name} - ` +
         `fund it from the Somnia faucet before deploying.`,
     );
   }

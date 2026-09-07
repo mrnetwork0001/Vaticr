@@ -10,8 +10,8 @@ import type { Config } from "tailwindcss";
  *   model   what Vaticr's posterior says a window is worth
  *   market  what the order book is actually asking
  *
- * Everywhere those two appear together — the probability bar, the trade ticket,
- * the row badges — they keep these colours. `up` and `down` stay semantic
+ * Everywhere those two appear together - the probability bar, the trade ticket,
+ * the row badges - they keep these colours. `up` and `down` stay semantic
  * (a window closing above or below its open) and are never used for anything else.
  */
 const config: Config = {

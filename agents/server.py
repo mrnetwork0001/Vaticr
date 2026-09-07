@@ -1,4 +1,4 @@
-"""FastAPI surface — the seam between the Python brain and the TypeScript bot.
+"""FastAPI surface - the seam between the Python brain and the TypeScript bot.
 
 The bot (`bot/src/runner.ts`) owns the wallet, the Bot Kit and every write. It
 asks this service one question per cycle: *what is the fair probability of each
@@ -36,7 +36,7 @@ RESOLVER = Resolver(SETTINGS)
 
 # Volatility is expensive to fetch and slow to change; one estimate per asset
 # per minute is plenty and keeps the price feed from being hammered. The level
-# is deliberately NOT on this clock — see `_series`.
+# is deliberately NOT on this clock - see `_series`.
 _VOL_TTL_SEC = 60
 _vol_cache: dict[str, tuple[int, list[PricePoint]]] = {}
 # Last known good level per asset. A fallback for an empty feed response only;
@@ -81,7 +81,7 @@ async def _series(
 
     * **Volatility** is estimated from `spot`, the raw multi-source median.
     * **The level** (and the window's opening price) is read from `mark`, the
-      EMA — because that is the series settlement actually compares.
+      EMA - because that is the series settlement actually compares.
 
     Estimating volatility from the EMA understates it, and understating
     volatility makes the prior *overconfident*, which is the direction that
@@ -94,7 +94,7 @@ async def _series(
     is the entire input to the prior's distance-from-strike term: on a 60s
     window a 60s-old level *is* the opening price, which prices every contract
     at 0.5 no matter where the asset has since moved. So the level is re-read
-    every call — one cheap query — and only falls back to the cached value when
+    every call - one cheap query - and only falls back to the cached value when
     the feed returns nothing.
     """
     now = int(time.time())
@@ -119,7 +119,7 @@ async def _series(
 async def _open_reference(
     client: httpx.AsyncClient, market_id: str, asset: str, trading_start: int
 ) -> float | None:
-    """A window's opening price — the line to beat.
+    """A window's opening price - the line to beat.
 
     The indexer publishes `strike: "0"` on these rows, so the line has to be
     recovered from the oracle feed at the window's own `tradingStart`. It never
@@ -196,7 +196,7 @@ async def _live_forecasts(
     A plain coroutine taking ordinary values, NOT a route. FastAPI resolves
     `Query(...)` defaults only when it dispatches a request, so one route
     calling another as a Python function hands it `Query` objects instead of
-    values — `asset.upper()` then raises AttributeError, and any falsy-default
+    values - `asset.upper()` then raises AttributeError, and any falsy-default
     check silently passes because a `Query` object is truthy. Both `/forecasts`
     and `/intent` go through here so neither ever calls the other.
     """
@@ -317,7 +317,7 @@ async def audit(
         # resolution running out, not the chain being wrong.
         "inconclusive": sum(1 for r in rows if r["verdict"] == "inconclusive"),
         "total": len(rows),
-        "reference": "mark (EMA) — empirically the settlement series; see docs/SDK_FEEDBACK.md",
+        "reference": "mark (EMA) - empirically the settlement series; see docs/SDK_FEEDBACK.md",
         "settlements": rows,
     }
 

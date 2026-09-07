@@ -1,5 +1,5 @@
 /**
- * Settlement backstop — the write half of the resolution agent.
+ * Settlement backstop - the write half of the resolution agent.
  *
  *   npm run backstop            # report only
  *   DRY_RUN=false npm run backstop
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
   }
 
   if (stuck.length === 0) {
-    log("no stuck markets — every expired window settled inside its grace period");
+    log("no stuck markets - every expired window settled inside its grace period");
     await shutdown(ctx);
     process.exit(0);
   }
@@ -72,26 +72,26 @@ async function main(): Promise<void> {
     try {
       if (m.suggested_call === "pokeOracle") {
         if (!m.oracle_question_id) {
-          warn("     no oracleQuestionId on this row — cannot poke");
+          warn("     no oracleQuestionId on this row - cannot poke");
           continue;
         }
-        // Note: pokeOracle takes the ORACLE QUESTION id, not the market id —
+        // Note: pokeOracle takes the ORACLE QUESTION id, not the market id -
         // the module fans out to every market bound to that question.
         const res = await ctx.exchange.trader.pokeOracle({
           oracleQuestionId: BigInt(m.oracle_question_id),
         });
         assertTxOk(res, `pokeOracle(${m.oracle_question_id})`);
-        log(`     poked — tx ${res.hash}`);
+        log(`     poked - tx ${res.hash}`);
       } else {
         const res = await ctx.exchange.trader.voidExpired({
           marketId: m.market_id as `0x${string}`,
         });
         assertTxOk(res, `voidExpired(${m.market_id})`);
-        log(`     voided — tx ${res.hash}; both sides now redeem at 0.5`);
+        log(`     voided - tx ${res.hash}; both sides now redeem at 0.5`);
       }
     } catch (err) {
       // Losing the race to the oracle's own callback is the expected outcome
-      // here, not a failure — the market resolved, which is the point.
+      // here, not a failure - the market resolved, which is the point.
       warn(`     ${m.suggested_call} failed: ${(err as Error).message}`);
     }
   }

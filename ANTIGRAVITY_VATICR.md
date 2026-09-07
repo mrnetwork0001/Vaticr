@@ -1,13 +1,13 @@
-# 🔮 ANTIGRAVITY_VATICR — Project Context Directive
+# 🔮 ANTIGRAVITY_VATICR - Project Context Directive
 
-> **Project:** VATICR — autonomous Bayesian forecasting and market making on
+> **Project:** VATICR - autonomous Bayesian forecasting and market making on
 > DreamDEX Event Contracts (Somnia testnet)  
 > **Event:** Somnia × DreamDEX Event Contracts Hackathon (DoraHacks)  
 > **Deadline:** September 8, 2026 @ 19:00 UTC · **Track:** Open  
 > **Repo:** <https://github.com/mrnetwork0001/Vaticr> · Apache-2.0  
 
 This file exists so an agent dropped into the repo with no context knows where
-to look. It carries no architecture of its own — every claim below would be a
+to look. It carries no architecture of its own - every claim below would be a
 second copy to drift out of date. **Read these instead:**
 
 | Read | For |
@@ -34,6 +34,6 @@ second copy to drift out of date. **Read these instead:**
 
 ## Submission requirements
 
-Tracked in one place — the checklist at the bottom of
+Tracked in one place - the checklist at the bottom of
 [VATICR_PROJECT_SPEC.md](VATICR_PROJECT_SPEC.md), mirrored in `SKILL.md`. Two
 items are still open: the repo is private, and the demo video is not recorded.

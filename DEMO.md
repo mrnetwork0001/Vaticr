@@ -1,4 +1,4 @@
-# Vaticr — demo video runbook
+# Vaticr - demo video runbook
 
 A 2–3 minute walkthrough is a required submission deliverable. This is the shot
 list: exact commands in order, what is on screen, and what to say over it.
@@ -41,22 +41,22 @@ curl -s "http://127.0.0.1:8799/forecasts?limit=6" > /dev/null
 ```
 
 Terminal set-up: **one window, large font (16pt+), dark theme, ~100 columns.**
-Two tabs — `bot` and `agents`. Browser at `http://localhost:3000/dashboard`,
+Two tabs - `bot` and `agents`. Browser at `http://localhost:3000/dashboard`,
 already loaded, with `npm run dev` running in a third tab you never show.
 
-Recording: 1080p minimum, screen only, no webcam needed. Talk over it live — a
+Recording: 1080p minimum, screen only, no webcam needed. Talk over it live - a
 scripted voiceover cut against footage is more work and reads as less honest.
 
 ---
 
-## Shot 1 — the claim (0:00 – 0:20)
+## Shot 1 - the claim (0:00 – 0:20)
 
 **On screen:** the landing page at `http://localhost:3000`.
 
 **Say:**
 > "A DreamDEX Event Contract asks one question: will this window close at or
 > above the price it opened at? So the fair value of a YES token is a
-> probability — and a probability can be derived instead of guessed. Vaticr
+> probability - and a probability can be derived instead of guessed. Vaticr
 > derives it, trades it, and then proves whether it was any good."
 
 Do not narrate the pivot here. It goes in shot 5, where it has evidence behind
@@ -64,7 +64,7 @@ it.
 
 ---
 
-## Shot 2 — one command (0:20 – 0:50)
+## Shot 2 - one command (0:20 – 0:50)
 
 **Run, on camera:**
 
@@ -77,7 +77,7 @@ scout....`, then the first trading cycle.
 
 **Say, while it comes up:**
 > "One command. It starts the Python intelligence layer, waits for the first
-> news scan, then hands over to the bot — which is dry run by default, so it
+> news scan, then hands over to the bot - which is dry run by default, so it
 > logs every order it would send and sends nothing."
 
 **Then let a full cycle print and read one line out loud.** Point the cursor at
@@ -88,13 +88,13 @@ BTC-0-01SEP26-0630/tUSDC book=[0.096/0.118] prior=0.186 post=0.186 news=-0.003(2
    posterior 0.186 clears ask 0.118 by 0.068
 ```
 
-> "Prior from the price process — where this window sits against its own open,
+> "Prior from the price process - where this window sits against its own open,
 > given time left and measured volatility. Posterior after the news evidence.
 > The book is asking 0.118, we think it is worth 0.186, so that clears the
-> touch and it takes. Note *touch*, not mid — paying the spread is how a bot
+> touch and it takes. Note *touch*, not mid - paying the spread is how a bot
 > with real edge still loses money."
 
-If the cycle shows a `quote` instead, take that line — it is the better story:
+If the cycle shows a `quote` instead, take that line - it is the better story:
 
 > "No takeable edge, so it rests a two-sided quote instead: buy YES below fair,
 > buy NO below its fair. On this venue two opposite-side buyers mint a fresh
@@ -103,13 +103,13 @@ If the cycle shows a `quote` instead, take that line — it is the better story:
 
 ---
 
-## Shot 3 — the dashboard (0:50 – 1:20)
+## Shot 3 - the dashboard (0:50 – 1:20)
 
 **On screen:** switch to the browser, `http://localhost:3000/dashboard`.
 
 **Say, scrolling once, slowly:**
 > "Same data, live. Every live window with its prior, its posterior, and the
-> headlines that moved it — each headline scored for direction, how
+> headlines that moved it - each headline scored for direction, how
 > market-moving it is at all, and source credibility. When there is no news the
 > posterior sits on the prior, which is the honest answer: genuinely fresh
 > market-moving crypto headlines are rare, so the price process carries most of
@@ -119,17 +119,17 @@ Hover one headline so its contribution is visible. Do not read the whole list.
 
 ---
 
-## Shot 4 — the measurement nobody documents (1:20 – 1:45)
+## Shot 4 - the measurement nobody documents (1:20 – 1:45)
 
 **On screen:** open `docs/SDK_FEEDBACK.md` in the editor, scroll to §3 and §5.
 
 **Say:**
 > "Two findings that decide whether any of this works. Settlement resolves
-> against `mark` — the EMA — not spot. That is undocumented; we measured it,
+> against `mark` - the EMA - not spot. That is undocumented; we measured it,
 > eight out of eight versus six out of eight, and the two disagreements were
 > exactly the near-the-money windows most worth trading. And because `mark` is
 > an EMA at one-second resolution, differencing it naively reads volatility
-> about four times too low, which drives priors to 0.0000 — maximum confidence
+> about four times too low, which drives priors to 0.0000 - maximum confidence
 > exactly where there is least information. So Vaticr takes the *level* from
 > `mark` and the *volatility* from `spot`, resampled to thirty seconds."
 
@@ -137,7 +137,7 @@ Keep this to twenty-five seconds. Show the table in §5; do not read it.
 
 ---
 
-## Shot 5 — the part nobody else has (1:45 – 2:30)
+## Shot 5 - the part nobody else has (1:45 – 2:30)
 
 **Run, on camera, in the `agents` tab:**
 
@@ -157,7 +157,7 @@ Point at an `inconclusive` row:
 > "This row matters. The oracle settles on its own sampled tick; we recover the
 > reference by timestamp, and on a window that closed five thousandths of a
 > percent from its open those can disagree. Rather than call that a failed
-> settlement, the audit reports it as inconclusive — our resolution ran out, the
+> settlement, the audit reports it as inconclusive - our resolution ran out, the
 > chain is not wrong. Anything above one basis point is a real mismatch and gets
 > reported as one. Over twenty settlements there were zero genuine mismatches."
 
@@ -165,14 +165,14 @@ Then the calibration block:
 
 > "And every forecast is committed *before* its window closes, then Brier-scored
 > once the oracle speaks. A coin flip scores 0.25. That is the only way to know
-> whether a forecasting bot is a forecaster or a random number generator — and
+> whether a forecasting bot is a forecaster or a random number generator - and
 > it is why the commitments also go on-chain, append-only, no owner, no
 > revisions. An agent that could edit its own history would prove nothing by
 > having one."
 
 ---
 
-## Shot 6 — close (2:30 – 2:45)
+## Shot 6 - close (2:30 – 2:45)
 
 **On screen:** back to the terminal, run:
 
@@ -193,7 +193,7 @@ End on the passing output. No outro card, no music.
 
 | | |
 |---|---|
-| **A dead venue.** | Venue ids move — they changed three times in one week. Run `npm run doctor` immediately before recording, not the night before. |
+| **A dead venue.** | Venue ids move - they changed three times in one week. Run `npm run doctor` immediately before recording, not the night before. |
 | **A cold cache.** | The first `/forecasts` call fetches ~40 minutes of ticks per asset and can take seconds. Warm it (step 4 above). |
 | **An empty audit.** | `--limit 8` on a venue with nothing recently settled prints an empty table. Check it before you record; wait for windows to close if needed. |
 | **Port 8787 taken.** | Set `VATICR_API_PORT` **and** `VATICR_API_URL` together, or the bot and the dashboard look at different places. |

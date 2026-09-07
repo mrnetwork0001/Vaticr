@@ -6,13 +6,13 @@
  * This hook exists because of one rule the protocol is unforgiving about: the
  * INDEXER LAGS THE CHAIN BY SECONDS, and a 15-minute window can leave `Trading`
  * inside that lag. Anything that writes must therefore gate on
- * `client.getMarketOnchain`, not on the indexed status the dashboard renders —
+ * `client.getMarketOnchain`, not on the indexed status the dashboard renders -
  * and it must do so IMMEDIATELY BEFORE SIGNING, not at mount. So the hook has
  * two halves:
  *
- *   `onchain` — a snapshot refreshed on a timer, used to render the ticket
+ *   `onchain` - a snapshot refreshed on a timer, used to render the ticket
  *               (what the pool is, what the grid is, when it expires).
- *   `refresh()` — an awaited re-read that THROWS rather than degrades, called
+ *   `refresh()` - an awaited re-read that THROWS rather than degrades, called
  *               as the last thing before a write. Its result is the generation
  *               the write acts on.
  *
@@ -36,7 +36,7 @@ export interface OnchainMarket {
   /** Why the read failed, verbatim. Never swallowed into a false "not trading". */
   error: Error | null;
   /**
-   * Re-read the snapshot now. THROWS on failure — a write must not proceed on
+   * Re-read the snapshot now. THROWS on failure - a write must not proceed on
    * a status it could not confirm.
    */
   refresh: () => Promise<MarketOnchain>;
@@ -90,7 +90,7 @@ export function useOnchainMarket(marketId: string | null | undefined): OnchainMa
           if (live) setGrid(g);
         }
       } catch (err) {
-        // A failed read must NOT read as "not trading" — that would invite the
+        // A failed read must NOT read as "not trading" - that would invite the
         // user to think the window closed when the RPC merely hiccuped.
         if (live) setError(err instanceof Error ? err : new Error(String(err)));
       } finally {

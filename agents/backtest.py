@@ -1,4 +1,4 @@
-"""The historical backtest — evidence for subsystem 2.
+"""The historical backtest - evidence for subsystem 2.
 
 (`docs/ARCHITECTURE.md` §2 is the Bayesian engine; this replays it against the
 past rather than adding anything to it.)
@@ -17,7 +17,7 @@ reconstruct exactly what `agents.server` would have seen at that instant, ask
 
     ./.venv/bin/python -m agents.backtest --limit 300
 
-**What is being tested.** The prior only — the price-process half of the
+**What is being tested.** The prior only - the price-process half of the
 engine. The headline layer is deliberately excluded, and not because it is
 inconvenient: reconstructing the scout's rolling window as it stood at a past
 instant would require a historical news archive we do not have, and
@@ -27,8 +27,8 @@ docstring in `pricing`), so it is the half worth proving.
 
 **How lookahead is prevented.** One chokepoint, `PriceHistory._visible`, turns
 a decision timestamp into an exclusive upper index via `bisect_right`. Every
-decision-time quantity — the opening reference, the level, the volatility
-series — is read through it and can only see ticks with `ts <= decision_ts`.
+decision-time quantity - the opening reference, the level, the volatility
+series - is read through it and can only see ticks with `ts <= decision_ts`.
 Nothing else indexes the tick array. The outcome is never derived from prices
 at all; it is read from the settled indexer row. Each scored case additionally
 carries the largest tick timestamp it consumed, and `Case.__post_init__`
@@ -38,12 +38,12 @@ re-checked at every decision point rather than merely asserted in a comment.
 None of that would catch a leak introduced *inside* an accessor, so
 `verify_no_lookahead` proves it a third way: a sample of cases is recomputed
 against a history physically rebuilt without the future, and every field must
-come out bit-identical. That check is not vacuous — mutating `level()` to peek
+come out bit-identical. That check is not vacuous - mutating `level()` to peek
 60 seconds forward takes it from 120/120 to 0/120. Both audit lines print in
 the report header.
 
 **Honesty rules.** Nothing here is tuned to the result. Markets with thin tick
-coverage are *skipped and counted*, never filled with the fallback volatility —
+coverage are *skipped and counted*, never filled with the fallback volatility -
 substituting the fallback would measure a constant from `config.py` rather than
 the engine. The report prints whatever comes out. A negative skill number would
 be a real finding about the model and is reported as one.
@@ -76,7 +76,7 @@ DEFAULT_FRACTIONS = (0.25, 0.50, 0.75)
 # arbitrary choice: it is exactly what `agents.server._series` fetches live, and
 # the backtest is worthless if it feeds the engine a different diet than
 # production does. This history sits *before* the decision point, and for the
-# early decision points it reaches back before the window even opened — that is
+# early decision points it reaches back before the window even opened - that is
 # past data, not future data, and the fetch span is widened to cover it.
 VOL_LOOKBACK_SEC = 2400
 
@@ -328,9 +328,9 @@ class BacktestReport:
 
         `pricing.build_forecast` never publishes a probability outside
         [prob_floor, prob_ceil]; the raw prior is unclamped and can sit at
-        0.000000, where a single miss costs 13.8 nats. Both numbers are honest —
+        0.000000, where a single miss costs 13.8 nats. Both numbers are honest -
         the raw one measures the model, the clamped one measures what the bot
-        would actually have quoted — so both are printed rather than one being
+        would actually have quoted - so both are printed rather than one being
         chosen to flatter the other.
         """
         if not self.cases:
@@ -345,7 +345,7 @@ class BacktestReport:
     def climatology(self) -> Score | None:
         """Brier of always quoting the sample's own observed up-rate.
 
-        A harder baseline than the coin flip and an in-sample one — it is handed
+        A harder baseline than the coin flip and an in-sample one - it is handed
         the answer's base rate for free, which no live forecaster gets. It is
         here because beating 0.25 on a sample that happened to settle 55% down
         is not by itself evidence of anything.
@@ -379,14 +379,14 @@ class BacktestReport:
     def verdict(self) -> str:
         s = self.overall
         if s.n == 0 or s.skill is None:
-            return "NO RESULT — no window had enough tick coverage to score."
+            return "NO RESULT - no window had enough tick coverage to score."
         if s.skill <= 0.0:
             return (
-                f"NEGATIVE RESULT — skill {s.skill:+.4f}. Over these {s.n} "
+                f"NEGATIVE RESULT - skill {s.skill:+.4f}. Over these {s.n} "
                 f"forecasts the derived prior did not beat a coin flip."
             )
         return (
-            f"skill {s.skill:+.4f} over {s.n} forecasts — the derived prior beat "
+            f"skill {s.skill:+.4f} over {s.n} forecasts - the derived prior beat "
             f"the coin flip on {self.markets_usable} settled windows it never saw."
         )
 
@@ -447,7 +447,7 @@ class Backtester:
 
         The feed returns the newest `PAGE_LIMIT` rows inside the bounds, so each
         page walks the ceiling down to just below the earliest row it saw. One
-        request at a time — a few hundred markets need ~12 pages per asset, and
+        request at a time - a few hundred markets need ~12 pages per asset, and
         that is the entire network cost of the run.
         """
         cached = self._history.get(asset)
@@ -580,8 +580,8 @@ class Backtester:
         The `bisect_right` chokepoint and the per-case assertion both argue that
         no future tick is reachable. This proves it instead: for each sampled
         decision point the asset's series is rebuilt containing *only* ticks at
-        or before that instant — the future does not exist in the object at all
-        — and the case is recomputed. If any accessor were reaching forward, the
+        or before that instant - the future does not exist in the object at all
+        - and the case is recomputed. If any accessor were reaching forward, the
         opening reference, the level, the volatility or the prior would move.
         Every field is compared, not just the prior, because a leak that happens
         to cancel out in one number is still a leak.
@@ -659,8 +659,8 @@ class Backtester:
 def default_venue() -> str | None:
     """VENUE_ID from the environment, falling back to the project's .env file.
 
-    `config.Settings` does not carry the venue — it is a bot-side value that the
-    TypeScript runner and the dashboard read straight from `.env` — but a
+    `config.Settings` does not carry the venue - it is a bot-side value that the
+    TypeScript runner and the dashboard read straight from `.env` - but a
     backtest that ignores it silently mixes every venue on the testnet into one
     sample. Reading it here keeps the default honest without reaching into a
     module this file does not own.
@@ -699,7 +699,7 @@ def render(report: BacktestReport) -> str:
     r = report
     s = r.overall
     out: list[str] = []
-    out.append("\n=== VATICR BACKTEST — derived priors vs settled outcomes ===")
+    out.append("\n=== VATICR BACKTEST - derived priors vs settled outcomes ===")
     out.append(f"  network        {r.network}")
     out.append(f"  venue          {r.venue_id or '(all)'}")
     out.append(
@@ -783,7 +783,7 @@ def render(report: BacktestReport) -> str:
 
     out.append(f"\n=== VERDICT ===\n  {r.verdict}")
     out.append(
-        "  Prior only — the headline layer is excluded because a historical "
+        "  Prior only - the headline layer is excluded because a historical "
         "scout window\n  cannot be reconstructed without leaking the future."
     )
     return "\n".join(out)

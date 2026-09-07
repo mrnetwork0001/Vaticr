@@ -3,7 +3,7 @@
 The lexicon is the floor the whole evidence path stands on: with no API key it
 is the *only* scorer, and every headline that reaches `evidence_for` carries a
 sign it produced. A sign error here does not degrade the forecast, it inverts
-it — the engine will confidently buy the wrong side of a window.
+it - the engine will confidently buy the wrong side of a window.
 
 Runs standalone (`python -m tests.test_lexicon`) or under pytest.
 """
@@ -35,7 +35,7 @@ def test_plain_bullish_and_bearish_headlines_get_the_right_sign() -> None:
     assert sign_of("Fed signals dovish turn, rate cut on the table") > 0.5
     assert sign_of("Bitcoin plunges after exchange hack drains $200M") < -0.5
     assert sign_of("SEC charges major exchange in crypto crackdown") < -0.5
-    # Nothing directional at all is 0.0, not a small random number — a neutral
+    # Nothing directional at all is 0.0, not a small random number - a neutral
     # headline must contribute exactly no log-odds.
     flat, note = score_sentiment("Conference announces speaker lineup for June")
     assert flat == 0.0 and note == "no directional terms"
@@ -82,7 +82,7 @@ def test_negation_dampens_as_well_as_flips() -> None:
     """A denial is weaker evidence than the event itself would have been.
 
     A denied approval is bearish, but it is not as bearish as an approval is
-    bullish — nothing changed, a hoped-for change simply did not happen.
+    bullish - nothing changed, a hoped-for change simply did not happen.
     """
     approved = sign_of("Bitcoin ETF approval")
     denied = sign_of("Bitcoin ETF approval denied")
@@ -164,8 +164,8 @@ def test_credibility_is_anchored_to_the_domain_not_a_suffix() -> None:
     """A typosquat must not inherit a trusted outlet's weight.
 
     `host.endswith(domain)` is true for "notreuters.com" and "fake-reuters.com".
-    Credibility multiplies straight into the evidence weight, so an attacker —
-    or an aggregator with an unlucky domain — gets a 0.95 outlet's pull from a
+    Credibility multiplies straight into the evidence weight, so an attacker -
+    or an aggregator with an unlucky domain - gets a 0.95 outlet's pull from a
     name nobody vetted. Anchoring means host == domain or host ends with
     "." + domain.
     """

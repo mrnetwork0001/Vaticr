@@ -2,7 +2,7 @@
  * The one place the app says which chain, which endpoints and which collateral
  * token Vaticr trades against.
  *
- * Everything here is a *browser* constant — it ships to the client, so nothing
+ * Everything here is a *browser* constant - it ships to the client, so nothing
  * secret belongs in this file. The bot reads the same facts from `.env` through
  * `vendor/ec-core/src/config.ts`; this is the web mirror of that, deliberately
  * narrowed to the single network the site trades on.
@@ -23,11 +23,11 @@ export const SOMNIA_CHAIN_ID = 50312 as const;
  *  `somniaTestnet` does not, and the SDK's live tail requires one). */
 export const somniaTestnet: Chain = somniaChains[SOMNIA_CHAIN_ID];
 
-/** HTTP RPC — what wagmi's public client and `wallet_addEthereumChain` use. */
+/** HTTP RPC - what wagmi's public client and `wallet_addEthereumChain` use. */
 export const SOMNIA_HTTP_RPC =
   process.env.NEXT_PUBLIC_SOMNIA_RPC_URL ?? "https://api.infra.testnet.somnia.network";
 
-/** WebSocket RPC — the SDK's single chain transport (reads, writes, live tail). */
+/** WebSocket RPC - the SDK's single chain transport (reads, writes, live tail). */
 export const SOMNIA_WS_RPC =
   process.env.NEXT_PUBLIC_SOMNIA_WS_URL ?? "wss://api.infra.testnet.somnia.network/ws";
 
@@ -44,7 +44,7 @@ export const SOMNIA_ADDRESSES: SomniaMarketsAddresses = SOMNIA_TESTNET_ADDRESSES
 export const SOMNIA_PRICE_FEED = SOMNIA_TESTNET_PRICE_FEED;
 
 /**
- * The venue's collateral ERC-20 — tUSDC on testnet.
+ * The venue's collateral ERC-20 - tUSDC on testnet.
  *
  * Its decimals are read from the chain at runtime (see `useBalances`); this
  * constant is only the fallback for the first paint. Mainnet USDso is 18, so

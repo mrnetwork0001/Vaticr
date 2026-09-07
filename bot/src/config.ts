@@ -36,13 +36,13 @@ export interface VaticrConfig {
    * An IOC at exactly `bestAsk` no-fills the moment the book moves one tick
    * between the read and the send, and a no-fill IOC still costs gas. One tick
    * on this venue is 0.001 (MM_TICK 1000 at 6 dp), so 0.005 buys five ticks of
-   * movement. Always capped at the posterior — see `strategy.ts`.
+   * movement. Always capped at the posterior - see `strategy.ts`.
    */
   takeBuffer: number;
   /** Stop adding to a market once |net position| exceeds this, in shares. */
   maxNetInventory: number;
   /**
-   * Hard ceiling on collateral this process may have committed at once —
+   * Hard ceiling on collateral this process may have committed at once -
    * escrow on resting orders plus notional that has filled. Nothing else in
    * the bot is a spend limit at all; see `risk.ts`.
    */

@@ -6,15 +6,15 @@
  *
  * This route used to derive it from resting `Order` rows in the Envio indexer.
  * That returned `null` for every market on the live venue while the chain
- * demonstrably had books — measured 2026-09-04: this route reported
+ * demonstrably had books - measured 2026-09-04: this route reported
  * best_bid/best_ask null on all eight live windows at the same moment the
  * on-chain reader saw [0.803/0.828] and [0.813/0.836]. So the dashboard showed
- * "mid —" on every row, on the exact screen whose whole argument is that the
+ * "mid -" on every row, on the exact screen whose whole argument is that the
  * model disagrees with the market.
  *
  * It now reads the same source the trade ticket reads: the chain, through the
  * SDK's `getBinaryOrderBook`. One authoritative book means the row badge's edge
- * and the ticket's edge cannot disagree about the same window — which they
+ * and the ticket's edge cannot disagree about the same window - which they
  * could when one came from the indexer and the other from the chain.
  */
 
@@ -24,7 +24,7 @@ import type { Hex } from "viem";
 // Deliberately NOT @dreamdex-bot-kit/ec-core: the vendored kit imports its own
 // modules with ESM ".js" specifiers that resolve to ".ts" files. tsx handles
 // that, webpack does not, and pulling it in here fails the Next build outright.
-// The app already owns one description of the chain — reuse it.
+// The app already owns one description of the chain - reuse it.
 import {
   SOMNIA_ADDRESSES, SOMNIA_INDEXER_URL, SOMNIA_WS_RPC, somniaTestnet,
 } from "@/app/components/wallet/chain";
@@ -80,7 +80,7 @@ async function topFor(marketId: string): Promise<Top> {
       depth: DEPTH,
       decimals: bound.decimals,
     });
-    // Prices come back RAW (bigint, scaled by the market's own decimals — 6 on
+    // Prices come back RAW (bigint, scaled by the market's own decimals - 6 on
     // testnet tUSDC, 18 on the mainnet USDso venue). Dividing by the wrong power
     // yields a mid of ~7e-13, which renders as a plausible-looking 0.0% rather
     // than an obvious error, so the scale is taken from the market, not assumed.

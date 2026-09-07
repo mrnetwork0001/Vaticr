@@ -116,14 +116,14 @@ def test_vol_estimator_is_immune_to_ema_smoothing() -> None:
     on_raw = realized_vol_per_sec(raw, sample_step_sec=30)
     assert naive is not None and fixed is not None and on_raw is not None
 
-    # Raw series: the estimator is accurate. This is the path production uses —
+    # Raw series: the estimator is accurate. This is the path production uses -
     # volatility comes from `spot`, precisely because it is not smoothed.
     assert abs(annualise(on_raw) - 0.35) / 0.35 < 0.25, annualise(on_raw)
 
     # EMA series: one-second differencing is catastrophically low, and
     # resampling recovers most of the gap but still understates. Since
     # understating volatility makes the prior OVERCONFIDENT, production never
-    # estimates from the EMA — see `agents.server._series`.
+    # estimates from the EMA - see `agents.server._series`.
     assert annualise(naive) < 0.35 * 0.4, annualise(naive)
     assert annualise(fixed) > annualise(naive) * 2.0
     assert annualise(fixed) < annualise(on_raw)
@@ -236,7 +236,7 @@ def _fc(p: float) -> object:
 
 
 def test_decide_requires_clearing_the_touch_not_the_mid() -> None:
-    # Posterior 0.60, mid 0.55, but the ask is 0.62 — lifting it is negative EV.
+    # Posterior 0.60, mid 0.55, but the ask is 0.62 - lifting it is negative EV.
     intent = decide(_fc(0.60), best_bid=0.48, best_ask=0.62, edge_threshold=0.04)
     assert intent.action == "quote", intent
 

@@ -1,11 +1,11 @@
-"""Subsystem 1 — the Headline-to-Signal Factory.
+"""Subsystem 1 - the Headline-to-Signal Factory.
 
 Scans live financial and Web3 news feeds, normalises every item into a
 `Headline`, and scores it for directional evidence on BTC/ETH.
 
 Design note (why this is not a "contract factory"):
 DreamDEX Event Contracts are protocol-created rolling Up/Down windows on BTC
-and ETH price — `BinaryMarketsModule` mints them per window and there is no
+and ETH price - `BinaryMarketsModule` mints them per window and there is no
 permissionless "create a market from this question" entry point. So Vaticr does
 not deploy markets from headlines; it converts headlines into a *tradable view*
 on the windows the protocol is already running. See docs/ARCHITECTURE.md.
@@ -64,7 +64,7 @@ def _first_text(node: ET.Element, names: tuple[str, ...]) -> str:
 # Defaulting to now() is the dangerous choice: evidence decays on a 30 min
 # half-life, so one feed with a format `parsedate_to_datetime` chokes on gets
 # full weight on every scan, forever, and the engine treats week-old copy as a
-# reason to cross the spread. Four half-lives back is the safe default — the
+# reason to cross the spread. Four half-lives back is the safe default - the
 # item still sits inside the 24 h window and is still visible in /headlines,
 # but it enters at 2^-4 = 6% weight and can corroborate without deciding.
 # (Dropping it outright would silently delete a whole feed over a date bug.)
@@ -75,7 +75,7 @@ def _attribution(entry: ET.Element) -> tuple[str, str]:
     """(originating outlet URL, display name) for aggregator feeds that name it.
 
     A search aggregator republishes everything under its own host, so every item
-    it carries — Reuters or a content farm — would enter at the 0.5 default
+    it carries - Reuters or a content farm - would enter at the 0.5 default
     weight because the aggregator itself is not in SOURCE_CREDIBILITY. RSS
     `<source url>` names the real publisher, so credibility can be graded again.
     Absent on ordinary feeds, where the link host is already the publisher.
@@ -109,8 +109,8 @@ def _parse_ts(raw: str) -> int:
             parsed = None
     if parsed is None:
         return now - _UNDATED_AGE_SEC
-    # A future pubDate — a timezone the publisher got backwards, or a CMS clock
-    # that drifted — otherwise never ages: `_prune` keeps it (published_at is
+    # A future pubDate - a timezone the publisher got backwards, or a CMS clock
+    # that drifted - otherwise never ages: `_prune` keeps it (published_at is
     # always >= cutoff) and the decay term reads a negative age, so a single bad
     # row would pin itself at full weight in the window permanently. Clamping to
     # now keeps the item usable and lets it decay like everything else.
@@ -156,7 +156,7 @@ async def _fetch_feed(client: httpx.AsyncClient, url: str) -> list[Headline]:
         resp.raise_for_status()
         entries = _entries(resp.text)
     except (httpx.HTTPError, ET.ParseError) as exc:
-        # A dead feed must never take the scout down — the others still vote.
+        # A dead feed must never take the scout down - the others still vote.
         log.warning("feed failed %s: %s", url, exc)
         return []
 
@@ -283,7 +283,7 @@ class Scout:
             from .llm import classify_batch
 
             await classify_batch(headlines, self.settings)
-        except Exception as exc:  # noqa: BLE001 — never let the LLM break ingestion
+        except Exception as exc:  # noqa: BLE001 - never let the LLM break ingestion
             log.warning("llm enrichment skipped: %s", exc)
 
     async def run_forever(self) -> None:

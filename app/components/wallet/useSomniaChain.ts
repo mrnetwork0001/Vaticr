@@ -6,8 +6,8 @@
  * Almost no wallet ships Somnia in its network list, so the ordinary
  * `wallet_switchEthereumChain` path fails before it can switch: the wallet
  * answers 4902 ("Unrecognized chain ID"). The fallback is
- * `wallet_addEthereumChain`, which adds the network and — in every wallet that
- * implements it — offers to switch in the same prompt.
+ * `wallet_addEthereumChain`, which adds the network and - in every wallet that
+ * implements it - offers to switch in the same prompt.
  *
  * wagmi's injected connector already tries this internally, but not every
  * connector does and the internal attempt is silent about which half failed. So
@@ -88,7 +88,7 @@ export function useSomniaChain(): SomniaChainState {
         params: [SOMNIA_ADD_CHAIN_PARAMS],
       });
 
-      // Adding usually switches too, but not in every wallet — ask again. If it
+      // Adding usually switches too, but not in every wallet - ask again. If it
       // is already current this resolves immediately.
       await switchChainAsync({ chainId: SOMNIA_CHAIN_ID }).catch((err: unknown) => {
         // The add succeeded; a follow-up switch that the user dismissed is not

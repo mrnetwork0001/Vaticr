@@ -16,7 +16,7 @@ import { createConnection } from "node:net";
 import process from "node:process";
 
 // Load .env before reading any of it. Both children get it too: the Python side
-// reads .env itself, and ec-core's loadEnv() walks up to find it — but the
+// reads .env itself, and ec-core's loadEnv() walks up to find it - but the
 // launcher's own port/host decisions happen here, before either starts.
 loadDotEnv();
 

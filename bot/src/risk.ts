@@ -18,7 +18,7 @@
  * `outstanding` is escrow the venue is holding for orders believed to be
  * resting; `settled` is notional that filled and is not coming back. A buy
  * escrows `price x size` in the leg's OWN price (vendor/ec-core `assertFunded`)
- * and a cancelled order refunds it, so escrow has to be released on cancel —
+ * and a cancelled order refunds it, so escrow has to be released on cancel -
  * which is why the runner tells this class when it pulls a market's quotes.
  *
  * Counting gross sends and never releasing was the first thing tried and it is
@@ -29,8 +29,8 @@
  * that always fires is a rail nobody keeps switched on.
  *
  * THE KNOWN LEAK, stated rather than papered over: a resting quote that fills
- * BETWEEN cycles is invisible here — the fill is reported only for what filled
- * at send time — so its escrow is released as if it had been cancelled. That
+ * BETWEEN cycles is invisible here - the fill is reported only for what filled
+ * at send time - so its escrow is released as if it had been cancelled. That
  * understates `settled` by at most one cycle's resting size per market, and
  * the position it leaves behind is the thing `maxNetInventory` bounds. This
  * class is a spend ceiling, not an accounting ledger.
@@ -53,7 +53,7 @@ export class NotionalBudget {
     return notionalOf(price, size);
   }
 
-  /** Filled notional plus escrow still held — the number the cap bounds. */
+  /** Filled notional plus escrow still held - the number the cap bounds. */
   get committed(): number {
     let open = 0;
     for (const v of this.escrow.values()) open += v;
@@ -79,8 +79,8 @@ export class NotionalBudget {
   }
 
   /**
-   * Book the escrow for an order that is about to be sent. Returns false —
-   * having charged nothing — when it would breach the cap, and the caller must
+   * Book the escrow for an order that is about to be sent. Returns false -
+   * having charged nothing - when it would breach the cap, and the caller must
    * then skip the write rather than shrink it: half a two-sided quote is a
    * one-sided quote, which is a different strategy.
    */
@@ -99,7 +99,7 @@ export class NotionalBudget {
     this.take(key, notionalOf(price, size));
   }
 
-  /** Every order on this market has been cancelled — its escrow is back. */
+  /** Every order on this market has been cancelled - its escrow is back. */
   releaseMarket(key: string): void {
     this.escrow.delete(key);
   }

@@ -43,7 +43,7 @@ export interface BookView {
   /** Best YES bid / ask, or null when that side is empty. */
   bestBid: number | null;
   bestAsk: number | null;
-  /** Mid, only when BOTH sides exist — a one-sided book has no mid. */
+  /** Mid, only when BOTH sides exist - a one-sided book has no mid. */
   mid: number | null;
   /** Where the numbers came from. `"none"` means both sources answered empty. */
   source: "live" | "chain" | "none";
@@ -94,7 +94,7 @@ export function useBinaryBook(
     }
     // Drop the previous pool's book BEFORE fetching the new one. Without this
     // the old book stays on screen for the whole round-trip, so a ticket that
-    // has just switched markets — or a pool that recycled onto the next window —
+    // has just switched markets - or a pool that recycled onto the next window -
     // renders one market's prices while pointing at another. A user already
     // filled 0.07/share away from a displayed touch because of a stale book;
     // showing the wrong market's book entirely is the same failure, worse.

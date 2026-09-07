@@ -9,7 +9,7 @@
  * `useVaticrExchange` (which needs the exchange itself for writes).
  *
  * A second instance would be a second WebSocket, a second live-tail store, and
- * — worse — a signer bound to one of them and not the other. So the instance is
+ * - worse - a signer bound to one of them and not the other. So the instance is
  * cached on `globalThis` rather than in a module-local `let`: Next's dev-mode
  * hot reload re-evaluates modules, and a module-local would silently fork.
  */
@@ -31,7 +31,7 @@ type ExchangeCache = { [CACHE_KEY]?: SomniaMarkets };
  * The shared exchange, constructed on first call.
  *
  * Safe to call during server rendering: the constructor only builds config
- * objects — the WebSocket is opened lazily on the first chain read — so no
+ * objects - the WebSocket is opened lazily on the first chain read - so no
  * socket is ever opened on the server.
  *
  * It is deliberately built with NO signer. Reads work immediately for a visitor

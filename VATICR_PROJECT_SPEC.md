@@ -1,4 +1,4 @@
-# 🔮 VATICR — Autonomous Bayesian Forecasting & Market Making on DreamDEX Event Contracts
+# 🔮 VATICR - Autonomous Bayesian Forecasting & Market Making on DreamDEX Event Contracts
 
 > **Somnia × DreamDEX Event Contracts Hackathon Blueprint ($5,000 Prize Pool)**  
 > **Host:** Somnia Network & DreamDEX (`dorahacks.io/hackathon/event-contracts/detail`)  
@@ -11,7 +11,7 @@
 
 ---
 
-> ### ⚠️ Design revision — what changed and why
+> ### ⚠️ Design revision - what changed and why
 >
 > This document originally specified a **headline-to-contract factory**: scan the
 > news, deploy a matching Event Contract, resolve it later from a signed news
@@ -23,7 +23,7 @@
 >    `BinaryMarketsModule`. There is no permissionless market-creation entry
 >    point, and the question text is fixed.
 > 2. **Contracts cannot be resolved from news payloads.** Settlement is
->    oracle-driven and automatic — the question is scheduled on the OracleHub at
+>    oracle-driven and automatic - the question is scheduled on the OracleHub at
 >    creation with its resolution gas reserved, and Somnia reactivity fires the
 >    callback at expiry. `BinaryMarketsModule` is the only trusted settler.
 > 3. **The venue is a CLOB, not an AMM.**
@@ -39,7 +39,7 @@
 
 A DreamDEX Event Contract asks exactly one question: *will this window close at
 or above the price it opened at?* That makes the fair value of a YES token a
-genuine probability — and a probability can be **derived** rather than guessed.
+genuine probability - and a probability can be **derived** rather than guessed.
 Almost nobody derives it. The books on these windows are priced by people
 watching a candle chart, and they misprice hardest near the extremes, where the
 arithmetic is least intuitive.
@@ -88,7 +88,7 @@ evidence.
                   │  prior = Φ((ln(S/S₀) − σ²τ/2)/σ√τ)  │
                   │  logit(post) = logit(prior) + Σ LLR │
                   └─────────────────┬───────────────────┘
-                                    │  HTTP — docs/API.md
+                                    │  HTTP - docs/API.md
                                     ▼
                   ┌─────────────────────────────────────┐
                   │  3. BOT       bot/src/runner.ts     │
@@ -106,7 +106,7 @@ evidence.
 
 **Python is read-only with respect to the chain. TypeScript owns every write.**
 Orders, claims, backstops and registry commitments are all TS, because that is
-where the Bot Kit and `markets-sdk` own signing, nonces and escrow — and two
+where the Bot Kit and `markets-sdk` own signing, nonces and escrow - and two
 senders on one key race each other. The two halves meet at one HTTP boundary,
 specified endpoint by endpoint in [docs/API.md](docs/API.md).
 
@@ -114,9 +114,9 @@ specified endpoint by endpoint in [docs/API.md](docs/API.md).
 
 ## 🌟 4 Key Subsystems
 
-### 1. Scout — headlines into evidence (`agents/scout.py`)
-Polls public RSS/Atom feeds — keyless by default, so a fresh clone produces real
-signal with zero configuration — and scores each item on **direction**,
+### 1. Scout - headlines into evidence (`agents/scout.py`)
+Polls public RSS/Atom feeds - keyless by default, so a fresh clone produces real
+signal with zero configuration - and scores each item on **direction**,
 **salience** and **source credibility**. Two scorers:
 [`agents/lexicon.py`](agents/lexicon.py) is deterministic and offline;
 [`agents/llm.py`](agents/llm.py) optionally uses Claude to score *surprise*
@@ -128,13 +128,13 @@ A driftless-GBM prior on `P(S_T ≥ S₀)` from the window's own opening price, 
 remaining and measured volatility, updated additively in log-odds by the news
 evidence. Two measurement details decide whether any of it works: the *level*
 comes from `mark` (the series settlement actually compares) while *volatility*
-comes from `spot` resampled onto a 30-second grid — differencing the EMA at tick
+comes from `spot` resampled onto a 30-second grid - differencing the EMA at tick
 resolution reads ~4× too low and drives priors to 0.0000. Covered by 17 property
 tests including Monte-Carlo recovery of a known σ.
 
 ### 3. DreamDEX Bot Kit integration (`bot/src/runner.ts`)
 Built on the official Bot Kit, vendored verbatim at
-[`vendor/ec-core`](vendor/ec-core) (MIT, never edited — it is not installable
+[`vendor/ec-core`](vendor/ec-core) (MIT, never edited - it is not installable
 from npm; see SDK_FEEDBACK §1), plus `@somnia-chain/markets-sdk`. Takes only
 when the posterior clears the **touch**, never the mid; otherwise rests a
 `Buy YES @ p−δ` + `Buy NO @ (1−p)−δ` **mint-a-pair** quote, which is a complete
@@ -145,7 +145,7 @@ winnings inside the loop so nothing races its own nonce.
 ### 4. Resolution, audit and backstops (`agents/resolver.py`)
 Three jobs the protocol leaves open to anyone. **Audit:** recompute every
 settlement from the public oracle feed and compare it to the on-chain winner,
-reporting *verified / mismatched / inconclusive* — where "inconclusive" is a
+reporting *verified / mismatched / inconclusive* - where "inconclusive" is a
 disagreement under 1bp, which is finer than an off-chain reconstruction can
 resolve. **Score:** Brier-score every pre-committed forecast against a 0.25
 coin-flip baseline. **Backstop:** find windows the oracle has not answered and
@@ -154,18 +154,18 @@ name the permissionless `pokeOracle` / `voidExpired` call;
 
 ### Supporting: on-chain forecast commitments (`contracts/VaticrForecastRegistry.sol`)
 An append-only log of forecasts published *before* settlement, with no owner, no
-upgrade path, and no revisions. An off-chain file proves nothing — whoever holds
+upgrade path, and no revisions. An off-chain file proves nothing - whoever holds
 it can rewrite it. 7 Solidity tests.
 
 ---
 
 ## 📋 Required Submission Package Checklist
 
-- [x] GitHub repository (`mrnetwork0001/Vaticr`), Apache 2.0 — **currently private; must be made public before submission.**
+- [x] GitHub repository (`mrnetwork0001/Vaticr`), Apache 2.0 - **currently private; must be made public before submission.**
 - [x] Integration with official DreamDEX Bot Kit (`vendor/ec-core` + `markets-sdk`).
-- [x] DreamDEX SDK Feedback Report — [docs/SDK_FEEDBACK.md](docs/SDK_FEEDBACK.md).
-- [x] Deployed smart contracts on Somnia Testnet — `VaticrForecastRegistry` is live at [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A), with a forecast committed on-chain 318s before its window closed and a real order placed. Addresses and transaction hashes in `deployments/`.
-- [ ] 2–3 minute demo video URL — **not yet recorded.** Runbook: [DEMO.md](DEMO.md).
+- [x] DreamDEX SDK Feedback Report - [docs/SDK_FEEDBACK.md](docs/SDK_FEEDBACK.md).
+- [x] Deployed smart contracts on Somnia Testnet - `VaticrForecastRegistry` is live at [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A), with a forecast committed on-chain 318s before its window closed and a real order placed. Addresses and transaction hashes in `deployments/`.
+- [ ] 2–3 minute demo video URL - **not yet recorded.** Runbook: [DEMO.md](DEMO.md).
 
 ---
 

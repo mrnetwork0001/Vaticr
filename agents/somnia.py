@@ -2,13 +2,13 @@
 
 Two GraphQL surfaces, both public and keyless:
 
-* the **markets indexer** — event-contract rows (window geometry, status,
+* the **markets indexer** - event-contract rows (window geometry, status,
   settlement outcome, oracle question id);
-* the **price feed** — the underlying BTC/ETH oracle series at one-second
+* the **price feed** - the underlying BTC/ETH oracle series at one-second
   resolution, which is the same reference the settlement is computed from.
 
 Writes stay in TypeScript (`bot/`), where the official Bot Kit and
-`@somnia-chain/markets-sdk` own signing, nonces and escrow. Python only reads —
+`@somnia-chain/markets-sdk` own signing, nonces and escrow. Python only reads -
 which is all the forecasting and audit layer needs, and keeps one key with one
 sender, as the Bot Kit's claim docs require.
 """
@@ -161,7 +161,7 @@ class SomniaReader:
         where = ['marketType: {_eq: "BINARY"}', "expiry: {_gt: $now}"]
         # Hasura rejects a declared-but-unused variable ("unexpected variables in
         # variableValues: venue"), so the signature is built to match exactly
-        # what the where clause references — same pattern as `price_series`.
+        # what the where clause references - same pattern as `price_series`.
         signature = "$now: numeric!, $limit: Int!"
         variables: dict[str, Any] = {"now": int(_t.time()), "limit": limit}
         if venue_id:
@@ -250,7 +250,7 @@ class SomniaReader:
     # Determined empirically, because the protocol docs say only "a multi-source
     # price reference": over the eight most recently settled BTC/ETH windows on
     # the testnet venue, comparing close-vs-open on `mark` reproduced the
-    # on-chain winner 8/8, while `spot` reproduced it 6/8 — the two
+    # on-chain winner 8/8, while `spot` reproduced it 6/8 - the two
     # disagreements being exactly the windows where spot and mark drifted apart
     # in direction. Pricing a contract off `spot` therefore mis-prices every
     # window that closes near its own opening price, which is precisely the
@@ -266,7 +266,7 @@ class SomniaReader:
         }
         # Hasura rejects a declared-but-unused variable, so the signature is
         # built to match exactly what the where clause references. Both bounds
-        # go in ONE `blockTimestamp` comparator — repeating the key twice in the
+        # go in ONE `blockTimestamp` comparator - repeating the key twice in the
         # same object is not valid GraphQL.
         signature = "$asset: String!, $since: numeric!, $limit: Int!"
         bounds = "_gte: $since"

@@ -1,15 +1,15 @@
 ---
 name: vaticr-dreamdex
-description: Architecture, protocol constraints, and integration rules for Vaticr — the DeAI forecasting and market-making stack on DreamDEX Event Contracts (Somnia), built for the Somnia x DreamDEX Hackathon.
+description: Architecture, protocol constraints, and integration rules for Vaticr - the DeAI forecasting and market-making stack on DreamDEX Event Contracts (Somnia), built for the Somnia x DreamDEX Hackathon.
 ---
 
-# 🔮 Vaticr — DreamDEX Event Contracts Skill
+# 🔮 Vaticr - DreamDEX Event Contracts Skill
 
 Use this when working on **Vaticr**. Read
 [docs/ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) and
 [docs/SDK_FEEDBACK.md](../../../docs/SDK_FEEDBACK.md) before changing anything
 in `agents/` or `bot/`. The HTTP seam between the two halves is specified
-endpoint by endpoint in [docs/API.md](../../../docs/API.md) — change a route
+endpoint by endpoint in [docs/API.md](../../../docs/API.md) - change a route
 there and here in the same commit.
 
 ## Protocol facts that constrain every design decision
@@ -22,7 +22,7 @@ design around wishes here.
    `BinaryMarketsModule`. No permissionless market creation; the question is
    always *"<ASSET> closes at or above its opening price"*; no preset strikes.
 2. **They cannot be resolved by us.** Settlement is oracle-driven and automatic
-   — scheduled on the OracleHub at creation with resolution gas reserved,
+   - scheduled on the OracleHub at creation with resolution gas reserved,
    delivered by Somnia reactivity at expiry. `BinaryMarketsModule` is the only
    trusted settler. The only permissionless calls are `pokeOracle(questionId)`
    and `voidExpired(marketId)`.
@@ -39,7 +39,7 @@ design around wishes here.
 
 - **Python is read-only. TypeScript owns every write.** Orders, claims,
   backstops and registry commitments are all TS, because the Bot Kit and
-  `markets-sdk` own signing and nonces — and two senders on one key race.
+  `markets-sdk` own signing and nonces - and two senders on one key race.
 - **`vendor/ec-core` is vendored verbatim from the official Bot Kit (MIT).**
   Never edit it. Vaticr code lives in `bot/` and imports
   `@dreamdex-bot-kit/ec-core` exactly as an in-repo strategy would.
@@ -75,15 +75,15 @@ Both must pass before claiming anything works.
 
 ## Submission checklist
 
-Mirrors `VATICR_PROJECT_SPEC.md` — keep the two in step; a checklist that
+Mirrors `VATICR_PROJECT_SPEC.md` - keep the two in step; a checklist that
 disagrees with itself is worse than no checklist.
 
 - [x] Repo `mrnetwork0001/Vaticr`, Apache-2.0 (`vendor/ec-core` MIT, attributed)
-      — still **private**; make it public before submitting.
+      - still **private**; make it public before submitting.
 - [x] Official DreamDEX Bot Kit integration (`vendor/ec-core` + `markets-sdk`).
-- [x] SDK feedback report — `docs/SDK_FEEDBACK.md`.
+- [x] SDK feedback report - `docs/SDK_FEEDBACK.md`.
 - [ ] Deployed contract on Somnia testnet. `VaticrForecastRegistry.sol` is
       DEPLOYED at 0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A on Somnia testnet.
       Addresses and tx hashes are in deployments/50312.json and
       deployments/onchain-proof.json. Redeploy with `npm run deploy:registry`.
-- [ ] 2–3 minute demo video — **not recorded**. Runbook: `DEMO.md`.
+- [ ] 2–3 minute demo video - **not recorded**. Runbook: `DEMO.md`.

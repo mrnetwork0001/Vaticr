@@ -2,7 +2,7 @@
 
 The whole auditability claim is "the prediction was written down before the
 outcome existed". A commitment that is dropped by a dedupe, an overwrite or a
-rewrite is indistinguishable from never having forecast at all — so these tests
+rewrite is indistinguishable from never having forecast at all - so these tests
 care less about happy-path reads than about what survives a second writer, a
 torn line and a full-file rewrite.
 
@@ -60,7 +60,7 @@ def test_record_dedupes_by_market_id() -> None:
 
     The server commits on every poll while a window is open. Without the dedupe
     the log would hold dozens of rows for the same market, and calibration would
-    weight that window dozens of times — the loudest market, not the best
+    weight that window dozens of times - the loudest market, not the best
     forecast, would decide the Brier score.
     """
     with temp_store():
@@ -149,7 +149,7 @@ def test_rewrite_keeps_every_other_record_and_leaves_no_temp_file() -> None:
     """Resolving one market rewrites the whole file; the rest must come back.
 
     `_rewrite` writes a sibling temp file and `os.replace`s it in. A bug in the
-    round-trip — a dropped record, a field lost to serialisation — would be
+    round-trip - a dropped record, a field lost to serialisation - would be
     invisible until calibration silently scored fewer windows than were
     committed.
     """

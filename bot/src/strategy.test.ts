@@ -2,7 +2,7 @@
  * Tests for the decision layer.
  *
  * `decide()` and `skipReason()` are pure, and they are the last gate before
- * real money crosses a spread — every other module either reads the chain or
+ * real money crosses a spread - every other module either reads the chain or
  * writes what these two returned. So the cases below are written as claims
  * about *money*, not about return shapes:
  *
@@ -40,7 +40,7 @@ const base: VaticrConfig = {
 
 const cfg = (over: Partial<VaticrConfig> = {}): VaticrConfig => ({ ...base, ...over });
 
-describe("decide() — taking YES", () => {
+describe("decide() - taking YES", () => {
   it("lifts the ask when the posterior clears it by more than edgeThreshold", () => {
     const d = decide(0.6, { bestBid: 0.4, bestAsk: 0.5 }, 0, cfg());
 
@@ -51,7 +51,7 @@ describe("decide() — taking YES", () => {
   });
 
   it("does not take when the edge over the ask is under edgeThreshold", () => {
-    // 0.54 vs a 0.50 ask is 0.04 of edge — real, but it does not pay for the
+    // 0.54 vs a 0.50 ask is 0.04 of edge - real, but it does not pay for the
     // half-spread on the way back out.
     const d = decide(0.54, { bestBid: 0.4, bestAsk: 0.5 }, 0, cfg());
 
@@ -67,7 +67,7 @@ describe("decide() — taking YES", () => {
   });
 });
 
-describe("decide() — taking NO", () => {
+describe("decide() - taking NO", () => {
   it("hits the bid when it clears the posterior by more than edgeThreshold", () => {
     const d = decide(0.5, { bestBid: 0.6, bestAsk: 0.7 }, 0, cfg());
 
@@ -90,13 +90,13 @@ describe("decide() — taking NO", () => {
   });
 });
 
-describe("decide() — the pay-the-spread trap", () => {
+describe("decide() - the pay-the-spread trap", () => {
   // The whole reason edgeThreshold is measured against the touch. On a wide
   // book the mid is a price nobody will trade with you at; an edge over it is
   // an edge over a fiction, and acting on it hands the spread to the maker.
   it("does not take YES on a posterior above the mid but below the ask", () => {
     const book: BookTop = { bestBid: 0.3, bestAsk: 0.7 };
-    const posterior = 0.65; // mid 0.50 — a 0.15 "edge" that costs 0.05 to collect.
+    const posterior = 0.65; // mid 0.50 - a 0.15 "edge" that costs 0.05 to collect.
 
     const d = decide(posterior, book, 0, cfg());
 
@@ -114,9 +114,9 @@ describe("decide() — the pay-the-spread trap", () => {
   });
 });
 
-describe("decide() — mint-a-pair quoting", () => {
+describe("decide() - mint-a-pair quoting", () => {
   it("seeds both sides on an empty book", () => {
-    // Cold start: no bid, no ask, no counterparty maker needed — two opposite
+    // Cold start: no bid, no ask, no counterparty maker needed - two opposite
     // buys mint a fresh pair out of the pool.
     const d = decide(0.6, {}, 0, cfg());
 
@@ -150,7 +150,7 @@ describe("decide() — mint-a-pair quoting", () => {
   });
 });
 
-describe("decide() — inventory caps", () => {
+describe("decide() - inventory caps", () => {
   it("quotes only the NO leg past +maxNetInventory", () => {
     const d = decide(0.5, { bestBid: 0.45, bestAsk: 0.55 }, 26, cfg());
 
@@ -189,7 +189,7 @@ describe("decide() — inventory caps", () => {
   });
 
   it("skips when both legs are capped", () => {
-    // maxNetInventory 0 caps in both directions at once — the degenerate
+    // maxNetInventory 0 caps in both directions at once - the degenerate
     // "hold nothing" configuration, which must produce no orders at all.
     const d = decide(0.6, { bestBid: 0.2, bestAsk: 0.3 }, 0, cfg({ maxNetInventory: 0 }));
 
@@ -199,11 +199,11 @@ describe("decide() — inventory caps", () => {
   });
 });
 
-describe("decide() — a resting quote must not reach through the touch", () => {
+describe("decide() - a resting quote must not reach through the touch", () => {
   // A post-only buy at or above the ask is not a maker order: it is rejected
   // (PostOnlyWouldCross) or filled as a taker, paying the spread the quote
-  // exists to earn. Both legs land on the one YES book — BUY_NO at n is the
-  // same resting order as a YES ask at 1 - n — so the quote the venue sees is
+  // exists to earn. Both legs land on the one YES book - BUY_NO at n is the
+  // same resting order as a YES ask at 1 - n - so the quote the venue sees is
   // bid p - halfSpread / ask p + halfSpread, and it crosses whenever the
   // posterior sits further than halfSpread from a touch. Since the taking
   // branch only fires past edgeThreshold, every posterior in
@@ -212,7 +212,7 @@ describe("decide() — a resting quote must not reach through the touch", () => 
 
   it("rests the YES bid strictly below the ask", () => {
     const book: BookTop = { bestBid: 0.4, bestAsk: 0.5 };
-    const d = decide(0.54, book, 0, shipped); // 0.04 of edge — quotes, does not take.
+    const d = decide(0.54, book, 0, shipped); // 0.04 of edge - quotes, does not take.
 
     expect(d.action).toBe("quote");
     expect(d.yesBid!).toBeLessThan(book.bestAsk!);
@@ -222,7 +222,7 @@ describe("decide() — a resting quote must not reach through the touch", () => 
     // Buying NO at noBid is offering YES at 1 - noBid; that offer has to sit
     // above the standing bid or it lifts it.
     const book: BookTop = { bestBid: 0.6, bestAsk: 0.7 };
-    const d = decide(0.56, book, 0, shipped); // 0.04 of edge — quotes, does not take.
+    const d = decide(0.56, book, 0, shipped); // 0.04 of edge - quotes, does not take.
 
     expect(d.action).toBe("quote");
     expect(1 - d.noBid!).toBeGreaterThan(book.bestBid!);
@@ -249,7 +249,7 @@ describe("decide() — a resting quote must not reach through the touch", () => 
   });
 });
 
-describe("decide() — where an IOC is priced", () => {
+describe("decide() - where an IOC is priced", () => {
   // A taking order priced at exactly the touch no-fills the moment the book
   // moves a tick between read and send, so it is priced through. The cap is
   // what makes that safe: a fill above fair value loses by construction, so

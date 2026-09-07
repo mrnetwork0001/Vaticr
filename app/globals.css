@@ -5,7 +5,7 @@
 :root { color-scheme: dark; }
 html, body { background: #07090f; color: #e5e7eb; }
 
-/* Flat by intention. Cards are a border and a fill, never a glow — the page
+/* Flat by intention. Cards are a border and a fill, never a glow - the page
    should read as instrumentation, not as marketing. */
 .card { @apply rounded-lg border border-ink-700 bg-ink-900; }
 .mono { @apply font-mono tabular-nums; }
@@ -82,7 +82,7 @@ html, body { background: #07090f; color: #e5e7eb; }
    .skip-link with no rule simply renders as plain visible text in the corner,
    which is how it was noticed. */
 
-/* Visible only to screen readers until it is tabbed to — which is the whole
+/* Visible only to screen readers until it is tabbed to - which is the whole
    point of a skip link. It should never be on screen for a mouse user. */
 .skip-link { @apply sr-only; }
 .skip-link:focus {

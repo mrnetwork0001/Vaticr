@@ -6,11 +6,11 @@
  *
  * It has four states and each one says something different:
  *
- *   disconnected  — one button, or a picker when more than one connector exists
- *   connecting    — the button says so and is disabled; no spinner theatre
- *   wrong network — an amber pill plus a one-click switch (which ADDS Somnia to
+ *   disconnected  - one button, or a picker when more than one connector exists
+ *   connecting    - the button says so and is disabled; no spinner theatre
+ *   wrong network - an amber pill plus a one-click switch (which ADDS Somnia to
  *                   the wallet first, because almost no wallet has it)
- *   connected     — truncated address, native STT and tUSDC, and a disconnect
+ *   connected     - truncated address, native STT and tUSDC, and a disconnect
  *
  * Errors are rendered, not swallowed. A user who cancels a wallet prompt sees
  * nothing (that is not a failure); anything else is shown verbatim, because a
@@ -31,7 +31,7 @@ import { isUserRejection, useSomniaChain } from "./useSomniaChain";
  *
  * The one exception is a dismissed wallet prompt: the user meant to do that, so
  * a red banner would be scolding them for it. Everything else is printed as the
- * wallet or the chain reported it — this page signs transactions, and a failure
+ * wallet or the chain reported it - this page signs transactions, and a failure
  * it hid would be a failure the user goes on to retry blind.
  */
 function ErrorNote({ error }: { error: Error | null }) {
@@ -80,7 +80,7 @@ export default function ConnectButton() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
-  // Close the connector picker on an outside click or Escape — a dropdown that
+  // Close the connector picker on an outside click or Escape - a dropdown that
   // only closes by re-clicking the trigger traps a keyboard user.
   useEffect(() => {
     if (!pickerOpen) return;
@@ -197,12 +197,12 @@ export default function ConnectButton() {
           href={`${SOMNIA_EXPLORER}/address/${address}`}
           target="_blank"
           rel="noreferrer"
-          title={`${address}${connector?.name ? ` — ${connector.name}` : ""}`}
+          title={`${address}${connector?.name ? ` - ${connector.name}` : ""}`}
           className="mono min-w-0 flex-1 truncate text-[12px] text-gray-200 transition hover:text-white"
         >
           {address ? truncateAddress(address) : ""}
           <span className="sr-only">
-            {connector?.name ? `, connected with ${connector.name}` : ""} — open in the explorer
+            {connector?.name ? `, connected with ${connector.name}` : ""} - open in the explorer
           </span>
         </a>
         <button

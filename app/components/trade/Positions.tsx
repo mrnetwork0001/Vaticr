@@ -40,7 +40,7 @@ interface Holding {
   decimals: number;
   yes: bigint;
   no: bigint;
-  /** True once the window voided — BOTH sides redeem at 0.5. Not a loss. */
+  /** True once the window voided - BOTH sides redeem at 0.5. Not a loss. */
   voided: boolean;
   /** 0 = YES, 1 = NO. Null until the window resolves, and always null on a void. */
   winningOutcome: number | null;
@@ -50,7 +50,7 @@ interface Holding {
  * What this panel knows, hoisted for the summary strip at the top of the page.
  *
  * The strip is the thing a user sees before they scroll, so the numbers on it
- * have to be the SAME numbers this panel renders — not a second, independently
+ * have to be the SAME numbers this panel renders - not a second, independently
  * derived set that can disagree with the table underneath it.
  */
 export interface PositionsSummary {
@@ -60,7 +60,7 @@ export interface PositionsSummary {
   netExposure: number;
   /** Orders still resting on a book, escrow committed. */
   resting: number;
-  /** Settled windows this wallet won or had voided — i.e. money to sweep. */
+  /** Settled windows this wallet won or had voided - i.e. money to sweep. */
   settledWinners: number;
   loading: boolean;
 }
@@ -80,8 +80,8 @@ interface SettledRow {
  * How a settled window actually turned out for this wallet.
  *
  * A void is the case worth spelling out: it has no winner, both legs redeem at
- * 0.5, and it is a REFUND. Rendering it beside a loss — or worse, in the same
- * colour — would tell someone something untrue about their own money.
+ * 0.5, and it is a REFUND. Rendering it beside a loss - or worse, in the same
+ * colour - would tell someone something untrue about their own money.
  */
 function verdictOf(h: Holding): SettledRow {
   const yes = rawToNumber(h.yes, h.decimals);
@@ -106,7 +106,7 @@ function verdictOf(h: Holding): SettledRow {
 const VERDICT_LABEL: Record<Verdict, { text: string; tone: "up" | "down" | "warn" | "neutral" }> = {
   won: { text: "won", tone: "up" },
   lost: { text: "lost", tone: "down" },
-  void: { text: "voided — refund", tone: "warn" },
+  void: { text: "voided - refund", tone: "warn" },
   pending: { text: "awaiting outcome", tone: "neutral" },
 };
 
@@ -147,7 +147,7 @@ export default function Positions({
   onChanged?: () => void;
   /**
    * Reports the headline figures upward so the summary strip can show them
-   * above the fold. Must be a stable identity — pass a `useState` setter or a
+   * above the fold. Must be a stable identity - pass a `useState` setter or a
    * `useCallback`, never an inline arrow.
    */
   onSummary?: (summary: PositionsSummary) => void;
@@ -163,7 +163,7 @@ export default function Positions({
 
   // `refreshToken` is a signal, not data: the dashboard bumps it after a trade
   // lands so this panel re-reads instead of showing a portfolio from before the
-  // order. `portfolio.refetch` is deliberately not in the dependency list — the
+  // order. `portfolio.refetch` is deliberately not in the dependency list - the
   // hook returns a new function identity on every render, so including it would
   // make this an unbounded refetch loop.
   const refetchPortfolio = portfolio.refetch;
@@ -251,7 +251,7 @@ export default function Positions({
         priceYes: rawToNumber(BigInt(o.price), d),
         remaining: rawToNumber(BigInt(o.quantityRemaining), d),
         filled: rawToNumber(BigInt(o.filledQuantity), d),
-        asset: meta?.asset ?? "—",
+        asset: meta?.asset ?? "-",
         expiresAtSec: Number(BigInt(o.expireTimestampNs) / 1_000_000_000n),
         source: "live",
       });
@@ -266,7 +266,7 @@ export default function Positions({
     setCancelled(null);
     try {
       // Without an explicit ceiling this inherits the SDK's 10,000,000 default,
-      // and a wallet prices that worst case and can refuse to sign outright —
+      // and a wallet prices that worst case and can refuse to sign outright -
       // the same failure that made the trade ticket unusable. A cancel is a
       // small, bounded write.
       const res = await exchange.trader.cancelOrder({
@@ -278,7 +278,7 @@ export default function Positions({
       // unchecked cancel would report success on an order that is still resting.
       if (res.receipt?.status === "reverted") {
         throw new Error(
-          `The cancel was mined but REVERTED (tx ${res.hash}) — the order may have filled or ` +
+          `The cancel was mined but REVERTED (tx ${res.hash}) - the order may have filled or ` +
             "been cancelled already. Refresh to see its current state.",
         );
       }
@@ -309,7 +309,7 @@ export default function Positions({
   const owed = winners.reduce((acc, r) => acc + r.redeemable, 0);
 
   // Hoist the headline figures so the strip at the top of the page can show
-  // them. The dependency list is deliberately all primitives — handing the
+  // them. The dependency list is deliberately all primitives - handing the
   // arrays up directly would fire this on every portfolio poll.
   const openCount = open.length;
   const restingCount = resting.length;
@@ -403,7 +403,7 @@ export default function Positions({
           </table>
           <p className="border-t border-white/5 px-4 py-2 text-[11px] leading-relaxed text-slate-400">
             <span className="mono">{totals.guaranteed.toFixed(2)}</span> shares are matched YES+NO
-            pairs — a complete set is worth exactly 1 {COLLATERAL_SYMBOL} whichever way the window
+            pairs - a complete set is worth exactly 1 {COLLATERAL_SYMBOL} whichever way the window
             closes, so it carries no directional risk.{" "}
             <span className="mono">{totals.atRisk.toFixed(2)}</span> shares are the actual bet: that
             part pays 1 each if the window closes your way and 0 if it does not.
@@ -478,7 +478,7 @@ export default function Positions({
                       >
                         {r.redeemable > 0
                           ? `${r.redeemable.toFixed(2)} ${COLLATERAL_SYMBOL}`
-                          : "—"}
+                          : "-"}
                       </td>
                       <td className="px-3 py-2">
                         {r.redeemable > 0 && (
@@ -488,7 +488,7 @@ export default function Positions({
                           >
                             Claim
                             <span className="sr-only">
-                              {" "}the {r.holding.asset} payout — jumps to the claim panel
+                              {" "}the {r.holding.asset} payout - jumps to the claim panel
                             </span>
                             <span aria-hidden className="ml-1">↓</span>
                           </a>
@@ -508,14 +508,14 @@ export default function Positions({
                 </span>{" "}
                 across {winners.length} settled window{winners.length === 1 ? "" : "s"} is yours
                 and is still sitting in the settlement contract. Winnings are{" "}
-                <strong className="text-slate-100">claimed, not received</strong> —{" "}
+                <strong className="text-slate-100">claimed, not received</strong> -{" "}
                 <a href="#claims" className="text-up hover:underline">sweep them below</a>. A
                 voided window is a refund at 0.5 a leg, not a loss.
               </>
             ) : settledRows.some((r) => r.verdict === "pending") ? (
               <>
                 These windows have closed but the indexer has not carried the outcome across
-                yet. Nothing is lost and nothing is claimable until it does &mdash; the row
+                yet. Nothing is lost and nothing is claimable until it does - the row
                 fills in on the next poll.
               </>
             ) : (
@@ -531,7 +531,7 @@ export default function Positions({
               user must never be left to reconcile two figures for the same money. */}
           <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
             These figures are gross. The <a href="#claims" className="text-accent hover:underline">Claim
-            panel</a> is authoritative &mdash; it reads the venue&rsquo;s own{" "}
+            panel</a> is authoritative - it reads the venue&rsquo;s own{" "}
             <span className="mono">getClaimable</span>, net of any settlement fee. dreamDEX
             currently sets that fee to zero, so the two agree today.
           </p>
@@ -568,7 +568,7 @@ export default function Positions({
                     {row.filled > 0 && (
                       <span className="mono text-[11px] text-slate-500">{row.filled.toFixed(2)} filled</span>
                     )}
-                    {expired && <Pill tone="warn">expired — cancel to free the escrow</Pill>}
+                    {expired && <Pill tone="warn">expired - cancel to free the escrow</Pill>}
                     <span className="mono text-[10px] text-slate-600">
                       #{row.orderId} · {row.source}
                     </span>
@@ -610,7 +610,7 @@ export default function Positions({
                       <span className="mono">{row.pool.slice(0, 8)}…</span>, releasing the{" "}
                       <span className="mono">{row.remaining.toFixed(2)}</span> unfilled share
                       {row.remaining === 1 ? "" : "s"} of escrow back to your wallet. Already-filled
-                      quantity is not affected — it is a position now, not an order.
+                      quantity is not affected - it is a position now, not an order.
                     </p>
                   )}
 

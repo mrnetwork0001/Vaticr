@@ -7,7 +7,7 @@ import Reveal from "./components/landing/Reveal";
 export const dynamic = "force-dynamic";
 
 export const metadata = {
-  title: "Vaticr — derived odds for DreamDEX Event Contracts",
+  title: "Vaticr - derived odds for DreamDEX Event Contracts",
   description:
     "A DreamDEX event contract's YES token has a real, derivable probability. Vaticr computes it from the price process, tilts it with live news, trades the gap, and proves afterwards whether it was any good.",
 };
@@ -64,7 +64,7 @@ export default function Landing() {
               <span className="font-semibold text-up">So Vaticr does what is actually unowned.</span>{" "}
               It decides what these windows are worth, trades that view through the
               official Bot Kit, and makes the resulting track record auditable by
-              someone who does not trust it. The pivot cost nothing in ambition — it
+              someone who does not trust it. The pivot cost nothing in ambition - it
               swapped a subsystem the protocol forbids for one it rewards.
             </p>
           </div>
@@ -84,7 +84,7 @@ export default function Landing() {
               <Panel className="h-full">
                 <div className="flex items-center gap-2">
                   <Tag color="#818cf8">01</Tag>
-                  <h3 className="text-[14px] font-semibold text-gray-100">Prior — the price process</h3>
+                  <h3 className="text-[14px] font-semibold text-gray-100">Prior - the price process</h3>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
                   Over seconds to an hour a driftless geometric Brownian motion is a
@@ -112,7 +112,7 @@ export default function Landing() {
               <Panel className="h-full">
                 <div className="flex items-center gap-2">
                   <Tag color="#818cf8">02</Tag>
-                  <h3 className="text-[14px] font-semibold text-gray-100">Posterior — the headlines</h3>
+                  <h3 className="text-[14px] font-semibold text-gray-100">Posterior - the headlines</h3>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
                   Five public feeds are scored for direction, salience and source
@@ -122,7 +122,7 @@ export default function Landing() {
                   logit(<em>posterior</em>) = logit(<em>prior</em>) + Σᵢ <em>LLRᵢ</em>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
-                  Every contribution is discounted three ways — by credibility, by
+                  Every contribution is discounted three ways - by credibility, by
                   exponential time decay, and by how much of the window is left, since
                   a headline cannot move a contract expiring in four seconds. The total
                   is hard-capped so a burst of correlated stories cannot run the
@@ -138,9 +138,9 @@ export default function Landing() {
                   <h3 className="text-[14px] font-semibold text-gray-100">Trade it, then prove it</h3>
                 </div>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
-                  When the posterior clears the <em className="not-italic text-market">touch</em> —
+                  When the posterior clears the <em className="not-italic text-market">touch</em> -
                   never the mid, because paying the spread is how a signal with real
-                  edge still loses money — it crosses with an IOC. Otherwise it rests a
+                  edge still loses money - it crosses with an IOC. Otherwise it rests a
                   two-sided quote.
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
@@ -168,7 +168,7 @@ export default function Landing() {
             <a className="text-model hover:underline" href={`${GITHUB}/blob/main/docs/evidence/backtest-2026-09-04.json`} target="_blank" rel="noreferrer">
               docs/evidence/
             </a>{" "}
-            — re-running drifts, because it replays a rolling window.
+            - re-running drifts, because it replays a rolling window.
           </>
         }
       >
@@ -233,7 +233,7 @@ export default function Landing() {
             {[
               ["No lookahead", "Volatility and level at each decision point use only ticks at or before that instant. All 900 cases assert it, and 120 are re-run against a physically truncated history so the assertion is not vacuous."],
               ["Prior only", "The headline layer is excluded, because a historical scout window cannot be reconstructed without leaking the future. This measures the price-process prior alone."],
-              ["Edge is concentrated", "The 300s windows — where the bot actually trades — score +0.3865 over n=597. The long windows are thin and closer to a coin flip on small samples."],
+              ["Edge is concentrated", "The 300s windows - where the bot actually trades - score +0.3865 over n=597. The long windows are thin and closer to a coin flip on small samples."],
             ].map(([t, d], i) => (
               <div key={t} style={nth(i)}>
                 <Panel className="h-full">
@@ -264,7 +264,7 @@ export default function Landing() {
                   {[
                     ["Buy YES × Sell YES", "direct", "tokens ↔ collateral", false],
                     ["Buy NO × Sell NO", "direct", "tokens ↔ collateral", false],
-                    ["Buy YES × Buy NO", "mint-a-pair", "the pool mints a fresh pair — no seller needed", true],
+                    ["Buy YES × Buy NO", "mint-a-pair", "the pool mints a fresh pair - no seller needed", true],
                     ["Sell YES × Sell NO", "burn-a-pair", "both positions burn", false],
                   ].map(([pair, path, what, hero]) => (
                     <tr key={pair as string} className={hero ? "bg-model/[0.08]" : ""}>
@@ -295,7 +295,7 @@ export default function Landing() {
                 <h3 className="text-[14px] font-semibold text-gray-100">So the only risk is the imbalance</h3>
                 <p className="mt-3 text-[13px] leading-relaxed text-gray-400">
                   Since it only buys, its position is complete sets plus a remainder. A
-                  complete set redeems for exactly 1 collateral whatever the outcome —
+                  complete set redeems for exactly 1 collateral whatever the outcome -
                   riskless. The only exposure is the net YES-minus-NO imbalance, which
                   the inventory cap bounds directly.
                 </p>
@@ -310,7 +310,7 @@ export default function Landing() {
         id="findings"
         eyebrow="what we measured"
         title="Two findings that changed the implementation."
-        lead="Both were silent failures — the code runs, the orders fill, and the money quietly goes the wrong way. Both are written up in the SDK feedback report."
+        lead="Both were silent failures - the code runs, the orders fill, and the money quietly goes the wrong way. Both are written up in the SDK feedback report."
       >
         <Reveal>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -340,7 +340,7 @@ export default function Landing() {
                 </div>
                 <p className="mt-3 text-[12px] leading-relaxed text-gray-500">
                   The two disagreements are exactly the windows where the series drifted
-                  apart in direction — the near-the-money ones, where the probability is
+                  apart in direction - the near-the-money ones, where the probability is
                   most sensitive and most worth trading.
                 </p>
               </div>
@@ -383,7 +383,7 @@ export default function Landing() {
                 <p className="mt-3 text-[12px] leading-relaxed text-gray-500">
                   Ground truth from realised 300-second moves is ≈0.33. Fed into a
                   Gaussian model, 0.079 drives P(Up) to 0.0000 on windows that are
-                  genuinely a coin flip — maximum confidence exactly where there is
+                  genuinely a coin flip - maximum confidence exactly where there is
                   least information.
                 </p>
               </div>
@@ -397,7 +397,7 @@ export default function Landing() {
         id="build"
         eyebrow="under the hood"
         title="Four subsystems, one command."
-        lead="Python reads and models; TypeScript owns every write, because that is where the Bot Kit and markets-sdk own signing, nonces and escrow — and two senders on one key race each other."
+        lead="Python reads and models; TypeScript owns every write, because that is where the Bot Kit and markets-sdk own signing, nonces and escrow - and two senders on one key race each other."
       >
         <Reveal>
           <div className="grid gap-4 lg:grid-cols-2">
@@ -481,7 +481,7 @@ npm run bot:start   # brain + bot, one command`}</Code>
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-[14.5px] leading-relaxed text-gray-400">
               Every live BTC and ETH window with its prior, its posterior and the book
-              side by side — plus the headlines moving them, every settlement
+              side by side - plus the headlines moving them, every settlement
               recomputed from the oracle, and a wallet that can trade the gap.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">

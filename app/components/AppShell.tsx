@@ -3,9 +3,9 @@
  * The app shell: a collapsible left rail, and a main column that owns one view
  * at a time.
  *
- * The dashboard used to render seven surfaces on a single scroll — the trade
+ * The dashboard used to render seven surfaces on a single scroll - the trade
  * ticket, positions, claims, the market list, calibration, the settlement audit
- * and the headline feed — all competing for the same screen. They are not
+ * and the headline feed - all competing for the same screen. They are not
  * sections of one page; they are destinations, and treating them as such is the
  * fix.
  *
@@ -55,7 +55,7 @@ export default function AppShell({
     try {
       setCollapsed(window.localStorage.getItem(KEY) === "1");
     } catch {
-      /* private mode, or storage disabled — the default stands */
+      /* private mode, or storage disabled - the default stands */
     }
     setReady(true);
   }, []);
@@ -86,7 +86,7 @@ export default function AppShell({
         >
           <a
             href="/"
-            aria-label="Vaticr — back to the overview"
+            aria-label="Vaticr - back to the overview"
             className="group flex min-w-0 flex-1 items-center gap-2.5"
           >
             <span
@@ -134,7 +134,7 @@ export default function AppShell({
                 onClick={() => !locked && onView(id)}
                 disabled={locked}
                 aria-current={active ? "page" : undefined}
-                title={collapsed ? `${label} — ${hint}` : locked ? "Connect a wallet to use this" : hint}
+                title={collapsed ? `${label} - ${hint}` : locked ? "Connect a wallet to use this" : hint}
                 className={`flex w-full items-center gap-3 rounded px-2.5 py-2 text-left text-[13.5px] transition ${
                   active
                     ? "bg-model/15 text-model"

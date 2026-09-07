@@ -45,7 +45,7 @@ describe("VaticrForecastRegistry", function () {
       .to.be.revertedWithCustomError(registry, "ProbabilityOutOfRange");
   });
 
-  it("is append-only — an agent cannot revise its own history", async function () {
+  it("is append-only - an agent cannot revise its own history", async function () {
     const expiry = await future();
     await registry.commit(MARKET, 6000, 6000, expiry, EVIDENCE);
     await expect(registry.commit(MARKET, 9000, 9000, expiry, EVIDENCE))

@@ -5,7 +5,7 @@
  * enters the viewport. `i` staggers siblings in 70ms steps.
  *
  * Anything without IntersectionObserver, and anyone who has asked for reduced
- * motion, sees the content immediately — the animation is decoration, and a
+ * motion, sees the content immediately - the animation is decoration, and a
  * page that needs it to become readable is broken.
  */
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";

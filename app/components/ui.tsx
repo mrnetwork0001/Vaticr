@@ -25,7 +25,7 @@ export function Card({
 }
 
 /**
- * A probability rendered as a bar plus a number — the core visual of the app.
+ * A probability rendered as a bar plus a number - the core visual of the app.
  *
  * Every quantity on the bar is also printed as text underneath. The bar is
  * decoration; the numbers are the content. That is what keeps it readable for
@@ -67,7 +67,7 @@ export function ProbabilityBar({
         <span>prior {pct(prior)}</span>
         {/* The mid is named in text, not only marked in amber. */}
         <span className={mid != null ? "text-amber-300" : "text-slate-400"}>
-          mid {mid != null ? pct(mid) : "—"}
+          mid {mid != null ? pct(mid) : "-"}
         </span>
         <span className="font-semibold text-accent">post {pct(posterior)}</span>
       </div>
@@ -95,7 +95,7 @@ export function Pill({
 
 /**
  * A shimmering placeholder. Its only job is to say "a number is coming" rather
- * than "there is nothing here" — the two read identically once a panel has
+ * than "there is nothing here" - the two read identically once a panel has
  * already committed to an em dash.
  */
 export function Skeleton({ className = "" }: { className?: string }) {

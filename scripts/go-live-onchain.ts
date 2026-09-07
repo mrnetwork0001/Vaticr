@@ -65,7 +65,7 @@ async function main(): Promise<void> {
       const res = await ctx.exchange.trader.faucet();
       assertTxOk(res, "faucet()");
       proof.faucet = { hash: res.hash, explorer: tx(res.hash) };
-      ok(`minted tUSDC — ${tx(res.hash)}`);
+      ok(`minted tUSDC - ${tx(res.hash)}`);
       await new Promise((r) => setTimeout(r, 3000));
     } else {
       ok(`already funded (${Number(before) / Number(one)} tUSDC)`);
@@ -89,7 +89,7 @@ async function main(): Promise<void> {
     break;
   }
   if (!target) {
-    bad("no live market with enough runway right now — re-run in a minute");
+    bad("no live market with enough runway right now - re-run in a minute");
     writeProof(proof);
     await shutdown(ctx);
     process.exit(1);
@@ -112,10 +112,10 @@ async function main(): Promise<void> {
       evidenceIds = hit.forecast.evidence.map((e: any) => e.headline_id);
       ok(`Vaticr posterior ${posterior.toFixed(4)} (prior ${prior.toFixed(4)})`);
     } else {
-      bad("no live forecast for this market — using 0.5, the forecast commit is then meaningless");
+      bad("no live forecast for this market - using 0.5, the forecast commit is then meaningless");
     }
   } catch (e) {
-    bad(`intelligence layer unreachable (${api}) — start it with 'npm run api'`);
+    bad(`intelligence layer unreachable (${api}) - start it with 'npm run api'`);
     proof.errors.push(`api: ${(e as Error).message}`);
   }
 
@@ -124,7 +124,7 @@ async function main(): Promise<void> {
   const dep = "deployments/50312.json";
   const registry = existsSync(dep) ? JSON.parse(readFileSync(dep, "utf8")).forecastRegistry : null;
   if (!registry) {
-    bad("no registry address in deployments/50312.json — deploy it first");
+    bad("no registry address in deployments/50312.json - deploy it first");
   } else {
     try {
       const chain = makeChain(ctx.config);
@@ -147,7 +147,7 @@ async function main(): Promise<void> {
         marketId, posteriorBps: bps(posterior), priorBps: bps(prior),
         hash, explorer: tx(hash),
       };
-      ok(`forecast committed before settlement — ${tx(hash)}`);
+      ok(`forecast committed before settlement - ${tx(hash)}`);
     } catch (e) {
       bad(`registry commit: ${(e as Error).message}`);
       proof.errors.push(`commit: ${(e as Error).message}`);
@@ -183,7 +183,7 @@ async function main(): Promise<void> {
       symbol: market.symbol, outcome: "YES", price: res.price, size: res.size,
       rested: res.rested, hash: res.hash, explorer: tx(res.hash),
     };
-    ok(`order ${res.rested ? `resting id=${res.orderId}` : `filled=${res.filled}`} — ${tx(res.hash)}`);
+    ok(`order ${res.rested ? `resting id=${res.orderId}` : `filled=${res.filled}`} - ${tx(res.hash)}`);
   } catch (e) {
     bad(`order: ${(e as Error).message}`);
     proof.errors.push(`order: ${(e as Error).message}`);

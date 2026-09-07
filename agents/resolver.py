@@ -1,4 +1,4 @@
-"""Subsystem 4 — the Autonomous Resolution & Settlement Agent.
+"""Subsystem 4 - the Autonomous Resolution & Settlement Agent.
 
 (Numbered to match `docs/ARCHITECTURE.md` §4, after scout, the Bayesian engine
 and the bot.)
@@ -19,7 +19,7 @@ So this agent does the three jobs that *are* still unowned:
 
 2. **Score.** Every forecast is committed to disk *before* its window closes,
    then scored with the Brier score once the oracle speaks. This is the honest
-   measure of whether Vaticr's probabilities mean anything — a model that
+   measure of whether Vaticr's probabilities mean anything - a model that
    cannot beat 0.25 is a coin flip with extra steps.
 
 3. **Backstop.** Watch for windows the oracle has not answered inside the
@@ -54,13 +54,13 @@ log = logging.getLogger("vaticr.resolver")
 # window. The oracle settles on its own sampled tick; we recover the reference
 # from the public feed by timestamp, and the two can differ by a tick. On a
 # window that moved 0.005% that difference flips the sign, so a disagreement
-# here says our resolution ran out — not that the chain is wrong.
+# here says our resolution ran out - not that the chain is wrong.
 INCONCLUSIVE_BPS = 1.0
 
 # How far back reconciliation will reach for a settled row, and in what steps.
 #
-# The venue mints roughly six windows per five-minute cadence — about 70 settled
-# rows an hour, measured against the testnet indexer — so the old single
+# The venue mints roughly six windows per five-minute cadence - about 70 settled
+# rows an hour, measured against the testnet indexer - so the old single
 # `limit=200` page reached back barely three hours. Every forecast older than
 # that stayed pending forever and the Brier record was silently truncated to
 # whatever the last sweep happened to catch.
@@ -90,7 +90,7 @@ class SettlementAudit:
     def derived(self) -> str | None:
         if self.open_ref is None or self.close_ref is None:
             return None
-        # "closes at or above its opening price" — the boundary is a YES.
+        # "closes at or above its opening price" - the boundary is a YES.
         return "up" if self.close_ref >= self.open_ref else "down"
 
     @property
@@ -135,8 +135,8 @@ class SettlementAudit:
 def brier(probability_up: float, outcome: str) -> float | None:
     """Brier score for a single binary forecast. Lower is better; 0.25 is a coin flip.
 
-    A voided market is not a forecasting error — nothing was predicted about a
-    feed outage — so it is excluded from scoring rather than counted as a loss.
+    A voided market is not a forecasting error - nothing was predicted about a
+    feed outage - so it is excluded from scoring rather than counted as a loss.
     """
     if outcome == "void":
         return None
@@ -189,7 +189,7 @@ class Resolver:
                 if not (covered or exhausted):
                     log.warning(
                         "resolver: settled scan capped at %d rows, reaching back "
-                        "only to %d — forecasts older than that stay pending",
+                        "only to %d - forecasts older than that stay pending",
                         limit, reach,
                     )
                 log.info(
@@ -206,15 +206,15 @@ class Resolver:
     ) -> list[MarketRow]:
         """Voided windows, which `settled_markets` structurally cannot return.
 
-        A void carries `winningOutcome: null` — the same shape the indexer uses
-        for "not settled yet" — and `settled_markets` filters
+        A void carries `winningOutcome: null` - the same shape the indexer uses
+        for "not settled yet" - and `settled_markets` filters
         `winningOutcome: {_is_null: false}`. So a voided market was never in the
         reconcile set: its forecast stayed pending forever and `brier()`'s void
         branch was dead code. Confirmed against the testnet indexer, which
         returns rows with `voided: true` and a null winner.
 
         One page is enough where the settled scan needs several: voids are the
-        rare case — five rows across the whole testnet indexer — so a single
+        rare case - five rows across the whole testnet indexer - so a single
         request at the same row cap cannot truncate the way a 200-row page of
         settlements does.
 
@@ -419,7 +419,7 @@ def _report(result: dict, limit: int) -> None:
     print(f"\n  {matched}/{total} settlements independently verified")
     if unclear:
         print(
-            f"  {unclear} inconclusive — decided by under {INCONCLUSIVE_BPS}bp, "
+            f"  {unclear} inconclusive - decided by under {INCONCLUSIVE_BPS}bp, "
             f"finer than an off-chain reconstruction can resolve"
         )
     if result["audits"]:
@@ -427,7 +427,7 @@ def _report(result: dict, limit: int) -> None:
 
     print("\n=== BACKSTOPS ===")
     if not result["backstops"]:
-        print("  none — every expired window settled inside its grace period")
+        print("  none - every expired window settled inside its grace period")
     for b in result["backstops"]:
         print(f"  {b['symbol']} overdue {b['overdue_sec']}s -> {b['suggested_call']}()")
 
@@ -450,7 +450,7 @@ async def _watch(resolver: Resolver, venue: str | None, interval: int, limit: in
     """Sweep on a cadence until SIGINT/SIGTERM.
 
     Without this, the whole resolution half of the stack only ever ran when a
-    human typed the CLI — forecasts sat unscored, and a market stuck past its
+    human typed the CLI - forecasts sat unscored, and a market stuck past its
     settlement window went unnamed until somebody looked. The bot polls the
     FastAPI server continuously; the scoring side has to keep the same hours.
     """
@@ -508,7 +508,7 @@ def _run() -> int:
     Every read here crosses a public network to two GraphQL endpoints, and the
     audit issues a price query per settled window, so a slow leg is a routine
     outcome rather than an exceptional one. Dumping ninety lines of httpx
-    traceback at an operator — or into a demo recording — hides the one line
+    traceback at an operator - or into a demo recording - hides the one line
     that says what to do about it.
     """
     try:
@@ -521,7 +521,7 @@ def _run() -> int:
         kind = type(exc).__name__
         print(
             f"\nThe Somnia indexer or price feed did not answer in time ({kind}).\n"
-            f"  Nothing was written and nothing is inconsistent — the sweep is\n"
+            f"  Nothing was written and nothing is inconsistent - the sweep is\n"
             f"  idempotent, so simply run it again.\n"
             f"  If it keeps timing out, raise VATICR_HTTP_TIMEOUT (currently "
             f"{get_settings().http_timeout_sec:.0f}s) or reduce --limit."

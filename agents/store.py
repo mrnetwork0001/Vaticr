@@ -5,9 +5,9 @@ appended before its window settles; the resolver fills in the outcome
 afterwards. JSON Lines keeps it append-friendly, human-readable and free of a
 database dependency.
 
-The file is shared by *separate processes* — the FastAPI server commits
+The file is shared by *separate processes* - the FastAPI server commits
 forecasts while `python -m agents.resolver` rewrites the same file to fill in
-outcomes — so every read-modify-write here is serialised with an OS-level
+outcomes - so every read-modify-write here is serialised with an OS-level
 `flock`, not just a `threading.Lock`. See `_exclusive`.
 """
 
@@ -31,7 +31,7 @@ _LOCK = threading.Lock()
 _FILE = "forecasts.jsonl"
 # The flock is taken on a sidecar, never on forecasts.jsonl itself: `_rewrite`
 # swaps the data file for a new inode via os.replace, and a lock held on the
-# old inode would be silently orphaned by that swap — the next writer would
+# old inode would be silently orphaned by that swap - the next writer would
 # lock the *new* file and the two would overlap anyway.
 _LOCK_FILE = "forecasts.jsonl.lock"
 

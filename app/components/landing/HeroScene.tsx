@@ -43,7 +43,7 @@ export default function HeroScene() {
         const { tops } = await json<{ tops: any[] }>(`/api/book?markets=${ids}`);
         const byId = new Map(tops.map((t) => [t.market_id, t]));
 
-        // Show the window where the model and the book disagree most — that
+        // Show the window where the model and the book disagree most - that
         // gap is the entire argument, and picking the first row would bury it.
         let best: Row | null = null;
         let bestEdge = -1;
@@ -90,7 +90,7 @@ export default function HeroScene() {
           {state === "ok" && row
             ? `vaticr · pricing ${row.asset} ${row.windowSec}s · ${Math.floor(row.secondsLeft / 60)}m ${Math.floor(row.secondsLeft % 60)}s left`
             : state === "off"
-              ? "vaticr · intelligence layer offline — run npm run api"
+              ? "vaticr · intelligence layer offline - run npm run api"
               : "vaticr · connecting"}
         </span>
       </div>
@@ -101,14 +101,14 @@ export default function HeroScene() {
             <div>
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-market">the book</div>
               <div className="mono mt-0.5 text-2xl font-bold text-market">
-                {row.ask !== null ? pct(row.ask) : "—"}
+                {row.ask !== null ? pct(row.ask) : "-"}
               </div>
               <div className="mono text-[10px] text-gray-500">best offer on YES</div>
             </div>
             <div className="text-center">
               <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-gray-500">gap</div>
               <div className={`mono mt-0.5 text-2xl font-bold ${edge !== null && edge > 0 ? "text-up" : "text-gray-400"}`}>
-                {edge !== null ? `${edge > 0 ? "+" : ""}${edge.toFixed(3)}` : "—"}
+                {edge !== null ? `${edge > 0 ? "+" : ""}${edge.toFixed(3)}` : "-"}
               </div>
               <div className="mono text-[10px] text-gray-500">per share</div>
             </div>
@@ -134,7 +134,7 @@ export default function HeroScene() {
           </div>
           <p className="mt-3 font-mono text-[11px] leading-relaxed text-gray-500">
             model <span className="text-model">{pct(row.posterior)}</span> · book{" "}
-            <span className="text-market">{mid !== null ? pct(mid) : "—"}</span>
+            <span className="text-market">{mid !== null ? pct(mid) : "-"}</span>
             {edge !== null && edge > 0 ? (
               <> · buying YES pays <span className="text-up">{edge.toFixed(3)}</span> under fair value</>
             ) : (

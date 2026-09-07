@@ -12,7 +12,7 @@ pragma solidity 0.8.24;
 ///         at expiry and `BinaryMarketsModule` is the only address a market
 ///         trusts as its settler. Nothing here touches that, and nothing here
 ///         can. This contract does the one thing the protocol deliberately
-///         leaves to the outside — it makes a *forecaster* accountable.
+///         leaves to the outside - it makes a *forecaster* accountable.
 ///
 ///         A prediction is only evidence of skill if it was published before
 ///         the outcome was known. An off-chain log proves nothing: whoever
@@ -72,7 +72,7 @@ contract VaticrForecastRegistry {
     ///
     /// @dev    Reverts once `expiry` has passed: a forecast made after the
     ///         window closed is not a forecast. One commitment per agent per
-    ///         market — an agent that could revise would prove nothing.
+    ///         market - an agent that could revise would prove nothing.
     function commit(
         bytes32 marketId,
         uint16 probabilityBps,

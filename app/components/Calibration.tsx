@@ -9,7 +9,7 @@ import type { Calibration } from "./types";
  * A Brier score is the whole argument this project makes: a forecast that
  * cannot beat 0.25 is a coin flip with extra steps. It is also the number most
  * easily oversold, so this panel is built to make the sample size impossible to
- * miss — the headline figure and the reason not to believe it yet sit in the
+ * miss - the headline figure and the reason not to believe it yet sit in the
  * same block of text.
  *
  * The threshold below is not a convention borrowed from anywhere; it comes out
@@ -25,7 +25,7 @@ const MIN_MEANINGFUL_SAMPLE = 30;
  * Individual Brier scores are bounded in [0, 1], and a variable on [0, 1] has
  * standard deviation at most 0.5, so the standard error of the mean is at most
  * 0.5/sqrt(n) whatever the distribution turns out to be. It is a bound rather
- * than an estimate — the per-window scores are not exposed by /calibration —
+ * than an estimate - the per-window scores are not exposed by /calibration -
  * which is the right direction to err when the number is being used to argue
  * that a model has edge.
  */
@@ -53,7 +53,7 @@ function Stat({
  * The reliability diagram: forecast probability against how often those windows
  * actually closed up.
  *
- * Position carries the meaning, not colour — every point is also labelled with
+ * Position carries the meaning, not colour - every point is also labelled with
  * its bucket and count, and the same numbers are repeated in the table below,
  * which is what a screen reader gets.
  */
@@ -203,7 +203,7 @@ export default function CalibrationPanel({
   return (
     <Card
       id="calibration"
-      title="Calibration — is any of this actually skill?"
+      title="Calibration - is any of this actually skill?"
       subtitle="Every forecast committed before its window closed, then Brier-scored against the settlement"
       right={
         cal && (
@@ -216,7 +216,7 @@ export default function CalibrationPanel({
       {state === "loading" && <PanelState state="loading" />}
       {state === "error" && (
         <PanelState state="error">
-          Calibration unavailable — {detail ?? "the scorer did not answer."}
+          Calibration unavailable - {detail ?? "the scorer did not answer."}
         </PanelState>
       )}
 
@@ -230,7 +230,7 @@ export default function CalibrationPanel({
               <p className="text-[13px] font-semibold text-amber-300">
                 {n === 0
                   ? "Nothing has been scored yet."
-                  : `${n} scored window${n === 1 ? "" : "s"} — far too few to conclude anything.`}
+                  : `${n} scored window${n === 1 ? "" : "s"} - far too few to conclude anything.`}
               </p>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-slate-300">
                 {n === 0 ? (
@@ -249,7 +249,7 @@ export default function CalibrationPanel({
                     . The gap to the 0.25 coin-flip baseline is{" "}
                     <span className="mono text-slate-100">
                       {cal.brier_score === null
-                        ? "—"
+                        ? "-"
                         : Math.abs(0.25 - cal.brier_score).toFixed(3)}
                     </span>
                     , which is well inside that noise. This panel is evidence that the
@@ -265,7 +265,7 @@ export default function CalibrationPanel({
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
             <Stat
               label="Brier score"
-              value={cal.brier_score === null ? "—" : cal.brier_score.toFixed(3)}
+              value={cal.brier_score === null ? "-" : cal.brier_score.toFixed(3)}
               hint="lower is better"
               tone={thin ? "muted" : "good"}
             />
@@ -277,13 +277,13 @@ export default function CalibrationPanel({
             />
             <Stat
               label="Skill"
-              value={cal.skill === null ? "—" : `${(cal.skill * 100).toFixed(1)}%`}
+              value={cal.skill === null ? "-" : `${(cal.skill * 100).toFixed(1)}%`}
               hint="1 − brier/0.25"
               tone={thin || (cal.skill ?? 0) <= 0 ? "muted" : "good"}
             />
             <Stat
               label="Directional accuracy"
-              value={cal.accuracy === null ? "—" : `${(cal.accuracy * 100).toFixed(0)}%`}
+              value={cal.accuracy === null ? "-" : `${(cal.accuracy * 100).toFixed(0)}%`}
               hint={`over ${n} window${n === 1 ? "" : "s"}`}
               tone="muted"
             />

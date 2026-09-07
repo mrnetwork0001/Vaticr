@@ -9,13 +9,13 @@
 
 import { formatUnits, parseUnits } from "viem";
 
-/** `0x1234…abcd` — enough to compare against a wallet's own display. */
+/** `0x1234…abcd` - enough to compare against a wallet's own display. */
 export function truncateAddress(address: string, lead = 6, tail = 4): string {
   if (address.length <= lead + tail + 1) return address;
   return `${address.slice(0, lead)}…${address.slice(-tail)}`;
 }
 
-/** The exact value, trailing zeros trimmed. Never rounded — this is the truth. */
+/** The exact value, trailing zeros trimmed. Never rounded - this is the truth. */
 export function exactAmount(raw: bigint, decimals: number): string {
   const s = formatUnits(raw, decimals);
   if (!s.includes(".")) return s;
@@ -41,7 +41,7 @@ export function shortAmount(raw: bigint, decimals: number, places = 4): ShortAmo
   const negative = raw < 0n;
   const abs = negative ? -raw : raw;
 
-  // Round toward zero at `places` by integer division — no float anywhere.
+  // Round toward zero at `places` by integer division - no float anywhere.
   const drop = decimals > places ? decimals - places : 0;
   const scale = 10n ** BigInt(drop);
   const kept = abs / scale;

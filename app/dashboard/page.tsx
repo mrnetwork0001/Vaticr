@@ -14,12 +14,12 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "Vaticr",
     url: "/dashboard",
-    title: "Vaticr — live windows",
+    title: "Vaticr - live windows",
     description: DESCRIPTION,
   },
   twitter: {
     card: "summary",
-    title: "Vaticr — live windows",
+    title: "Vaticr - live windows",
     description: DESCRIPTION,
   },
 };

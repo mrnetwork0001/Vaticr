@@ -1,5 +1,5 @@
 /**
- * The wagmi configuration — one chain, one HTTP transport, and whichever
+ * The wagmi configuration - one chain, one HTTP transport, and whichever
  * connectors this deployment can actually offer.
  *
  * WalletConnect is opt-in. It needs a project id from the WalletConnect cloud

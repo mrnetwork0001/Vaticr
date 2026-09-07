@@ -1,5 +1,5 @@
 /**
- * VATICR — autonomous DeAI market maker for DreamDEX Event Contracts.
+ * VATICR - autonomous DeAI market maker for DreamDEX Event Contracts.
  *
  *   npm run bot:start
  *
@@ -10,7 +10,7 @@
  *   3. take when the posterior clears the touch, otherwise rest a two-sided
  *      mint-a-pair quote that needs no inventory;
  *   4. commit the forecast so the resolver can Brier-score it after settlement;
- *   5. sweep settled markets and redeem — winnings are claimed, not received.
+ *   5. sweep settled markets and redeem - winnings are claimed, not received.
  *
  * Runs in DRY_RUN by default: it logs every order it would send and sends
  * nothing. Set DRY_RUN=false with a funded PRIVATE_KEY to trade for real.
@@ -70,7 +70,7 @@ async function bookTop(ctx: EcContext, yesSymbol: string): Promise<BookTop> {
 }
 
 /**
- * Pull every order this wallet has resting on one market — BOTH legs.
+ * Pull every order this wallet has resting on one market - BOTH legs.
  *
  * Read from the SDK rather than assumed: `fetchOpenOrders(ref)` does NOT return
  * a market's orders, it returns one TRADABLE's. The unified exchange maps each
@@ -78,8 +78,8 @@ async function bookTop(ctx: EcContext, yesSymbol: string): Promise<BookTop> {
  * the `#NO` tradable, and then drops anything whose outcome differs from the
  * ref's (`if (scope?.outcome && t.outcome !== scope.outcome) return []`,
  * markets-sdk `unified/exchange.ts`). So asking for the YES symbol returns the
- * BUY_YES leg and silently omits the BUY_NO one — even though the two share a
- * pool and a book — and the requote loop was leaving half its quote resting at
+ * BUY_YES leg and silently omits the BUY_NO one - even though the two share a
+ * pool and a book - and the requote loop was leaving half its quote resting at
  * a stale price on every cycle. One symbol is emphatically not enough; ask for
  * both. (`cancelOrder(id, ref)` only needs the ref to find the pool, which both
  * symbols resolve to identically, but pairing each id with the symbol it came
@@ -113,22 +113,22 @@ async function actOnMarket(
    * Every path that declines to trade this market leaves through here.
    *
    * A quote already resting is a live order at a price the bot has just decided
-   * it no longer wants — the market went untradable, the headroom ran out, the
+   * it no longer wants - the market went untradable, the headroom ran out, the
    * posterior pinned, inventory capped. Returning without cancelling leaves it
    * working until `orderTtlSec` (90s by default, up to nine cycles), quoting a
    * view that has been abandoned, and it is the *skip* conditions that most
    * often mean the old price is now the wrong one. Cancel on the way out.
    *
    * Best-effort by design: on a market that has already left `Trading` the
-   * cancel may itself revert, which is fine — those orders can no longer fill
+   * cancel may itself revert, which is fine - those orders can no longer fill
    * and expire at the market's own expiry (`placeLimit` caps every TTL there).
    */
   const standDown = async (why: string | null): Promise<void> => {
     stats.skipped++;
-    if (why) log(`  ${market.symbol}: skip — ${why}`);
+    if (why) log(`  ${market.symbol}: skip - ${why}`);
     if (cfg.dryRun) {
       // Mirror the live path's book-keeping so the rail reads the same in both
-      // modes — a dry run that never releases escrow would report a cap breach
+      // modes - a dry run that never releases escrow would report a cap breach
       // a live run would not have hit.
       budget.releaseMarket(market.symbol);
       return;
@@ -143,7 +143,7 @@ async function actOnMarket(
   // in the pass so we never straddle a pool recycle.
   const onchain = await marketOnchain(ctx, market);
   // Not a binary row at all, so it has no YES/NO books and nothing of ours can
-  // be resting on it — the one early return with nothing to stand down from.
+  // be resting on it - the one early return with nothing to stand down from.
   if (!onchain) return;
   if (!isTradable(onchain)) {
     await standDown(null);
@@ -168,8 +168,8 @@ async function actOnMarket(
   const tickProb = Number(ctx.config.tick) / 10 ** ctx.config.decimals;
   const decision = decide(f.posterior, top, net, cfg, tickProb);
 
-  const bid = top.bestBid === undefined ? "  -  " : top.bestBid.toFixed(3);
-  const ask = top.bestAsk === undefined ? "  -  " : top.bestAsk.toFixed(3);
+  const bid = top.bestBid === undefined ? " - " : top.bestBid.toFixed(3);
+  const ask = top.bestAsk === undefined ? " - " : top.bestAsk.toFixed(3);
   const ev = f.evidence.length ? ` news=${f.evidence_log_odds >= 0 ? "+" : ""}${f.evidence_log_odds.toFixed(3)}(${f.evidence.length})` : "";
   log(
     `  ${market.symbol} book=[${bid}/${ask}] prior=${f.prior.toFixed(3)} ` +
@@ -191,7 +191,7 @@ async function actOnMarket(
   // venue would refuse should be visible in the log before it is live.
   const size = quantize(ctx, cfg.quoteSize);
   if (size <= 0) {
-    warn(`${market.symbol}: quote size ${cfg.quoteSize} is below one lot — skipping`);
+    warn(`${market.symbol}: quote size ${cfg.quoteSize} is below one lot - skipping`);
     await standDown(null);
     return;
   }
@@ -206,7 +206,7 @@ async function actOnMarket(
   const afford = (price: number, what: string): boolean => {
     if (budget.reserve(market.symbol, price, size)) return true;
     warn(
-      `${market.symbol}: ${what} refused — notional cap ${budget.cap} reached ` +
+      `${market.symbol}: ${what} refused - notional cap ${budget.cap} reached ` +
         `(committed ${budget.committed.toFixed(2)}, this order ` +
         `${NotionalBudget.costOf(price, size).toFixed(2)}). ` +
         `Raise VATICR_MAX_NOTIONAL deliberately.`,
@@ -241,7 +241,7 @@ async function actOnMarket(
     return;
   }
 
-  // Clear our own stale quotes before re-posting, so levels never stack — and
+  // Clear our own stale quotes before re-posting, so levels never stack - and
   // give the rail back the escrow those orders were holding.
   await cancelResting(ctx, market);
   budget.releaseMarket(market.symbol);
@@ -295,24 +295,24 @@ async function actOnMarket(
             `${res.rested ? `resting id=${res.orderId}` : `filled=${res.filled}`}`,
         );
       } catch (err) {
-        // Nothing was escrowed by a reverted order — give the rail its budget
+        // Nothing was escrowed by a reverted order - give the rail its budget
         // back before deciding what the revert was.
         budget.release(market.symbol, leg.price, size);
         // A post-only that would cross reverts with PostOnlyWouldCross. On a
-        // quoting loop that is routine — the touch moved between read and send
-        // — so requote next cycle instead of treating it as a fault.
+        // quoting loop that is routine - the touch moved between read and send
+        // - so requote next cycle instead of treating it as a fault.
         //
         // Branch on the SDK's DECODED error, never on the message text. The
         // SDK wraps every revert as ContractRevertError with `errorName` taken
         // from the protocol's custom-error ABIs; its own docs warn that
-        // `errorName` is `undefined` when the revert did not decode — a bare
+        // `errorName` is `undefined` when the revert did not decode - a bare
         // require string, an unknown selector, no data at all. A substring test
         // on `err.message` cannot tell those apart from the routine case, so an
         // undecodable revert (exactly the kind worth seeing) was being logged
         // as a requote and swallowed. Anything that is not this one named
         // revert propagates.
         if (err instanceof ContractRevertError && err.errorName === "PostOnlyWouldCross") {
-          log(`     BUY_${leg.outcome} @ ${leg.price.toFixed(3)} would cross — requoting next cycle`);
+          log(`     BUY_${leg.outcome} @ ${leg.price.toFixed(3)} would cross - requoting next cycle`);
         } else {
           throw err;
         }
@@ -349,8 +349,8 @@ async function cycle(
 
   // EC_UNDERLYING has to reach the QUERY, not a filter downstream of it.
   // `activeMarkets` slices to `max` before returning, and the venue interleaves
-  // its BTC and ETH series — measured on testnet just now, the live list came
-  // back ETH, BTC, BTC, ETH, ETH, BTC, … — so filtering after the slice means
+  // its BTC and ETH series - measured on testnet just now, the live list came
+  // back ETH, BTC, BTC, ETH, ETH, BTC, … - so filtering after the slice means
   // EC_UNDERLYING=BTC on maxMarkets=1 trades nothing at all, and on 8 quietly
   // trades four markets instead of eight. The kit takes an `asset` option that
   // filters before the slice; the rows carry the bare symbol ("BTC" / "ETH"),
@@ -362,8 +362,8 @@ async function cycle(
   if (markets.length === 0) {
     warn(
       cfg.underlying
-        ? `no live ${cfg.underlying} markets in scope — ${await explainEmptyScope(ctx)}`
-        : `no live markets in scope — ${await explainEmptyScope(ctx)}`,
+        ? `no live ${cfg.underlying} markets in scope - ${await explainEmptyScope(ctx)}`
+        : `no live markets in scope - ${await explainEmptyScope(ctx)}`,
     );
     return;
   }
@@ -384,7 +384,7 @@ async function cycle(
     const marketId = String((market.info as { marketId?: string }).marketId ?? "");
     const envelope = byId.get(marketId.toLowerCase());
     if (!envelope) {
-      log(`  ${market.symbol}: no forecast yet (window just opened) — skipping`);
+      log(`  ${market.symbol}: no forecast yet (window just opened) - skipping`);
       stats.skipped++;
       continue;
     }
@@ -402,7 +402,7 @@ async function cycle(
   if (!cfg.dryRun && ctx.canTrade) {
     try {
       // `maybeClaim` is throttled internally (AUTO_CLAIM_INTERVAL_MS) and
-      // returns void — it logs its own sweeps.
+      // returns void - it logs its own sweeps.
       await maybeClaim(ctx);
     } catch (err) {
       warn(`claim sweep failed: ${(err as Error).message}`);
@@ -416,10 +416,10 @@ async function main(): Promise<void> {
 
   console.log(`
 ================================================================================
-  VATICR — Autonomous DeAI Market Maker for DreamDEX Event Contracts
+  VATICR - Autonomous DeAI Market Maker for DreamDEX Event Contracts
   Somnia ${ctx.config.network} (chainId ${ctx.config.chainId})
 ================================================================================
-  mode          ${cfg.dryRun ? "DRY_RUN — logging orders, sending nothing" : "LIVE — sending real orders"}
+  mode          ${cfg.dryRun ? "DRY_RUN - logging orders, sending nothing" : "LIVE - sending real orders"}
   wallet        ${ctx.exchange.walletAddress ?? "(read-only)"}
   venue         ${ctx.config.venueId ?? "(inferred from live markets)"}
   intelligence  ${cfg.apiUrl}
@@ -442,14 +442,14 @@ async function main(): Promise<void> {
     );
   } catch {
     warn(
-      `intelligence layer not reachable at ${cfg.apiUrl} — start it with 'npm run api'. ` +
+      `intelligence layer not reachable at ${cfg.apiUrl} - start it with 'npm run api'. ` +
         `Retrying each cycle.`,
     );
   }
   const stop = (sig: string) => {
     if (stopping) return;
     stopping = true;
-    log(`${sig} — finishing cycle and cancelling resting orders…`);
+    log(`${sig} - finishing cycle and cancelling resting orders…`);
   };
   process.on("SIGINT", () => stop("SIGINT"));
   process.on("SIGTERM", () => stop("SIGTERM"));
@@ -469,7 +469,7 @@ async function main(): Promise<void> {
     log(`cancelled ${cancelled} of ${tracked} tracked order(s)`);
   }
   log(
-    `done — cycles=${stats.cycles} quoted=${stats.quoted} taken=${stats.taken} ` +
+    `done - cycles=${stats.cycles} quoted=${stats.quoted} taken=${stats.taken} ` +
       `skipped=${stats.skipped} errors=${stats.errors} ` +
       `notional=${budget.committed.toFixed(2)}/${budget.cap} ` +
       `(filled ${budget.settled.toFixed(2)}, escrowed ${budget.outstanding.toFixed(2)})` +

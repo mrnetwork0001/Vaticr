@@ -1,4 +1,4 @@
-"""Optional LLM headline classifier — the "DeAI" half of the scout.
+"""Optional LLM headline classifier - the "DeAI" half of the scout.
 
 The lexicon in `agents.lexicon` is fast, free and deterministic, but it is
 still a keyword model: it cannot read "the SEC's approval was widely expected
@@ -32,7 +32,7 @@ For each headline return:
 next hour*, from -1 (strongly bearish) to +1 (strongly bullish).
 - salience: how market-moving the item is at all, 0 (noise) to 1 (regime-changing).
 - assets: which of BTC, ETH the item bears on. Macro and market-wide items \
-bear on both. Items about unrelated altcoins bear on neither — return [].
+bear on both. Items about unrelated altcoins bear on neither - return [].
 
 Score the SURPRISE, not the sentiment of the words. A long-expected ETF approval \
 that finally lands is mostly priced in and deserves a modest score. A routine \

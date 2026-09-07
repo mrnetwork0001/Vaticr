@@ -3,7 +3,7 @@
 /**
  * Winnings are CLAIMED, not received.
  *
- * This is the protocol's sharpest edge for a human user, and it is not a bug —
+ * This is the protocol's sharpest edge for a human user, and it is not a bug -
  * it is how settlement is built. A market that resolves in your favour does not
  * push collateral back to you and your outcome tokens do not decay into money.
  * They sit there. Trade a rolling 15-minute series for an afternoon and your
@@ -12,7 +12,7 @@
  *
  * So this panel does the one thing nothing else on the page does: it scans the
  * settled markets the connected account still holds tokens in, prices them, adds
- * them up, and lets them be swept — in one transaction if the user wants.
+ * them up, and lets them be swept - in one transaction if the user wants.
  *
  * The case worth being careful about is a VOID. A voided window has no winner:
  * BOTH sides redeem at 0.5. That is a refund, not a loss, and rendering it in
@@ -55,14 +55,14 @@ export default function ClaimPanel({
   onClaimed, onSummary,
 }: {
   onClaimed?: () => void;
-  /** Stable identity only — a `useState` setter or a `useCallback`. */
+  /** Stable identity only - a `useState` setter or a `useCallback`. */
   onSummary?: (summary: ClaimSummary) => void;
 }) {
   const { exchange, address, chainOk, canTrade } = useVaticrExchange();
   const balances = useBalances(chainOk ? address : undefined);
   const portfolio = usePortfolio(address);
 
-  // One indexer read plus a fee read per winning market — the SDK's own sweep.
+  // One indexer read plus a fee read per winning market - the SDK's own sweep.
   const claimable = useIndexerQuery(
     async (client) => (address ? client.getClaimable(address) : []),
     [address],
@@ -135,7 +135,7 @@ export default function ClaimPanel({
       if (res.receipt?.status === "reverted") {
         throw new Error(
           `The claim was mined but REVERTED on-chain (tx ${res.hash}). Nothing was redeemed. ` +
-            "A batch claim is all-or-nothing — try claiming the rows one at a time to find the one that objects.",
+            "A batch claim is all-or-nothing - try claiming the rows one at a time to find the one that objects.",
         );
       }
       setDone({
@@ -160,7 +160,7 @@ export default function ClaimPanel({
     <Card
       id="claims"
       title="Unclaimed winnings"
-      subtitle="A settled market pays out only when someone asks — nothing sweeps for you"
+      subtitle="A settled market pays out only when someone asks - nothing sweeps for you"
       right={
         /* The total lives in the HEADER, at size, because a user who has
            winnings must not have to expand or scroll to learn that. Nothing
@@ -224,7 +224,7 @@ export default function ClaimPanel({
             <p className="border-t border-white/5 px-4 py-2.5 text-[11.5px] leading-relaxed text-amber-300/90">
               {voidCount} of these {voidCount === 1 ? "is" : "are"} a <strong>voided</strong> window.
               A void has no winner: both YES and NO redeem at 0.5, with no settlement fee. That is a
-              refund of half your stake per leg, not a loss — and if you held both legs you get the
+              refund of half your stake per leg, not a loss - and if you held both legs you get the
               whole thing back.
             </p>
           )}
@@ -271,8 +271,8 @@ export default function ClaimPanel({
                 value={`+${r.payout.toFixed(4)} ${COLLATERAL_SYMBOL}`}
                 note={
                   r.voided
-                    ? "voided window — both sides redeem at 0.5, no fee"
-                    : "winning side — redeems at 1 minus the venue settlement fee"
+                    ? "voided window - both sides redeem at 0.5, no fee"
+                    : "winning side - redeems at 1 minus the venue settlement fee"
                 }
               />
             ))}
@@ -286,7 +286,7 @@ export default function ClaimPanel({
           <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
             {review.length > 1
               ? "One transaction redeems all of these. It is all-or-nothing: if any single entry cannot be redeemed, the whole batch reverts and nothing changes."
-              : "One transaction redeems this position. The payout goes to your own wallet — the settlement contract pins the recipient to the token holder."}{" "}
+              : "One transaction redeems this position. The payout goes to your own wallet - the settlement contract pins the recipient to the token holder."}{" "}
             The payout is an estimate from the venue's frozen settlement fee; the exact figure is
             whatever the contract transfers.
           </p>

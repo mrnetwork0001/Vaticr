@@ -43,7 +43,7 @@ async function get<T>(path: string): Promise<T> {
   const res = await fetch(path, { cache: "no-store" });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    // A 502 alone is ambiguous — FastAPI also answers 502 when the indexer is
+    // A 502 alone is ambiguous - FastAPI also answers 502 when the indexer is
     // down but the service itself is fine. The proxy's own marker is the only
     // reliable way to tell "nothing is listening" from "something objected".
     throw new ApiError(
@@ -149,9 +149,9 @@ function SummaryStrip({
   const hasMoney = owed > 0;
   // A panel that has not reported yet is indistinguishable from one that is
   // still scanning, and both must read as "a number is coming" rather than as
-  // a confident zero — telling someone they have nothing owed when the scan
+  // a confident zero - telling someone they have nothing owed when the scan
   // has not finished is the exact failure this strip exists to prevent.
-  const num = (unsettled: boolean, render: () => string) => (unsettled ? "—" : render());
+  const num = (unsettled: boolean, render: () => string) => (unsettled ? "-" : render());
   const posPending = positions === null || positions.loading;
   const claimPending = claims === null || claims.loading;
 
@@ -189,7 +189,7 @@ function SummaryStrip({
         value={num(claimPending, () => `${owed.toFixed(4)} ${COLLATERAL_SYMBOL}`)}
         note={
           hasMoney
-            ? "Money this wallet has already won and has not been paid — a payout is claimed, never received"
+            ? "Money this wallet has already won and has not been paid - a payout is claimed, never received"
             : "Nothing settled is waiting to be swept"
         }
       />
@@ -228,7 +228,7 @@ const VIEW_META: Record<View, { title: string; lead: string }> = {
   },
   calibration: {
     title: "Calibration",
-    lead: "Whether the posteriors have actually tracked reality — Brier score against the coin-flip baseline.",
+    lead: "Whether the posteriors have actually tracked reality - Brier score against the coin-flip baseline.",
   },
 };
 
@@ -296,7 +296,7 @@ export default function Dashboard() {
           setBooks(Object.fromEntries(book.tops.map((t) => [t.market_id, t])));
         } catch {
           // A missing book is a normal state on a quiet testnet venue, and the
-          // bar renders "mid —" for it. Not worth an error banner.
+          // bar renders "mid -" for it. Not worth an error banner.
           setBooks({});
         }
       }
@@ -315,7 +315,7 @@ export default function Dashboard() {
 
   /**
    * When a wallet connects, open the ticket on the window where the model and
-   * the book disagree most — that comparison is the whole product, and making
+   * the book disagree most - that comparison is the whole product, and making
    * someone hunt for it buries it. This only SELECTS a market; nothing is
    * pre-filled beyond the model's own price and nothing is ever submitted.
    */
@@ -331,7 +331,7 @@ export default function Dashboard() {
   }, [canTrade, ticket, ticketDismissed, tradable, books]);
 
   // Disconnecting takes the trading surface away with it, including whichever
-  // window was selected — leaving a stale ticket behind would invite a click
+  // window was selected - leaving a stale ticket behind would invite a click
   // that cannot be signed.
   useEffect(() => {
     if (!isConnected) {
@@ -348,7 +348,7 @@ export default function Dashboard() {
 
   // Wider than the landing page on purpose: this is a working surface, and the
   // market list, the book and the model's number all want to be readable on one
-  // line. max-w-app is calc(25vw + 60rem) — the side margin a max-w-7xl shell
+  // line. max-w-app is calc(25vw + 60rem) - the side margin a max-w-7xl shell
   // would leave, at three quarters of its width.
   // A wallet that disconnects while on a wallet-only view must not be stranded
   // looking at an empty panel.
@@ -366,7 +366,7 @@ export default function Dashboard() {
           // entirely would strand anyone who collapsed the rail mid-session.
           <div
             className="flex justify-center py-1"
-            title={canTrade ? "Wallet connected — expand the rail to manage it" : "No wallet connected"}
+            title={canTrade ? "Wallet connected - expand the rail to manage it" : "No wallet connected"}
           >
             <span
               aria-hidden
@@ -394,7 +394,7 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2.5">
-          {/* System health is one muted line, not four badges. It is ambient —
+          {/* System health is one muted line, not four badges. It is ambient -
               a reader checks it when something looks wrong, and the rest of the
               time it should not compete with the account or the market data.
               The dot carries the state; the words carry the detail. */}
@@ -441,7 +441,7 @@ export default function Dashboard() {
             wallet attached. Connect one and each window gains a ticket that prices your
             order at the Vaticr posterior, states the edge against the resting book before
             you sign, and sweeps the winnings that settled markets will otherwise hold
-            indefinitely &mdash; on this protocol a payout is <em className="not-italic text-slate-100">claimed</em>,
+            indefinitely - on this protocol a payout is <em className="not-italic text-slate-100">claimed</em>,
             never received.
           </p>
           <p className="mt-1.5 text-[11px] text-slate-400">
@@ -452,7 +452,7 @@ export default function Dashboard() {
       )}
 
       {/* Connected, on the right chain, and STILL unable to sign. Without this the
-          trade controls simply never appear and the reason is invisible — the
+          trade controls simply never appear and the reason is invisible - the
           signer binds in an effect, so a wallet client that never resolves looks
           identical to no wallet at all. Name the failing gate rather than making
           someone guess. */}
@@ -464,7 +464,7 @@ export default function Dashboard() {
           <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
             The trading controls stay hidden until the exchange holds a signer for{" "}
             <span className="mono">{address ?? "this account"}</span>. This is normally a
-            single render; if it persists, the wallet client never resolved &mdash;
+            single render; if it persists, the wallet client never resolved -
             reconnect from the header, and if that fails, disconnect the site inside the
             wallet itself and connect again.
           </p>
@@ -483,7 +483,7 @@ export default function Dashboard() {
           <h2 className="text-sm font-semibold text-amber-300">Wrong network</h2>
           <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
             Vaticr trades only on Somnia Shannon testnet (50312). The forecasts below are
-            unaffected, but nothing can be signed until the wallet switches &mdash; use the
+            unaffected, but nothing can be signed until the wallet switches - use the
             button in the header, which will offer to add the network if your wallet has
             never seen it.
           </p>
@@ -503,7 +503,7 @@ export default function Dashboard() {
               the same read-only console it has always been.
 
               Order matters here. For a connected trader their OWN money comes
-              first — ticket, positions, then the claim sweep — and the market
+              first - ticket, positions, then the claim sweep - and the market
               list follows. Positions and claims used to sit below a twelve-row
               live-windows table, which put a settled payout below the fold and
               made it invisible. Disconnected, none of this mounts and the
@@ -557,7 +557,7 @@ export default function Dashboard() {
             {forecasts.state === "ready" && rows.length === 0 && (
               <PanelState
                 state="empty"
-                empty="No live windows in scope. Rolling windows are minted per interval — the next one opens shortly."
+                empty="No live windows in scope. Rolling windows are minted per interval - the next one opens shortly."
               />
             )}
             {forecasts.state === "ready" && rows.length > 0 && (
@@ -788,7 +788,7 @@ export default function Dashboard() {
                   {audit.data.inconclusive > 0 && (
                     <p className="mt-1">
                       &ldquo;too close to call&rdquo; means the window was decided by
-                      under 1bp &mdash; finer than a reconstruction from the public
+                      under 1bp - finer than a reconstruction from the public
                       feed can resolve, since the oracle settles on its own sampled
                       tick. It is not a disputed settlement; open the receipt to see
                       the sources that decided it.
@@ -819,7 +819,7 @@ export default function Dashboard() {
           {headlines.state === "ready" && news.length === 0 && (
             <PanelState
               state="empty"
-              empty="No scored headlines in the window yet — the scout scans on a timer."
+              empty="No scored headlines in the window yet - the scout scans on a timer."
             />
           )}
           {headlines.state === "ready" && news.length > 0 && (
@@ -835,7 +835,7 @@ export default function Dashboard() {
                       className="text-[13px] leading-snug text-slate-200 hover:text-white hover:underline"
                     >
                       {h.title}
-                      <span className="sr-only"> — opens in a new tab</span>
+                      <span className="sr-only"> - opens in a new tab</span>
                     </a>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                       <Pill tone={tone}>
