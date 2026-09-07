@@ -207,6 +207,31 @@ function SummaryStrip({
   );
 }
 
+/** One line per view. A working surface should name itself, not re-pitch the
+ *  product on every screen. */
+const VIEW_META: Record<View, { title: string; lead: string }> = {
+  markets: {
+    title: "Markets",
+    lead: "Every live BTC and ETH window, with the model's posterior against the top of the resting book.",
+  },
+  positions: {
+    title: "Positions",
+    lead: "What this wallet holds, what is still resting on the book, and what settled markets owe it.",
+  },
+  evidence: {
+    title: "Evidence",
+    lead: "The headlines behind each posterior, scored for direction, salience and source credibility.",
+  },
+  audit: {
+    title: "Settlement audit",
+    lead: "Every settled window recomputed from the public oracle feed and compared to the on-chain winner.",
+  },
+  calibration: {
+    title: "Calibration",
+    lead: "Whether the posteriors have actually tracked reality — Brier score against the coin-flip baseline.",
+  },
+};
+
 export default function Dashboard() {
   const [health, setHealth] = useState<Loaded<Health>>(pending);
   const [forecasts, setForecasts] = useState<Loaded<ForecastEnvelope[]>>(pending);
@@ -357,28 +382,15 @@ export default function Dashboard() {
     <main id="main" className="mx-auto max-w-app px-4 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
-          {/* The lockup IS the way back to the landing page, which is where a
-              reader expects a logo to go. A separate "back" link next to a
-              non-clickable wordmark taught the opposite. */}
-          <a
-            href="/"
-            aria-label="Vaticr — back to the overview"
-            className="group inline-flex items-center gap-2.5 rounded transition"
-          >
-            <span
-              aria-hidden
-              className="flex h-9 w-9 items-center justify-center rounded border-2 border-model text-base transition group-hover:border-model/70"
-            >
-              🔮
-            </span>
-            <h1 className="font-mono text-2xl font-bold tracking-[0.16em] text-gray-100 transition group-hover:text-white">
-              VATICR
-            </h1>
-          </a>
-          <p className="mt-1 max-w-2xl text-sm text-slate-400">
-            Bayesian forecasting and autonomous market making on DreamDEX Event
-            Contracts. A price-process prior, tilted by decayed news evidence,
-            quoted against the live on-chain book.
+          {/* The lockup lives in the rail now. Repeating it here, with the
+              landing page's paragraph underneath, meant every view opened on
+              the same block of identity copy before any data. A working surface
+              should say which surface it is and then get out of the way. */}
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-100">
+            {VIEW_META[view].title}
+          </h1>
+          <p className="mt-1 max-w-2xl text-sm text-gray-400">
+            {VIEW_META[view].lead}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2.5">
@@ -417,9 +429,11 @@ export default function Dashboard() {
         </div>
       )}
 
-      {!isConnected && (
-        <div className="mb-6 rounded-xl border border-accent/25 bg-accent/[0.06] px-5 py-4">
-          <h2 className="text-sm font-semibold text-accent">
+      {/* Only where it is actionable. On Audit or Calibration there is
+          nothing to trade, so an invitation to connect is just noise. */}
+      {!isConnected && (view === "markets" || view === "positions") && (
+        <div className="mb-6 rounded-lg border border-model/25 bg-model/[0.06] px-5 py-4">
+          <h2 className="text-sm font-semibold text-model">
             You are reading. You can also trade.
           </h2>
           <p className="mt-1.5 max-w-3xl text-[13px] leading-relaxed text-slate-300">
