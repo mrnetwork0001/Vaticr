@@ -72,15 +72,27 @@ die()  { printf '  \033[1;31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
 
 listening_on() { ss -ltnp 2>/dev/null | awk -v p=":$1\$" '$4 ~ p {print $NF}' | head -1; }
 port_free()    { [[ -z "$(listening_on "$1")" ]]; }
+pid_on_port()  { listening_on "$1" | grep -oE 'pid=[0-9]+' | head -1 | cut -d= -f2; }
+
+# Is the process holding this port one of ours? Ask the kernel which unit it
+# belongs to rather than guessing from the process name: systemd runs the API
+# as `python -m uvicorn` and the web app as `node`, so a name match recognises
+# neither, and a re-run walks both services onto new ports every time.
+port_is_ours() {
+  local pid; pid="$(pid_on_port "$1")"
+  [[ -n "$pid" ]] || return 1
+  grep -qE 'vaticr-(api|web|bot)\.service' "/proc/$pid/cgroup" 2>/dev/null
+}
 
 pick_port() {  # $1 = wanted, $2 = ceiling, $3 = label. Echoes the chosen port.
   local want="$1" top="$2" label="$3" holder
-  if port_free "$want"; then echo "$want"; return; fi
+  if port_free "$want" || port_is_ours "$want"; then echo "$want"; return; fi
   holder="$(listening_on "$want")"
-  if [[ "$holder" == *vaticr* || "$holder" == *uvicorn* || "$holder" == *next* ]]; then echo "$want"; return; fi
   local p
   for ((p = want + 1; p <= top; p++)); do
-    if port_free "$p"; then warn "$label port $want is held by $holder - using $p" >&2; echo "$p"; return; fi
+    if port_free "$p" || port_is_ours "$p"; then
+      warn "$label port $want is held by $holder - using $p" >&2; echo "$p"; return
+    fi
   done
   die "no free $label port between $want and $top"
 }
@@ -324,8 +336,16 @@ PrivateTmp=true
 [Install]
 WantedBy=multi-user.target
 UNIT
-  warn "the bot needs PRIVATE_KEY in $APP/.env before it can do anything"
-  warn "it stays in DRY_RUN until you set DRY_RUN=false yourself"
+  if grep -qE '^PRIVATE_KEY=0x[0-9a-fA-F]{64}$' "$APP/.env"; then
+    ok "a well-formed PRIVATE_KEY is present"
+  else
+    warn "no valid PRIVATE_KEY in $APP/.env - the bot cannot sign until you add one"
+  fi
+  if grep -q '^DRY_RUN=true' "$APP/.env"; then
+    ok "DRY_RUN=true - it logs orders and sends nothing"
+  else
+    warn "DRY_RUN is not true - this bot can place real orders"
+  fi
 fi
 
 chown -R vaticr:vaticr "$APP" "$STATE_DIR"
@@ -364,8 +384,10 @@ elif [[ -n "$DOMAIN" && "$EDGE" == caddy ]]; then
   CADDY_BACKUP=/root/Caddyfile-before-vaticr-$(date +%Y%m%d-%H%M%S)
   cp -a "$CADDYFILE" "$CADDY_BACKUP"; ok "backed up $CADDYFILE to $CADDY_BACKUP"
 
-  if grep -qE "^\s*[^#]*\b$DOMAIN\b" "$CADDYFILE" || grep -rqE "^\s*[^#]*\b$DOMAIN\b" /etc/caddy/conf.d/ 2>/dev/null; then
-    warn "$DOMAIN already appears in the Caddy config - check for a conflict"
+  # Our own site file is not a conflict with itself, so it is excluded.
+  if grep -qE "^[[:space:]]*[^#]*$DOMAIN" "$CADDYFILE" 2>/dev/null || \
+     grep -rlE "^[[:space:]]*[^#]*$DOMAIN" /etc/caddy/conf.d/ 2>/dev/null | grep -qv "vaticr.caddy"; then
+    warn "$DOMAIN already appears in another Caddy site - check for a conflict"
   fi
 
   mkdir -p /etc/caddy/conf.d
