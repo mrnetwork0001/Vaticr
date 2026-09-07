@@ -48,7 +48,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
 ];
 
 function FooterLink({ label, href }: { label: string; href: string }) {
-  const cls = "block py-0.5 font-mono text-[14px] leading-snug text-gray-300 transition hover:text-model";
+  const cls = "block py-0.5 text-[14.5px] leading-snug text-gray-300 transition hover:text-model";
   const external = !href.startsWith("/") && !href.startsWith("#");
   return (
     <a href={href} className={cls} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>
@@ -97,7 +97,7 @@ export default function Footer() {
 
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
-              <p className="font-mono text-xs uppercase tracking-[0.28em] text-model">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-model">
                 {col.heading}
               </p>
               <ul className="mt-3.5 space-y-1.5">
