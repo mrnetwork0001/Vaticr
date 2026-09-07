@@ -1,0 +1,31 @@
+{
+ "name": "audit",
+ "seconds": 29.495,
+ "events": [
+  {
+   "t": 10.89,
+   "kind": "scroll",
+   "note": "markets"
+  },
+  {
+   "t": 14.428,
+   "kind": "click",
+   "note": "audit"
+  },
+  {
+   "t": 17.929,
+   "kind": "result",
+   "note": "audit"
+  },
+  {
+   "t": 21.631,
+   "kind": "click",
+   "note": "calibration"
+  },
+  {
+   "t": 24.833,
+   "kind": "result",
+   "note": "calibration"
+  }
+ ]
+}

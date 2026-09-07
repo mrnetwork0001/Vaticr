@@ -1,0 +1,9 @@
+node_modules/
+out/
+# Rendered media: regenerate with `npm run capture` / `npm run narrate`.
+# Keeping them out means a clone stays small and nothing here goes stale
+# against a site that has moved on.
+public/footage/*.webm
+public/footage/*.mp4
+public/narration/*.mp3
+public/manifest.json

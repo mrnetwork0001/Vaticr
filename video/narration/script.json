@@ -1,0 +1,35 @@
+{
+  "voice": "CwhRBWXzGAHq8TQ4Fs17",
+  "model": "eleven_multilingual_v2",
+  "sections": [
+    { "id": "intro",
+      "text": "Vaticr. Autonomous forecasting and market making for DreamDEX event contracts on Somnia." },
+
+    { "id": "claim",
+      "text": "Every event contract asks one question. Will this window close at or above the price it opened at? That makes the fair value of a YES token a real probability. Not an opinion. It can be derived." },
+
+    { "id": "gap",
+      "text": "But the book is quoted by people eyeballing a chart. Here the model says eighty-nine point nine, and the book asks eighty-eight point nine. One cent of edge per share, and nobody else is computing it." },
+
+    { "id": "how",
+      "text": "Vaticr derives that number from the price process, using time remaining and volatility measured live. Then it tilts it with scored news, folded in as log-odds, so evidence compounds without any one headline running the probability to certainty." },
+
+    { "id": "trade",
+      "text": "This is the live app. A new wallet mints test collateral in one click. The ticket then shows both numbers side by side, the model against the book, and takes the difference. The fill confirms on chain in about a second." },
+
+    { "id": "mint",
+      "text": "The agent quotes both sides at once. On a binary book, buying YES and buying NO needs no seller. The pool mints a fresh pair. So two resting bids are a complete two-sided market, made with no inventory and no counterparty maker." },
+
+    { "id": "bot",
+      "text": "That is the agent on a live book right now. Reading the top, deriving the posterior, resting a pair of quotes around it. Those orders are being filled by real counterparties." },
+
+    { "id": "evidence",
+      "text": "And it is measurably right. Nine hundred forecasts, over three hundred settled windows the model never saw. A Brier score of zero point one five five, against a coin flip's zero point two five. Skill, plus zero point three seven nine." },
+
+    { "id": "proof",
+      "text": "Every settled window is recomputed from the public oracle feed and checked against the chain. And a forecast committed three hundred and eighteen seconds before its window expired is still there, unchanged. That is the point of writing it down first." },
+
+    { "id": "close",
+      "text": "Vaticr. Price the window. Trade the gap. Prove the record." }
+  ]
+}

@@ -1,0 +1,31 @@
+// Builds public/manifest.json: real durations of every narration file and clip (ffprobe) plus the
+// captured event timelines, so the composition's timing is derived, never guessed.
+import { execSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const HERE = dirname(fileURLToPath(import.meta.url));
+const PUB = resolve(HERE, '..', 'public');
+const dur = (f) => parseFloat(execSync(`ffprobe -v error -show_entries format=duration -of csv=p=0 "${f}"`).toString());
+const script = JSON.parse(readFileSync(resolve(HERE, '..', 'narration', 'script.json'), 'utf8'));
+const narration = {};
+for (const s of script.sections) narration[s.id] = { file: `narration/${s.id}.mp3`, seconds: dur(`${PUB}/narration/${s.id}.mp3`), text: s.text };
+const footage = {};
+// `trade` is recorded by hand and may not be in yet; the cut falls back to
+// other footage for that beat rather than refusing to build.
+for (const n of ['landing', 'audit', 'trade']) {
+  const mp4 = `${PUB}/footage/${n}.mp4`;
+  if (!existsSync(mp4)) { console.log(`footage ${n}: not present, skipping`); continue; }
+  const evFile = `${PUB}/footage/${n}.events.json`;
+  const ev = existsSync(evFile) ? JSON.parse(readFileSync(evFile, 'utf8')) : { events: [] };
+  footage[n] = { file: `footage/${n}.mp4`, seconds: dur(mp4), events: ev.events };
+}
+const sfx = {};
+for (const id of ['whoosh', 'key', 'click', 'ding', 'veto', 'pad']) {
+  const mp3 = `${PUB}/sfx/${id}.mp3`, wav = `${PUB}/sfx/${id}.wav`;
+  const f = existsSync(mp3) ? mp3 : wav; sfx[id] = { file: `sfx/${id}.${existsSync(mp3) ? 'mp3' : 'wav'}`, seconds: dur(f) };
+}
+writeFileSync(`${PUB}/manifest.json`, JSON.stringify({ narration, footage, sfx }, null, 1));
+console.log('narration s:', Object.fromEntries(Object.entries(narration).map(([k, v]) => [k, +v.seconds.toFixed(1)])));
+console.log('footage s:', Object.fromEntries(Object.entries(footage).map(([k, v]) => [k, +v.seconds.toFixed(1)])));
+console.log('sfx:', Object.fromEntries(Object.entries(sfx).map(([k, v]) => [k, v.file.split('/')[1] + ' ' + v.seconds.toFixed(2)])));
