@@ -335,6 +335,24 @@ export default function Dashboard() {
       onView={setView}
       canTrade={canTrade}
       badges={{ positions: claimSummary && claimSummary.total > 0 ? "$" : null }}
+      footer={(collapsed) =>
+        collapsed ? (
+          // At 68px there is no room for an account card, and hiding the wallet
+          // entirely would strand anyone who collapsed the rail mid-session.
+          <div
+            className="flex justify-center py-1"
+            title={canTrade ? "Wallet connected — expand the rail to manage it" : "No wallet connected"}
+          >
+            <span
+              aria-hidden
+              className={`h-2 w-2 rounded-full ${canTrade ? "bg-up" : "bg-gray-700"}`}
+            />
+            <span className="sr-only">{canTrade ? "Wallet connected" : "No wallet connected"}</span>
+          </div>
+        ) : (
+          <ConnectButton />
+        )
+      }
     >
     <main id="main" className="mx-auto max-w-app px-4 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
@@ -364,31 +382,32 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-col items-end gap-2.5">
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {health.state === "loading" && (
-              <>
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-5 w-20" />
-              </>
-            )}
-            {health.state === "ready" && health.data && (
-              <>
-                <Pill tone="up">somnia {health.data.network}</Pill>
-                <Pill>{health.data.headlines_in_window} headlines</Pill>
-                <Pill tone={health.data.llm_classifier.startsWith("on") ? "up" : "neutral"}>
-                  classifier {health.data.llm_classifier.startsWith("on") ? "LLM" : "lexicon"}
-                </Pill>
-              </>
-            )}
-            {updated > 0 && (
-              <span className="mono text-[11px] text-slate-400">
-                updated {new Date(updated).toLocaleTimeString()}
+          {/* System health is one muted line, not four badges. It is ambient —
+              a reader checks it when something looks wrong, and the rest of the
+              time it should not compete with the account or the market data.
+              The dot carries the state; the words carry the detail. */}
+          {health.state === "loading" && <Skeleton className="h-4 w-64" />}
+          {health.state === "ready" && health.data && (
+            <p className="mono flex items-center gap-2 text-[11px] text-gray-500">
+              <span
+                aria-hidden
+                className={`h-1.5 w-1.5 shrink-0 rounded-full ${down ? "bg-down" : "bg-up"}`}
+              />
+              <span className="text-gray-400">somnia {health.data.network}</span>
+              <span aria-hidden className="text-gray-700">·</span>
+              <span>{health.data.headlines_in_window} headlines</span>
+              <span aria-hidden className="text-gray-700">·</span>
+              <span title="Headlines are scored by the deterministic lexicon unless an LLM classifier is configured">
+                {health.data.llm_classifier.startsWith("on") ? "LLM classifier" : "lexicon"}
               </span>
-            )}
-          </div>
-          {/* The only thing on this page that can spend money. Everything above
-              and below it renders identically with no wallet attached. */}
-          <ConnectButton />
+              {updated > 0 && (
+                <>
+                  <span aria-hidden className="text-gray-700">·</span>
+                  <span className="text-gray-600">{new Date(updated).toLocaleTimeString()}</span>
+                </>
+              )}
+            </p>
+          )}
         </div>
       </header>
 

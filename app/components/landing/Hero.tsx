@@ -1,15 +1,10 @@
 import HeroScene from "./HeroScene";
-import { Tag } from "./Section";
 
 export default function Hero() {
   return (
     <header id="top" className="hero-grid border-b border-ink-700/70">
       <div className="mx-auto grid w-full max-w-page gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.05fr_1fr] lg:items-center">
         <div>
-          <div className="hero-in">
-            <Tag color="#34d399">somnia × dreamdex event contracts</Tag>
-          </div>
-
           <h1 className="hero-in mt-6 text-balance text-4xl font-bold leading-[1.05] tracking-tight text-gray-50 sm:text-5xl">
             Price the window.
             <br />

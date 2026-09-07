@@ -41,7 +41,9 @@ export default function AppShell({
   canTrade: boolean;
   /** Optional count/among rendered against a rail item, e.g. claimable. */
   badges?: Partial<Record<View, string | null>>;
-  footer?: ReactNode;
+  /** Rendered at the foot of the rail. Receives the collapsed state so it can
+   *  offer something usable at 68px instead of vanishing. */
+  footer?: (collapsed: boolean) => ReactNode;
   children: ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -135,7 +137,7 @@ export default function AppShell({
           })}
         </nav>
 
-        {footer && !collapsed && <div className="px-2.5 pb-3">{footer}</div>}
+        {footer && <div className="px-2.5 pb-3">{footer(collapsed)}</div>}
 
         <button
           type="button"
