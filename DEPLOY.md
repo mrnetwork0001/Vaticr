@@ -16,89 +16,64 @@ so there is **no CORS to configure** and the API URL never reaches the client.
 
 ## 1. The VPS
 
-Ubuntu 22.04+, one small instance is enough.
+One script does the whole thing from this machine:
 
 ```bash
-sudo apt update && sudo apt install -y python3-venv python3-pip nginx git
-git clone https://github.com/mrnetwork0001/Vaticr.git /opt/vaticr
-cd /opt/vaticr
-
-python3 -m venv .venv
-./.venv/bin/pip install -r requirements.txt
-
-cp .env.example .env
+./scripts/deploy-vps.sh root@YOUR_SERVER_IP api.your-domain.tld you@email.tld
 ```
 
-Edit `/opt/vaticr/.env`. The brain needs very little:
+- **1st argument** - the SSH target. Key auth must already work
+  (`ssh-copy-id root@YOUR_SERVER_IP` if it does not).
+- **2nd argument** *(optional)* - the domain for the API. Sets up nginx. Point
+  an A record at the server before running this.
+- **3rd argument** *(optional)* - your email. Requests a Let's Encrypt
+  certificate for that domain.
 
-```ini
-NETWORK=testnet
-VENUE_ID=0x679795a0195a1b76cdebb7c51d74e058aee92919b8c3389af86ef24535e8a28c
-VATICR_API_HOST=127.0.0.1     # bind to loopback; nginx is the only way in
-VATICR_API_PORT=8787
-```
+Re-run it any time to redeploy. Every step is idempotent, and your `.env` on
+the server is written once and never overwritten afterwards.
 
-### Run it under systemd
+### Why it pushes files instead of cloning
 
-```ini
-# /etc/systemd/system/vaticr-api.service
-[Unit]
-Description=Vaticr forecasting API
-After=network-online.target
-Wants=network-online.target
+**The repository is private.** `git clone` on the server would mean leaving a
+GitHub credential there, so the script `rsync`s `agents/` and
+`requirements.txt` over SSH instead. Nothing else goes up: no keys, no `.env`,
+no `node_modules`, no local virtualenv.
 
-[Service]
-Type=simple
-User=vaticr
-WorkingDirectory=/opt/vaticr
-EnvironmentFile=/opt/vaticr/.env
-ExecStart=/opt/vaticr/.venv/bin/python -m uvicorn agents.server:app --host 127.0.0.1 --port 8787
-Restart=always
-RestartSec=5
+### What it puts on the server
 
-[Install]
-WantedBy=multi-user.target
-```
+| Path | What |
+|---|---|
+| `/opt/vaticr` | `agents/`, `requirements.txt`, the virtualenv, `.env` (mode 600) |
+| `/var/lib/vaticr` | `forecasts.jsonl` and lock file - state lives outside the code |
+| `/etc/systemd/system/vaticr-api.service` | The unit. Runs as an unprivileged `vaticr` user under `ProtectSystem=strict`, with `/var/lib/vaticr` its only writable path |
+| `/etc/nginx/sites-available/vaticr-api` | Reverse proxy on 80/443, only when a domain was given |
+
+Uvicorn binds `127.0.0.1`, so nginx is the only way in. Requirements on the
+box: Ubuntu/Debian with **Python 3.11+** and root over SSH. Node is not needed
+for the API.
+
+### Verify by hand
 
 ```bash
-sudo useradd -r -s /usr/sbin/nologin vaticr && sudo chown -R vaticr:vaticr /opt/vaticr
-sudo systemctl daemon-reload && sudo systemctl enable --now vaticr-api
-curl -s localhost:8787/health | head -c 200      # sanity check
+ssh root@YOUR_SERVER_IP systemctl status vaticr-api
+ssh root@YOUR_SERVER_IP journalctl -u vaticr-api -f
+curl -s https://api.your-domain.tld/health
 ```
-
-### Expose it over TLS
-
-```nginx
-# /etc/nginx/sites-available/vaticr-api
-server {
-    server_name api.your-domain.tld;
-    location / {
-        proxy_pass http://127.0.0.1:8787;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_read_timeout 60s;          # /audit recomputes settlements; give it room
-    }
-}
-```
-
-```bash
-sudo ln -s /etc/nginx/sites-available/vaticr-api /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d api.your-domain.tld
-```
-
-Firewall: allow 80/443 only. Port 8787 stays on loopback.
 
 ### The bot (optional, recommended for the demo)
 
 Without it the dashboard still forecasts and audits - it just never places an
-order, so the book never shows the agent's own quotes.
+order, so the book never shows the agent's own quotes. The bot is the Node
+side, so it needs the whole repository rather than `agents/` alone, plus
+Node 20+:
 
 ```bash
-cd /opt/vaticr && npm install        # needs Node 20+
+rsync -az --exclude node_modules --exclude .next --exclude .venv --exclude .git \
+  ./ root@YOUR_SERVER_IP:/opt/vaticr-bot/
+ssh root@YOUR_SERVER_IP 'cd /opt/vaticr-bot && npm install --omit=dev'
 ```
 
-Add the signer to `.env`, and **start with `DRY_RUN=true`**:
+Add the signer to `/opt/vaticr-bot/.env`, and **start with `DRY_RUN=true`**:
 
 ```ini
 DRY_RUN=true
@@ -108,13 +83,11 @@ VATICR_COMMIT_FORECASTS=true
 ```
 
 Watch a full cycle in dry run, confirm the orders it *would* place look right,
-then flip `DRY_RUN=false` and run it the same way as the API - a second systemd
-unit with `ExecStart=/usr/bin/npm run bot:only`, `WorkingDirectory=/opt/vaticr`.
+then set `DRY_RUN=false` and give it its own systemd unit with
+`ExecStart=/usr/bin/npm run bot:only` and `WorkingDirectory=/opt/vaticr-bot`.
 
-> The `.env` on this box holds a funded private key. `chmod 600 .env`, keep the
-> box patched, and never commit it.
-
----
+> That `.env` holds a funded private key. `chmod 600` it, keep the box
+> patched, and never commit it.
 
 ## 2. Vercel
 
