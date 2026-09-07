@@ -120,19 +120,26 @@ else
 fi
 [[ -x "$NODE_DIR/bin/node" ]] && { NODE_BIN="$NODE_DIR/bin/node"; NPM_BIN="$NODE_DIR/bin/npm"; ok "private Node already at $NODE_DIR"; }
 
-# Web server
+# Which server owns the edge? Join it; never fight it for the bind.
 WEB80="$(listening_on 80)"; WEB443="$(listening_on 443)"
-NGINX_OK=1
+EDGE=none
 if [[ -n "$WEB80$WEB443" ]]; then
   echo "  port 80: ${WEB80:-free} · port 443: ${WEB443:-free}"
-  if [[ "$WEB80$WEB443" == *nginx* ]]; then
-    ok "nginx already serves this box; Vaticr will be added as one more site"
-  else
-    NGINX_OK=0
-    warn "a non-nginx server holds the web ports - nginx will NOT be installed"
-  fi
+  case "$WEB80$WEB443" in
+    *caddy*) EDGE=caddy; ok "Caddy is the edge; Vaticr will be added as one more site" ;;
+    *nginx*) EDGE=nginx; ok "nginx is the edge; Vaticr will be added as one more site" ;;
+    *)       EDGE=foreign
+             warn "an unrecognised server holds the web ports"
+             warn "no web server will be installed or reconfigured" ;;
+  esac
 else
-  ok "ports 80 and 443 are free"
+  EDGE=nginx-new
+  ok "ports 80 and 443 are free; nginx will be installed"
+fi
+
+# nginx may be installed but idle behind another edge. Never start it.
+if [[ "$EDGE" == caddy ]] && command -v nginx >/dev/null && ! systemctl is-active --quiet nginx; then
+  warn "nginx is installed but not running - leaving it stopped, Caddy owns the ports"
 fi
 
 API_PORT="$(pick_port "$API_PORT" 8799 API)"
@@ -152,8 +159,9 @@ done
 if [[ $CHECK_ONLY -eq 1 ]]; then
   say "Check only - nothing was changed"
   echo "  Plan: API on $API_PORT$([[ $API_ONLY -eq 0 ]] && echo ", web on $WEB_PORT")"
-  [[ -n "$DOMAIN" ]] && echo "  nginx: $DOMAIN, www.$DOMAIN $([[ $NGINX_OK -eq 0 ]] && echo '(SKIPPED - another server holds port 80)')"
-  [[ -n "$TLS_EMAIL" ]] && echo "  TLS: certificate for $DOMAIN via $TLS_EMAIL"
+  [[ -n "$DOMAIN" ]] && echo "  edge: $EDGE will serve $DOMAIN and www.$DOMAIN -> 127.0.0.1:$WEB_PORT"
+  [[ "$EDGE" == caddy ]] && echo "  TLS: automatic, issued by Caddy - certbot not used"
+  [[ "$EDGE" == foreign ]] && echo "  edge: SKIPPED, proxy it yourself"
   [[ $WITH_BOT -eq 1 ]] && echo "  bot: installed in DRY RUN"
   echo "  Re-run without --check to apply."
   exit 0
@@ -338,12 +346,64 @@ if [[ $API_ONLY -eq 0 ]]; then
 fi
 
 # ══════════════════════════════════════════════════════════════════ nginx
-if [[ -n "$DOMAIN" && $NGINX_OK -eq 0 ]]; then
-  say "Skipping nginx"
+if [[ -n "$DOMAIN" && "$EDGE" == foreign ]]; then
+  say "Leaving the edge alone"
   warn "port 80 belongs to: $WEB80"
   warn "Vaticr will not install a second web server or edit that one's config."
   warn "Proxy $DOMAIN to http://127.0.0.1:$WEB_PORT from it yourself."
+
+elif [[ -n "$DOMAIN" && "$EDGE" == caddy ]]; then
+  # ── Caddy ──────────────────────────────────────────────────────────────
+  # Caddy provisions its own certificates, so there is no certbot step and
+  # no renewal to arrange. Our site goes in its own file, imported by the
+  # main Caddyfile, so no existing block is ever edited.
+  say "Adding a Caddy site for $DOMAIN"
+  CADDYFILE=/etc/caddy/Caddyfile
+  [[ -f "$CADDYFILE" ]] || die "Caddy is running but $CADDYFILE is missing - tell me where its config lives"
+
+  CADDY_BACKUP=/root/Caddyfile-before-vaticr-$(date +%Y%m%d-%H%M%S)
+  cp -a "$CADDYFILE" "$CADDY_BACKUP"; ok "backed up $CADDYFILE to $CADDY_BACKUP"
+
+  if grep -qE "^\s*[^#]*\b$DOMAIN\b" "$CADDYFILE" || grep -rqE "^\s*[^#]*\b$DOMAIN\b" /etc/caddy/conf.d/ 2>/dev/null; then
+    warn "$DOMAIN already appears in the Caddy config - check for a conflict"
+  fi
+
+  mkdir -p /etc/caddy/conf.d
+  cat > /etc/caddy/conf.d/vaticr.caddy <<CADDY
+# Vaticr. The web app listens on loopback only; this is its way in.
+$DOMAIN, www.$DOMAIN {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:$WEB_PORT {
+		# /audit recomputes every settlement from the oracle feed.
+		transport http {
+			read_timeout 90s
+		}
+	}
+}
+CADDY
+
+  # Import the directory once, appended at the end so no existing block moves.
+  if ! grep -qE '^\s*import\s+/etc/caddy/conf\.d/' "$CADDYFILE"; then
+    printf '\n# added by Vaticr - per-site files, so this file need not be edited again\nimport /etc/caddy/conf.d/*.caddy\n' >> "$CADDYFILE"
+    ok "added one import line to $CADDYFILE"
+  else
+    ok "$CADDYFILE already imports conf.d"
+  fi
+
+  if caddy validate --config "$CADDYFILE" --adapter caddyfile >/dev/null 2>&1; then
+    systemctl reload caddy
+    ok "Caddy serving $DOMAIN, every other site untouched"
+    ok "TLS will be issued automatically once DNS resolves here"
+  else
+    rm -f /etc/caddy/conf.d/vaticr.caddy
+    cp -a "$CADDY_BACKUP" "$CADDYFILE"
+    echo "  rolled our changes back out; validating the config as it was:"
+    caddy validate --config "$CADDYFILE" --adapter caddyfile || true
+    die "Caddy rejected the new site. Nothing of ours remains; your other sites are unaffected."
+  fi
+
 elif [[ -n "$DOMAIN" ]]; then
+  # Reached only when nginx is the edge, or nothing is.
   say "Configuring nginx for $DOMAIN"
   command -v nginx >/dev/null || { apt-get update -qq; apt-get install -y -qq nginx; }
   tar czf "$NGINX_BACKUP" -C /etc nginx 2>/dev/null && ok "backed up /etc/nginx to $NGINX_BACKUP"
