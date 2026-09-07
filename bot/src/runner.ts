@@ -40,6 +40,7 @@ import { loadVaticrConfig, log, warn, type VaticrConfig } from "./config.js";
 import { VaticrClient, type ForecastEnvelope } from "./signal.js";
 import { ForecastRegistry } from "./registry.js";
 import { NotionalBudget } from "./risk.js";
+import { getSomniaRpcError } from "@somnia-chain/markets-sdk/native";
 import { decide, skipReason, type BookTop } from "./strategy.js";
 
 let stopping = false;
@@ -62,6 +63,27 @@ interface Stats {
 const stats: Stats = {
   cycles: 0, quoted: 0, taken: 0, skipped: 0, errors: 0,
 };
+
+/**
+ * What the NODE said, not what viem made of it.
+ *
+ * Somnia reports a mempool rejection as JSON-RPC -32000 with the real reason in
+ * `message` and a status byte in `data`. viem maps -32000 to
+ * `InvalidInputRpcError`, whose short message is the generic "Missing or
+ * invalid parameters." - so the default log accuses the payload while the node
+ * is actually saying something specific and actionable. The SDK ships the
+ * unwrapper; this uses it, and appends the mempool verdict when there is one.
+ */
+function explain(err: unknown): string {
+  const base = (err as Error)?.message ?? String(err);
+  const rpc = getSomniaRpcError(err);
+  if (!rpc) return base;
+  const status = rpc.mempoolStatus ? ` [${rpc.mempoolStatus}]` : "";
+  const first = base.split("\n")[0];
+  return rpc.message && rpc.message !== first
+    ? `${first} - node said: ${rpc.message}${status}`
+    : `${first}${status}`;
+}
 
 /**
  * Markets this process may have an order resting on.
@@ -353,7 +375,7 @@ async function actOnMarket(
     if (rested) stats.quoted++;
   } catch (err) {
     stats.errors++;
-    warn(`${market.symbol}: ${(err as Error).message}`);
+    warn(`${market.symbol}: ${explain(err)}`);
   }
 }
 
@@ -424,7 +446,7 @@ async function cycle(
       await actOnMarket(ctx, cfg, api, registry, budget, market, envelope);
     } catch (err) {
       stats.errors++;
-      warn(`${market.symbol}: ${(err as Error).message}`);
+      warn(`${market.symbol}: ${explain(err)}`);
     }
   }
 
@@ -437,7 +459,7 @@ async function cycle(
       // returns void - it logs its own sweeps.
       await maybeClaim(ctx);
     } catch (err) {
-      warn(`claim sweep failed: ${(err as Error).message}`);
+      warn(`claim sweep failed: ${explain(err)}`);
     }
   }
 }
