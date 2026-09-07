@@ -321,15 +321,24 @@ export default function Dashboard() {
     <main id="main" className="mx-auto max-w-7xl px-5 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
+          {/* The lockup IS the way back to the landing page, which is where a
+              reader expects a logo to go. A separate "back" link next to a
+              non-clickable wordmark taught the opposite. */}
           <a
             href="/"
-            className="mb-1 inline-flex items-center gap-1.5 text-xs text-slate-400 transition hover:text-slate-200"
+            aria-label="Vaticr — back to the overview"
+            className="group inline-flex items-center gap-2.5 rounded transition"
           >
-            <span aria-hidden>&larr;</span> Back to overview
+            <span
+              aria-hidden
+              className="flex h-9 w-9 items-center justify-center rounded border-2 border-model text-base transition group-hover:border-model/70"
+            >
+              🔮
+            </span>
+            <h1 className="font-mono text-2xl font-bold tracking-[0.16em] text-gray-100 transition group-hover:text-white">
+              VATICR
+            </h1>
           </a>
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
-            Vaticr
-          </h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-400">
             Bayesian forecasting and autonomous market making on DreamDEX Event
             Contracts. A price-process prior, tilted by decayed news evidence,

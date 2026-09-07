@@ -1,0 +1,133 @@
+/**
+ * Footer: brand block on the left, three mono link columns on the right.
+ *
+ * The columns are ordered by who is reading. PRODUCT is for someone who wants
+ * to use it, RESOURCES for someone who wants to check whether the claims hold,
+ * ECOSYSTEM for the protocol this is built on and does not own.
+ */
+import { Github } from "lucide-react";
+
+const GITHUB = "https://github.com/mrnetwork0001/Vaticr";
+const BLOB = `${GITHUB}/blob/main`;
+const EXPLORER = "https://shannon-explorer.somnia.network";
+const REGISTRY = "0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A";
+
+const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] = [
+  {
+    heading: "Product",
+    links: [
+      { label: "Launch app", href: "/dashboard" },
+      { label: "How it works", href: "#how" },
+      { label: "Does the model work?", href: "#evidence" },
+      { label: "Mint-a-pair", href: "#mint" },
+      { label: "Run it yourself", href: "#build" },
+    ],
+  },
+  {
+    heading: "Resources",
+    links: [
+      { label: "README", href: `${BLOB}/README.md` },
+      { label: "Architecture note", href: `${BLOB}/docs/ARCHITECTURE.md` },
+      { label: "SDK feedback report", href: `${BLOB}/docs/SDK_FEEDBACK.md` },
+      { label: "API reference", href: `${BLOB}/docs/API.md` },
+      { label: "Backtest, 900 forecasts", href: `${BLOB}/docs/evidence/backtest-2026-09-04.json` },
+      { label: "114 tests", href: `${GITHUB}/tree/main/tests` },
+    ],
+  },
+  {
+    heading: "Ecosystem",
+    links: [
+      { label: "DreamDEX Event Contracts", href: "https://docs.dreamdex.io/developers/event-contracts" },
+      { label: "dreamDEX Bot Kit", href: "https://github.com/somnia-chain/dreamdex-bot-kit" },
+      { label: "Somnia Network", href: "https://somnia.network" },
+      { label: "markets-sdk", href: "https://www.npmjs.com/package/@somnia-chain/markets-sdk" },
+      { label: "Forecast registry", href: `${EXPLORER}/address/${REGISTRY}` },
+      { label: "Event Contracts Hackathon", href: "https://dorahacks.io/hackathon/event-contracts/detail" },
+    ],
+  },
+];
+
+function FooterLink({ label, href }: { label: string; href: string }) {
+  const cls = "font-mono text-[15px] text-gray-300 transition hover:text-market";
+  const external = !href.startsWith("/") && !href.startsWith("#");
+  return (
+    <a href={href} className={cls} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>
+      {label}
+    </a>
+  );
+}
+
+export default function Footer() {
+  return (
+    <footer className="border-t border-ink-700/70 bg-ink-950 pb-8 pt-14">
+      <div className="mx-auto max-w-page px-4 sm:px-6">
+        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8">
+          {/* brand */}
+          <div className="max-w-md">
+            <a href="#top" className="inline-flex items-center gap-3" aria-label="Vaticr, back to top">
+              <span
+                aria-hidden
+                className="flex h-12 w-12 items-center justify-center rounded border-2 border-model text-xl"
+              >
+                🔮
+              </span>
+              <span>
+                <span className="block font-mono text-2xl font-bold tracking-[0.2em] text-gray-100">
+                  VATICR
+                </span>
+                <span className="block font-mono text-[9px] tracking-[0.18em] text-gray-500">
+                  PRICE THE WINDOW. TRADE THE GAP.
+                </span>
+              </span>
+            </a>
+
+            <p className="mt-8 text-[15px] leading-relaxed text-gray-400">
+              A Bayesian forecasting and market-making agent for DreamDEX Event
+              Contracts on Somnia. It derives the fair probability of every Up/Down
+              window from the price process, tilts it with live news, trades the gap
+              through the official Bot Kit, and commits each forecast on-chain before
+              the window settles — so the track record can be checked by someone who
+              does not trust it.
+            </p>
+
+            <div className="mt-8 flex items-center gap-4">
+              <a
+                href={GITHUB}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Vaticr on GitHub"
+                className="text-gray-400 transition hover:text-market"
+              >
+                <Github size={20} aria-hidden />
+              </a>
+            </div>
+          </div>
+
+          {COLUMNS.map((col) => (
+            <nav key={col.heading} aria-label={col.heading}>
+              <p className="font-mono text-xs uppercase tracking-[0.28em] text-market">
+                {col.heading}
+              </p>
+              <ul className="mt-6 space-y-4">
+                {col.links.map((l) => (
+                  <li key={l.label}>
+                    <FooterLink {...l} />
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
+        </div>
+
+        <div className="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-ink-700/70 pt-6">
+          <p className="font-mono text-[11px] text-gray-600">
+            Apache-2.0 · vendored Bot Kit MIT, © DreamDEX S.A.
+          </p>
+          <p className="font-mono text-[11px] text-gray-600">
+            Markets and settlement are the DreamDEX protocol. The forecasting is Vaticr&rsquo;s.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}

@@ -1,4 +1,5 @@
 import Hero from "./components/landing/Hero";
+import Footer from "./components/landing/Footer";
 import Nav from "./components/landing/Nav";
 import { Code, Mono, Num, Panel, Section, Tag, nth } from "./components/landing/Section";
 import Reveal from "./components/landing/Reveal";
@@ -495,25 +496,7 @@ npm run bot:start   # brain + bot, one command`}</Code>
         </div>
       </section>
 
-      <footer className="border-t border-ink-700/70">
-        <div className="mx-auto flex max-w-page flex-wrap items-center justify-between gap-4 px-4 py-7 sm:px-6">
-          <p className="font-mono text-[11px] text-gray-600">
-            vaticr · apache-2.0 · markets and settlement are the DreamDEX protocol
-          </p>
-          <div className="flex flex-wrap gap-5 font-mono text-[11px]">
-            {[
-              ["GitHub", GITHUB],
-              ["DreamDEX docs", "https://docs.dreamdex.io/developers/event-contracts"],
-              ["Bot Kit", "https://github.com/somnia-chain/dreamdex-bot-kit"],
-              ["Hackathon", "https://dorahacks.io/hackathon/event-contracts/detail"],
-            ].map(([l, h]) => (
-              <a key={l} href={h} target="_blank" rel="noreferrer" className="text-gray-500 transition hover:text-gray-300">
-                {l}
-              </a>
-            ))}
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
