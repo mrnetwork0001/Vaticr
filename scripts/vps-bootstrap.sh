@@ -381,6 +381,25 @@ if [[ $API_ONLY -eq 0 ]]; then
   ok "vaticr-web active on 127.0.0.1:$WEB_PORT"
 fi
 
+# The bot is started only in dry run. Writing the unit and leaving it stopped
+# was worse than either choice: it read as installed and did nothing.
+if [[ $WITH_BOT -eq 1 ]]; then
+  if grep -q '^DRY_RUN=true' "$APP/.env"; then
+    systemctl enable -q vaticr-bot && systemctl restart vaticr-bot
+    sleep 5
+    if systemctl is-active --quiet vaticr-bot; then
+      ok "vaticr-bot active, in DRY RUN - watch it with: journalctl -u vaticr-bot -f"
+    else
+      warn "vaticr-bot did not stay up; its last lines:"
+      journalctl -u vaticr-bot -n 20 --no-pager || true
+    fi
+  else
+    systemctl enable -q vaticr-bot
+    warn "DRY_RUN is not true, so the bot was enabled but NOT started"
+    warn "start it yourself when you mean to trade: systemctl start vaticr-bot"
+  fi
+fi
+
 # ══════════════════════════════════════════════════════════════════ nginx
 if [[ -n "$DOMAIN" && "$EDGE" == foreign ]]; then
   say "Leaving the edge alone"
