@@ -81,6 +81,10 @@ measurements, in our SDK feedback report.
 | Demo video | `[VIDEO URL]` |
 | Repository | `[REPO URL]` |
 | Deck | https://claude.ai/code/artifact/72484586-670b-40fc-814f-a520e14b780e |
+
+Twelve slides. Arrow keys or the on-screen arrows to move, swipe on a phone,
+and **P prints it one slide per page** if DoraHacks wants a PDF rather than a
+link.
 | SDK & documentation feedback | `[REPO URL]/blob/main/docs/SDK_FEEDBACK.md` |
 | Backtest evidence, 900 forecasts | `[REPO URL]/blob/main/docs/evidence/backtest-2026-09-04.json` |
 | Forecast registry on Shannon | https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A |
