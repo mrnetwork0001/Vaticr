@@ -14,7 +14,7 @@
  * tooltips and to screen readers when it is narrow.
  */
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   BarChart3, ChevronLeft, ClipboardCheck, LineChart, Newspaper, Wallet,
 } from "lucide-react";
@@ -66,12 +66,15 @@ export default function AppShell({
     });
   };
 
+  const railW = collapsed ? "68px" : "232px";
+
   return (
-    <div className="flex min-h-screen">
+    <div className="min-h-screen">
       <aside
-        className={`sticky top-0 hidden h-screen shrink-0 flex-col border-r border-ink-700/70 bg-ink-950 transition-[width] duration-200 md:flex ${
-          collapsed ? "w-[68px]" : "w-[232px]"
-        } ${ready ? "" : "invisible"}`}
+        style={{ width: railW }}
+        className={`fixed inset-y-0 left-0 z-30 hidden flex-col overflow-y-auto border-r border-ink-700/70 bg-ink-950 transition-[width] duration-200 md:flex ${
+          ready ? "" : "invisible"
+        }`}
         aria-label="Sections"
       >
         <div className="flex h-16 items-center gap-2.5 px-4">
@@ -150,7 +153,16 @@ export default function AppShell({
         </button>
       </aside>
 
-      <div className="min-w-0 flex-1">{children}</div>
+      {/* The offset is applied only from md up, because the rail itself only
+          exists from md up. Using a CSS variable with Tailwind's md: prefix
+          keeps that breakpoint in CSS rather than in JS, which would flash the
+          wrong layout on first paint. */}
+      <div
+        className="min-w-0 transition-[margin] duration-200 md:ml-[var(--rail)]"
+        style={{ "--rail": railW } as CSSProperties}
+      >
+        {children}
+      </div>
     </div>
   );
 }
