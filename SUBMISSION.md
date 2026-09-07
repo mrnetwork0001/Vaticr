@@ -6,7 +6,9 @@ Fill the four bracketed placeholders before submitting.
 - `[LIVE URL]` - the Vercel deployment
 - `[VIDEO URL]` - the 2-3 minute walkthrough
 - `[REPO URL]` - `https://github.com/mrnetwork0001/Vaticr` **once it is reachable by judges**
-- `[DECK URL]` - the presentation deck
+- `[DECK URL]` - https://claude.ai/code/artifact/72484586-670b-40fc-814f-a520e14b780e
+  (**share it from the page's share menu first** - artifacts are private by default,
+  so an unshared link opens for you and 404s for a judge)
 
 ---
 
@@ -78,7 +80,7 @@ measurements, in our SDK feedback report.
 | Live app | `[LIVE URL]` |
 | Demo video | `[VIDEO URL]` |
 | Repository | `[REPO URL]` |
-| Deck | `[DECK URL]` |
+| Deck | https://claude.ai/code/artifact/72484586-670b-40fc-814f-a520e14b780e |
 | SDK & documentation feedback | `[REPO URL]/blob/main/docs/SDK_FEEDBACK.md` |
 | Backtest evidence, 900 forecasts | `[REPO URL]/blob/main/docs/evidence/backtest-2026-09-04.json` |
 | Forecast registry on Shannon | https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A |

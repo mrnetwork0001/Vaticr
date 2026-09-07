@@ -1,0 +1,1023 @@
+<title>Vaticr</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  /* ------------------------------------------------------------------------
+     Tokens are lifted from the product's own tailwind.config.ts, so the deck
+     and the app cannot drift. The two that matter are semantic, not
+     decorative: indigo is what the MODEL says, amber is what the BOOK asks.
+     Every chart, rule and figure in this deck obeys that, because the gap
+     between those two colours is the entire business.
+
+     Committed dark. This is a trading surface; it has one visual world, and
+     every colour below is painted explicitly so it holds on any host ground.
+  --------------------------------------------------------------------------- */
+  :root {
+    --ground:   #07090f;
+    --surface:  #0e1420;
+    --raised:   #131b2b;
+    --line:     #1f2937;
+    --line-soft:#151f30;
+
+    --model:    #818cf8;
+    --model-dim:#4c53a5;
+    --market:   #f0b90b;
+    --market-dim:#8a6c0a;
+    --up:       #34d399;
+    --down:     #fb7185;
+
+    --text:     #e8eaf0;
+    --muted:    #8b95a9;   /* grey biased toward the indigo, not neutral */
+    --faint:    #5a6479;
+
+    --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+    --body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    --col: 1120px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--model); color: #07090f; }
+
+  a { color: var(--model); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  a:focus-visible, button:focus-visible {
+    outline: 2px solid var(--model);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* ---------------------------------------------------------------- shell */
+
+  .rail {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 78px;
+    border-right: 1px solid var(--line-soft);
+    background: var(--ground);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    padding: 26px 0;
+    gap: 14px;
+    z-index: 10;
+  }
+  @media (min-width: 1060px) { .rail { display: flex; } body { padding-left: 78px; } }
+
+  .rail-mark {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--text);
+    writing-mode: vertical-rl;
+    margin-bottom: 6px;
+  }
+  .rail a {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--faint);
+    letter-spacing: 0.04em;
+    padding: 3px 0;
+    transition: color .15s;
+  }
+  .rail a:hover { color: var(--model); text-decoration: none; }
+
+  section {
+    border-top: 1px solid var(--line-soft);
+    padding: 74px 24px;
+  }
+  section:first-of-type { border-top: 0; }
+  .alt { background: var(--surface); }
+  .wrap { max-width: var(--col); margin: 0 auto; }
+
+  /* ------------------------------------------------------------ typography */
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--model);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0 0 18px;
+  }
+  .eyebrow .n { color: var(--faint); }
+
+  h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(38px, 6.4vw, 74px);
+    line-height: 0.98;
+    letter-spacing: -0.032em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: clamp(26px, 3.6vw, 40px);
+    line-height: 1.08;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+  }
+  h3 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: -0.008em;
+    margin: 0 0 7px;
+  }
+  p { margin: 0 0 15px; max-width: 66ch; color: var(--muted); }
+  p.lead { font-size: 19px; line-height: 1.55; color: #c3cad8; }
+  strong { color: var(--text); font-weight: 600; }
+  em { color: var(--text); font-style: italic; }
+
+  .model-word  { color: var(--model);  font-weight: 600; }
+  .market-word { color: var(--market); font-weight: 600; }
+
+  code, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  code {
+    font-size: 0.88em;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: #cdd4e2;
+  }
+
+  /* ---------------------------------------------------------------- hero */
+
+  .hero-top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-bottom: 26px; }
+  .wordmark {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 21px;
+    letter-spacing: 0.16em;
+  }
+  .hero-meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--faint);
+    letter-spacing: 0.06em;
+  }
+  .tagline {
+    font-family: var(--mono);
+    font-size: clamp(12px, 1.7vw, 15px);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--market);
+    margin: 22px 0 0;
+  }
+
+  /* --------------------------------------------------------------- figures */
+
+  .figure {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+    padding: 20px 20px 14px;
+    margin: 26px 0 0;
+  }
+  .alt .figure { background: var(--raised); }
+  .figure svg { display: block; width: 100%; height: auto; }
+  .figcap {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.65;
+    color: var(--faint);
+    margin: 12px 0 0;
+    max-width: none;
+  }
+
+  /* ----------------------------------------------------------------- stats */
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 34px;
+  }
+  .stat { background: var(--ground); padding: 17px 18px 15px; }
+  .alt .stat { background: var(--surface); }
+  .stat .k {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .stat .v {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 31px;
+    line-height: 1.15;
+    margin-top: 5px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .stat .s { font-family: var(--mono); font-size: 11px; color: var(--faint); margin-top: 2px; }
+  .v.good { color: var(--up); }
+  .v.mdl  { color: var(--model); }
+  .stats.words .v { font-size: 21px; letter-spacing: -0.01em; line-height: 1.25; }
+
+  /* ----------------------------------------------------------------- steps */
+
+  .steps { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin-top: 26px; }
+  .step { background: var(--surface); padding: 19px 20px; display: grid; grid-template-columns: 42px 1fr; gap: 16px; align-items: start; }
+  .alt .step { background: var(--raised); }
+  .step .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--model);
+    padding-top: 3px;
+    letter-spacing: 0.06em;
+  }
+  .step p { margin: 0; font-size: 14.5px; }
+
+  /* ------------------------------------------------------------------ grid */
+
+  .two { display: grid; gap: 22px; }
+  @media (min-width: 860px) { .two { grid-template-columns: 1fr 1fr; gap: 34px; } }
+  .two.tilt { grid-template-columns: 1fr; }
+  @media (min-width: 860px) { .two.tilt { grid-template-columns: 1.15fr 1fr; } }
+
+  .note {
+    border-left: 2px solid var(--model);
+    padding: 2px 0 2px 18px;
+    margin: 24px 0 0;
+  }
+  .note p { margin: 0; }
+  .note.amber { border-left-color: var(--market); }
+
+  /* ----------------------------------------------------------------- table */
+
+  .scroll { overflow-x: auto; margin-top: 24px; }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 14px 9px 0; border-bottom: 1px solid var(--line-soft); }
+  th {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--faint);
+    font-weight: 500;
+    border-bottom-color: var(--line);
+  }
+  td { color: var(--muted); vertical-align: top; }
+  td.k { color: var(--text); font-weight: 500; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--text); }
+  tr.hero-row td { background: rgba(129,140,248,0.07); }
+  tr.hero-row td.k { color: var(--model); font-weight: 600; }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    border: 1px solid;
+    border-radius: 3px;
+    padding: 1px 6px;
+    white-space: nowrap;
+  }
+  .tag.up   { color: var(--up);    border-color: rgba(52,211,153,0.4);  background: rgba(52,211,153,0.09); }
+  .tag.mdl  { color: var(--model); border-color: rgba(129,140,248,0.4); background: rgba(129,140,248,0.09); }
+  .tag.mkt  { color: var(--market);border-color: rgba(240,185,11,0.4);  background: rgba(240,185,11,0.09); }
+
+  /* --------------------------------------------------------------- finding */
+
+  .findings { display: grid; gap: 14px; margin-top: 26px; }
+  .finding {
+    display: grid;
+    grid-template-columns: 26px 1fr;
+    gap: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .finding:last-child { border-bottom: 0; padding-bottom: 0; }
+  .finding .fn { font-family: var(--mono); font-size: 12px; color: var(--faint); padding-top: 2px; }
+  .finding p { margin: 0; font-size: 14.5px; }
+  .finding .ft { color: var(--text); font-weight: 600; }
+
+  /* ---------------------------------------------------------------- footer */
+
+  footer { border-top: 1px solid var(--line); padding: 40px 24px 60px; }
+  .links { display: flex; flex-wrap: wrap; gap: 10px 26px; font-family: var(--mono); font-size: 12.5px; }
+  .foot-note { font-family: var(--mono); font-size: 11.5px; color: var(--faint); margin-top: 22px; max-width: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<nav class="rail" aria-label="Sections">
+  <span class="rail-mark">VATICR</span>
+  <a href="#s1">01</a>
+  <a href="#s2">02</a>
+  <a href="#s3">03</a>
+  <a href="#s4">04</a>
+  <a href="#s5">05</a>
+  <a href="#s6">06</a>
+  <a href="#s7">07</a>
+  <a href="#s8">08</a>
+  <a href="#s9">09</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════ 01 · thesis -->
+<section id="s1">
+  <div class="wrap">
+    <div class="hero-top">
+      <span class="wordmark">VATICR</span>
+      <span class="hero-meta">SOMNIA × DREAMDEX EVENT CONTRACTS · SEPTEMBER 2026</span>
+    </div>
+
+    <h1>An event contract<br>is a probability.<br>So derive it.</h1>
+    <p class="tagline">Price the window · trade the gap · prove the record</p>
+
+    <p class="lead" style="margin-top:30px">
+      Every DreamDEX Up/Down window asks one question: will it close at or above
+      the price it opened at? That makes the fair value of a YES token a real
+      probability, not an opinion. Vaticr derives it, trades the distance to the
+      book, and commits every forecast on-chain <em>before</em> the window
+      settles, so the track record cannot be edited after the outcome is known.
+    </p>
+
+    <!-- The most characteristic object in this subject's world: one real
+         window, the model's number against the book's, and the distance
+         between them. Every figure is from the transaction linked in 07. -->
+    <div class="figure">
+      <svg viewBox="0 0 1000 186" role="img"
+           aria-label="Probability axis from 0 to 1. The model's posterior sits at 73.26 percent; the order book's touch is 85.2 to 87.6 percent; Vaticr's resting bid is at 71.3 percent. The distance between the model and the book is the tradable gap.">
+        <!-- gap band -->
+        <rect x="704.7" y="60" width="105.1" height="34" fill="rgba(129,140,248,0.10)"/>
+        <!-- book spread -->
+        <rect x="809.8" y="60" width="21.1" height="34" fill="rgba(240,185,11,0.20)"/>
+
+        <!-- axis -->
+        <line x1="60" y1="94" x2="940" y2="94" stroke="#1f2937" stroke-width="1.5"/>
+        <g font-family="JetBrains Mono, monospace" font-size="11" fill="#5a6479">
+          <line x1="60"  y1="94" x2="60"  y2="101" stroke="#1f2937" stroke-width="1.5"/>
+          <text x="60"  y="118" text-anchor="middle">0.00</text>
+          <line x1="280" y1="94" x2="280" y2="101" stroke="#1f2937" stroke-width="1.5"/>
+          <text x="280" y="118" text-anchor="middle">0.25</text>
+          <line x1="500" y1="94" x2="500" y2="101" stroke="#1f2937" stroke-width="1.5"/>
+          <text x="500" y="118" text-anchor="middle">0.50</text>
+          <line x1="720" y1="94" x2="720" y2="101" stroke="#1f2937" stroke-width="1.5"/>
+          <text x="720" y="118" text-anchor="middle">0.75</text>
+          <line x1="940" y1="94" x2="940" y2="101" stroke="#1f2937" stroke-width="1.5"/>
+          <text x="940" y="118" text-anchor="middle">1.00</text>
+        </g>
+
+        <!-- model posterior -->
+        <line x1="704.7" y1="46" x2="704.7" y2="94" stroke="#818cf8" stroke-width="2.5"/>
+        <circle cx="704.7" cy="94" r="4.5" fill="#818cf8"/>
+        <text x="700" y="34" text-anchor="end" font-family="JetBrains Mono, monospace"
+              font-size="12.5" font-weight="700" fill="#818cf8">MODEL 0.7326</text>
+        <text x="700" y="18" text-anchor="end" font-family="JetBrains Mono, monospace"
+              font-size="10.5" fill="#4c53a5">posterior</text>
+
+        <!-- book touch -->
+        <line x1="809.8" y1="46" x2="809.8" y2="94" stroke="#f0b90b" stroke-width="2.5"/>
+        <line x1="830.9" y1="52" x2="830.9" y2="94" stroke="#8a6c0a" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="809.8" cy="94" r="4.5" fill="#f0b90b"/>
+        <text x="838" y="34" font-family="JetBrains Mono, monospace"
+              font-size="12.5" font-weight="700" fill="#f0b90b">BOOK 0.852 / 0.876</text>
+        <text x="838" y="18" font-family="JetBrains Mono, monospace"
+              font-size="10.5" fill="#8a6c0a">bid / ask</text>
+
+        <!-- the gap -->
+        <text x="757" y="80" text-anchor="middle" font-family="JetBrains Mono, monospace"
+              font-size="11" fill="#818cf8">the gap</text>
+
+        <!-- resting bid, below the axis -->
+        <line x1="687.4" y1="94" x2="687.4" y2="134" stroke="#4c53a5" stroke-width="1.5" stroke-dasharray="3 3"/>
+        <circle cx="687.4" cy="94" r="3.5" fill="none" stroke="#4c53a5" stroke-width="1.5"/>
+        <text x="682" y="150" text-anchor="end" font-family="JetBrains Mono, monospace"
+              font-size="11" fill="#8b95a9">post-only BUY_YES @ 0.713</text>
+        <text x="682" y="166" text-anchor="end" font-family="JetBrains Mono, monospace"
+              font-size="10" fill="#5a6479">rests inside the touch - never crosses</text>
+      </svg>
+      <p class="figcap">
+        ETH-0-02SEP26-0330/tUSDC, 318 seconds before expiry. Indigo is what the
+        model says; amber is what the book asks. The deck keeps that pairing
+        throughout.
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="k">Brier score</div>
+        <div class="v mdl">0.15522</div>
+        <div class="s">coin flip = 0.25</div>
+      </div>
+      <div class="stat">
+        <div class="k">Skill</div>
+        <div class="v good">+0.3791</div>
+        <div class="s">over 900 forecasts</div>
+      </div>
+      <div class="stat">
+        <div class="k">Accuracy</div>
+        <div class="v">76.22%</div>
+        <div class="s">300 settled windows</div>
+      </div>
+      <div class="stat">
+        <div class="k">Inventory to quote</div>
+        <div class="v">0</div>
+        <div class="s">both sides, mint-a-pair</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 02 · problem -->
+<section id="s2" class="alt">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">02</span> The problem</p>
+    <div class="two tilt">
+      <div>
+        <h2>The number is knowable. Nobody computes it.</h2>
+        <p>
+          A binary event contract has a closed-form fair value. Given where the
+          price sits relative to the window's open, how long is left, and how
+          volatile the underlying is, the probability of closing above the open
+          is a calculation, not a guess.
+        </p>
+        <p>
+          Yet the book is quoted by people eyeballing a chart. And when a window
+          settles, there is no way to tell whether any given quote was skilful
+          or lucky, because nothing was written down beforehand. Every track
+          record in prediction markets is a claim made after the fact.
+        </p>
+      </div>
+      <div>
+        <div class="note">
+          <p><strong>Three things a new venue needs</strong></p>
+        </div>
+        <div class="steps" style="margin-top:16px">
+          <div class="step">
+            <span class="num">01</span>
+            <p><strong>Resting liquidity.</strong> An empty book quotes nothing, and nobody trades an empty book. The constraint is capital: a maker normally needs inventory on both sides.</p>
+          </div>
+          <div class="step">
+            <span class="num">02</span>
+            <p><strong>Prices worth trusting.</strong> If the quote is a guess, the spread is compensation for not knowing rather than for taking risk.</p>
+          </div>
+          <div class="step">
+            <span class="num">03</span>
+            <p><strong>Settlement worth trusting.</strong> Automatic on-chain settlement is only as convincing as a trader's ability to check it independently.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 03 · insight -->
+<section id="s3">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">03</span> The insight</p>
+    <h2>Two voices, one number.</h2>
+    <p class="lead">
+      <span class="model-word">What the model says</span> and
+      <span class="market-word">what the book asks</span> are both estimates of
+      the same probability. Whenever they disagree by more than fees, there is a
+      trade. That is the whole strategy, and it is why this deck has exactly two
+      accent colours.
+    </p>
+
+    <div class="two" style="margin-top:30px">
+      <div>
+        <h3 style="color:var(--model)">The prior, from the price process</h3>
+        <p style="font-size:14.5px">
+          A closed-form GBM barrier probability. Where the window sits relative
+          to its own open, given time remaining and measured volatility.
+        </p>
+        <div class="figure" style="margin-top:16px">
+          <svg viewBox="0 0 560 92" role="img"
+               aria-label="P of S at T at least S nought equals Phi of the quantity natural log of S over S nought, minus sigma squared tau over two, all divided by sigma root tau.">
+            <text x="16" y="52" font-family="JetBrains Mono, monospace" font-size="20" fill="#e8eaf0">P(S</text>
+            <text x="55" y="58" font-family="JetBrains Mono, monospace" font-size="13" fill="#8b95a9">T</text>
+            <text x="66" y="52" font-family="JetBrains Mono, monospace" font-size="20" fill="#e8eaf0">≥ S</text>
+            <text x="105" y="58" font-family="JetBrains Mono, monospace" font-size="13" fill="#8b95a9">0</text>
+            <text x="116" y="52" font-family="JetBrains Mono, monospace" font-size="20" fill="#e8eaf0">) = Φ</text>
+            <text x="168" y="52" font-family="JetBrains Mono, monospace" font-size="26" fill="#4c53a5">(</text>
+            <text x="192" y="42" font-family="JetBrains Mono, monospace" font-size="15" fill="#818cf8">ln(S/S₀) − σ²τ/2</text>
+            <line x1="188" y1="50" x2="392" y2="50" stroke="#4c53a5" stroke-width="1.2"/>
+            <text x="258" y="70" font-family="JetBrains Mono, monospace" font-size="15" fill="#818cf8">σ√τ</text>
+            <text x="396" y="52" font-family="JetBrains Mono, monospace" font-size="26" fill="#4c53a5">)</text>
+          </svg>
+        </div>
+        <p style="font-size:14.5px;margin-top:16px">
+          <code>σ</code> is measured from live ticks, not assumed. <code>τ</code>
+          is the fraction of the window still open.
+        </p>
+      </div>
+      <div>
+        <h3 style="color:var(--market)">The posterior, from the news</h3>
+        <p style="font-size:14.5px">
+          Live headlines are scored for directional impact on BTC and ETH, then
+          folded in as log-likelihood ratios. Log-odds is the right space for
+          this: evidence is additive there, so a second headline strengthens the
+          first without either one being able to run the probability to 0 or 1.
+        </p>
+        <div class="figure" style="margin-top:16px">
+          <svg viewBox="0 0 560 92" role="img"
+               aria-label="Logit of the posterior equals logit of the prior plus the sum over headlines of kappa times score times decay.">
+            <text x="16" y="52" font-family="JetBrains Mono, monospace" font-size="17" fill="#e8eaf0">logit(p</text>
+            <text x="88" y="58" font-family="JetBrains Mono, monospace" font-size="12" fill="#8b95a9">post</text>
+            <text x="126" y="52" font-family="JetBrains Mono, monospace" font-size="17" fill="#e8eaf0">) = logit(p</text>
+            <text x="228" y="58" font-family="JetBrains Mono, monospace" font-size="12" fill="#8b95a9">prior</text>
+            <text x="272" y="52" font-family="JetBrains Mono, monospace" font-size="17" fill="#e8eaf0">) +</text>
+            <text x="312" y="52" font-family="JetBrains Mono, monospace" font-size="24" fill="#8a6c0a">Σ</text>
+            <text x="338" y="52" font-family="JetBrains Mono, monospace" font-size="15" fill="#f0b90b">κ · sᵢ · dᵢ</text>
+          </svg>
+        </div>
+        <p style="font-size:14.5px;margin-top:16px">
+          Each contribution decays by the headline's age, its source's
+          credibility, and how much of the window is left. Near expiry, news
+          stops mattering and the price process takes over.
+        </p>
+      </div>
+    </div>
+
+    <div class="note amber">
+      <p>
+        <strong>The evidence layer is excluded from the published backtest.</strong>
+        A historical scout window cannot be reconstructed without leaking the
+        future, so every number in section 06 measures the price-process prior
+        <em>alone</em>. The news layer can only be judged live.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 04 · product -->
+<section id="s4" class="alt">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">04</span> How it works</p>
+    <h2>Four subsystems, one command.</h2>
+    <p>
+      Python reads and models; TypeScript owns every write, because that is
+      where the Bot Kit and markets-sdk own signing, nonces and escrow, and two
+      senders on one key race each other.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <span class="num">01</span>
+        <p><strong>Derive.</strong> The prior from the price process, tilted by scored headlines, refreshed every few seconds per live window.</p>
+      </div>
+      <div class="step">
+        <span class="num">02</span>
+        <p><strong>Decide.</strong> Take when the posterior clears the touch by more than fees. Otherwise rest a two-sided quote and wait to be hit.</p>
+      </div>
+      <div class="step">
+        <span class="num">03</span>
+        <p><strong>Trade.</strong> Through the official dreamDEX Bot Kit and <code>@somnia-chain/markets-sdk</code>, against the real CLOB. Post-only unless crossing is intended.</p>
+      </div>
+      <div class="step">
+        <span class="num">04</span>
+        <p><strong>Commit.</strong> Each forecast is written to a <code>VaticrForecastRegistry</code> contract while the window is still open. Append-only, one row per market.</p>
+      </div>
+      <div class="step">
+        <span class="num">05</span>
+        <p><strong>Audit.</strong> Every settled window is recomputed from the public oracle feed and compared to the on-chain winner, then Brier-scored against a coin flip in the app.</p>
+      </div>
+    </div>
+
+    <div class="note">
+      <p>
+        Step 05 is the one that could embarrass us, which is exactly why it
+        ships in the product rather than in a slide. If the model drifts, the
+        calibration view shows it to every user at the same time it shows us.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 05 · mint -->
+<section id="s5">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">05</span> Mint-a-pair</p>
+    <h2>Two resting buys are a complete quote.</h2>
+    <p class="lead">
+      On a binary book, <code>Buy YES × Buy NO</code> needs no seller. The pool
+      mints a fresh pair for two opposite-side buyers. So a resting
+      <code>BUY_YES @ p−δ</code> plus <code>BUY_NO @ (1−p)−δ</code> is a
+      two-sided market made with <strong>no inventory and no counterparty
+      maker</strong>.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Crossing</th><th>Path</th><th>What happens</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="k">Buy YES × Sell YES</td><td class="num">direct</td><td>tokens ↔ collateral</td></tr>
+          <tr><td class="k">Buy NO × Sell NO</td><td class="num">direct</td><td>tokens ↔ collateral</td></tr>
+          <tr class="hero-row"><td class="k">Buy YES × Buy NO</td><td class="num">mint-a-pair</td><td>the pool mints a fresh pair, no seller needed</td></tr>
+          <tr><td class="k">Sell YES × Sell NO</td><td class="num">burn-a-pair</td><td>both positions burn</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="two" style="margin-top:32px">
+      <div>
+        <h3>Why it matters to the venue</h3>
+        <p style="font-size:14.5px">
+          The binding constraint on a young order book is the capital a maker
+          must hold to quote both sides. Mint-a-pair removes it. One small agent
+          can quote every live window at once, and the only risk it carries is
+          its net imbalance, not a full inventory.
+        </p>
+      </div>
+      <div>
+        <h3>Why it matters to us</h3>
+        <p style="font-size:14.5px">
+          Vaticr never sells. It quotes around a probability it actually
+          computed, so the spread is compensation for risk rather than for
+          ignorance, and it can afford to sit tighter than a maker who is
+          guessing.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 06 · evidence -->
+<section id="s6" class="alt">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">06</span> Does it work</p>
+    <h2>900 forecasts, scored against a coin flip.</h2>
+    <p>
+      300 settled windows the model never saw, three decision points each, on
+      32,413 real ticks per asset. Lookahead-free: volatility and level at every
+      decision point use only ticks at or before that instant, asserted on all
+      900 cases and re-run against a physically truncated history on 120 of
+      them, all 120 matching.
+    </p>
+
+    <div class="two" style="margin-top:6px">
+      <div class="figure">
+        <svg viewBox="0 0 460 330" role="img"
+             aria-label="Reliability diagram. Ten forecast buckets plotted as mean forecast against observed rate of upward closes, following the diagonal closely from 0.05 to 0.98.">
+          <!-- frame -->
+          <rect x="52" y="20" width="380" height="250" fill="none" stroke="#1f2937" stroke-width="1"/>
+          <!-- grid -->
+          <g stroke="#151f30" stroke-width="1">
+            <line x1="52"  y1="82.5"  x2="432" y2="82.5"/>
+            <line x1="52"  y1="145"   x2="432" y2="145"/>
+            <line x1="52"  y1="207.5" x2="432" y2="207.5"/>
+            <line x1="147" y1="20" x2="147" y2="270"/>
+            <line x1="242" y1="20" x2="242" y2="270"/>
+            <line x1="337" y1="20" x2="337" y2="270"/>
+          </g>
+          <!-- perfect calibration -->
+          <line x1="52" y1="270" x2="432" y2="20" stroke="#5a6479" stroke-width="1.2" stroke-dasharray="4 4"/>
+          <text x="366" y="60" font-family="JetBrains Mono, monospace" font-size="10" fill="#5a6479">perfect</text>
+
+          <!-- observed: x = 52 + f*380, y = 270 - o*250 -->
+          <polyline fill="none" stroke="#818cf8" stroke-width="2"
+            points="69.7,257.3 107.3,245.7 146.1,225.9 185.0,199.9 222.2,168.5 261.6,148.8 299.5,114.3 336.7,87.3 374.4,52.6 419.0,24.2"/>
+          <g fill="#818cf8">
+            <circle cx="69.7"  cy="257.3" r="3.4"/>
+            <circle cx="107.3" cy="245.7" r="3.4"/>
+            <circle cx="146.1" cy="225.9" r="3.4"/>
+            <circle cx="185.0" cy="199.9" r="3.4"/>
+            <circle cx="222.2" cy="168.5" r="3.4"/>
+            <circle cx="261.6" cy="148.8" r="3.4"/>
+            <circle cx="299.5" cy="114.3" r="3.4"/>
+            <circle cx="336.7" cy="87.3"  r="3.4"/>
+            <circle cx="374.4" cy="52.6"  r="3.4"/>
+            <circle cx="419.0" cy="24.2"  r="3.4"/>
+          </g>
+
+          <!-- axes -->
+          <g font-family="JetBrains Mono, monospace" font-size="10" fill="#5a6479">
+            <text x="52"  y="288" text-anchor="middle">0.0</text>
+            <text x="147" y="288" text-anchor="middle">0.25</text>
+            <text x="242" y="288" text-anchor="middle">0.5</text>
+            <text x="337" y="288" text-anchor="middle">0.75</text>
+            <text x="432" y="288" text-anchor="middle">1.0</text>
+            <text x="46"  y="274" text-anchor="end">0.0</text>
+            <text x="46"  y="211" text-anchor="end">0.25</text>
+            <text x="46"  y="149" text-anchor="end">0.5</text>
+            <text x="46"  y="86"  text-anchor="end">0.75</text>
+            <text x="46"  y="24"  text-anchor="end">1.0</text>
+            <text x="242" y="310" text-anchor="middle" fill="#8b95a9">mean forecast</text>
+          </g>
+          <text x="14" y="145" font-family="JetBrains Mono, monospace" font-size="10" fill="#8b95a9"
+                transform="rotate(-90 14 145)" text-anchor="middle">observed up rate</text>
+        </svg>
+        <p class="figcap">
+          Reliability. A forecast of 0.75 should be right about three times in
+          four, and it is. The line tracks the diagonal at every bucket, which
+          is what separates a calibrated model from one that is merely
+          confident.
+        </p>
+      </div>
+
+      <div class="figure">
+        <svg viewBox="0 0 460 330" role="img"
+             aria-label="Skill against the coin flip by fraction of window elapsed: 0.18 at one quarter elapsed, 0.35 at half, 0.61 at three quarters.">
+          <rect x="62" y="20" width="370" height="230" fill="none" stroke="#1f2937" stroke-width="1"/>
+          <g stroke="#151f30" stroke-width="1">
+            <line x1="62" y1="66"  x2="432" y2="66"/>
+            <line x1="62" y1="112" x2="432" y2="112"/>
+            <line x1="62" y1="158" x2="432" y2="158"/>
+            <line x1="62" y1="204" x2="432" y2="204"/>
+          </g>
+          <!-- zero line = coin flip -->
+          <line x1="62" y1="250" x2="432" y2="250" stroke="#5a6479" stroke-width="1.4"/>
+          <text x="432" y="264" text-anchor="end" font-family="JetBrains Mono, monospace"
+                font-size="10" fill="#5a6479">coin flip</text>
+
+          <!-- bars: y = 250 - skill*306.6 ; skill 0.1816 / 0.3469 / 0.6088 -->
+          <rect x="102" y="194.3" width="72" height="55.7" fill="#4c53a5"/>
+          <rect x="211" y="143.6" width="72" height="106.4" fill="#6570d4"/>
+          <rect x="320" y="63.3"  width="72" height="186.7" fill="#818cf8"/>
+
+          <g font-family="JetBrains Mono, monospace" font-size="13" font-weight="700" fill="#e8eaf0" text-anchor="middle">
+            <text x="138" y="185">+0.1816</text>
+            <text x="247" y="134">+0.3469</text>
+            <text x="356" y="54">+0.6088</text>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="11" fill="#8b95a9" text-anchor="middle">
+            <text x="138" y="270">25% elapsed</text>
+            <text x="247" y="270">50% elapsed</text>
+            <text x="356" y="270">75% elapsed</text>
+            <text x="138" y="286" fill="#5a6479">n=300</text>
+            <text x="247" y="286" fill="#5a6479">n=300</text>
+            <text x="356" y="286" fill="#5a6479">n=300</text>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="10" fill="#5a6479" text-anchor="end">
+            <text x="56" y="254">0.0</text>
+            <text x="56" y="208">0.15</text>
+            <text x="56" y="162">0.30</text>
+            <text x="56" y="116">0.45</text>
+            <text x="56" y="70">0.60</text>
+          </g>
+          <text x="14" y="135" font-family="JetBrains Mono, monospace" font-size="10" fill="#8b95a9"
+                transform="rotate(-90 14 135)" text-anchor="middle">skill vs coin flip</text>
+        </svg>
+        <p class="figcap">
+          The edge sharpens as the window closes, because less time means less
+          the price can still do. This is the argument for short windows: the
+          300-second contracts the bot actually trades score +0.3865 over
+          n=597.
+        </p>
+      </div>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Slice</th><th>n</th><th>Brier</th><th>Skill</th><th>Accuracy</th><th>Log loss</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hero-row"><td class="k">All forecasts</td><td class="num">900</td><td class="num">0.15522</td><td class="num">+0.3791</td><td class="num">76.22%</td><td class="num">0.46816</td></tr>
+          <tr><td class="k">BTC</td><td class="num">450</td><td class="num">0.15294</td><td class="num">+0.3882</td><td class="num">76.89%</td><td class="num">0.45954</td></tr>
+          <tr><td class="k">ETH</td><td class="num">450</td><td class="num">0.15751</td><td class="num">+0.3700</td><td class="num">75.56%</td><td class="num">0.47677</td></tr>
+          <tr><td class="k">300s windows</td><td class="num">597</td><td class="num">0.15337</td><td class="num">+0.3865</td><td class="num">75.04%</td><td class="num">0.46017</td></tr>
+          <tr><td class="k">Climatology baseline</td><td class="num">900</td><td class="num">0.24990</td><td class="num">n/a</td><td class="num">n/a</td><td class="num">n/a</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="figcap" style="margin-top:14px">
+      Frozen at <code>docs/evidence/backtest-2026-09-04.json</code> and committed
+      to the repository, so these figures can be recomputed rather than taken on
+      trust. The long windows are thin and closer to a coin flip on small
+      samples; that is in the file too.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 07 · proof -->
+<section id="s7">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">07</span> On-chain proof</p>
+    <h2>Not a dry run.</h2>
+    <p>
+      One command put the whole loop on Somnia's Shannon testnet. Every step is
+      independently verifiable on the explorer, and the commitment can be read
+      back off the chain today.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr><th>Step</th><th>State</th><th>What it proves</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="k">Registry deployed</td>
+            <td><span class="tag up">confirmed</span></td>
+            <td>Append-only forecast commitments, one row per market</td>
+          </tr>
+          <tr>
+            <td class="k">tUSDC minted</td>
+            <td><span class="tag up">confirmed</span></td>
+            <td>Collateral from the public faucet, 10,000 tUSDC</td>
+          </tr>
+          <tr class="hero-row">
+            <td class="k">Forecast committed</td>
+            <td><span class="tag mdl">318s early</span></td>
+            <td>Posterior 73.26% written while the outcome was still unknown</td>
+          </tr>
+          <tr>
+            <td class="k">Order resting on the book</td>
+            <td><span class="tag mkt">post-only</span></td>
+            <td>BUY_YES 1 @ 0.713 against a 0.852 / 0.876 book</td>
+          </tr>
+          <tr>
+            <td class="k">Escrow reconciles</td>
+            <td><span class="tag up">9999.287</span></td>
+            <td>Exactly 10,000 minted minus the 0.713 the order locked</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <p>
+        <strong>318 seconds is the whole argument.</strong> The forecast was
+        public and immutable while the window was still open. A track record
+        assembled this way cannot be curated afterwards, which is the difference
+        between evidence and a screenshot.
+      </p>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="k">Tests</div><div class="v">114</div><div class="s">75 Python · 32 TS · 7 Solidity</div></div>
+      <div class="stat"><div class="k">Chain</div><div class="v">50312</div><div class="s">Somnia Shannon testnet</div></div>
+      <div class="stat"><div class="k">Ticks replayed</div><div class="v">32,413</div><div class="s">per asset, real feed</div></div>
+      <div class="stat"><div class="k">Truncation checks</div><div class="v good">120/120</div><div class="s">lookahead-free, verified</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 08 · findings -->
+<section id="s8" class="alt">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">08</span> What we found</p>
+    <h2>Two undocumented facts change what a correct price is.</h2>
+    <p>
+      Building this surfaced six substantive issues in the SDK and docs, each
+      hit in practice and verified against live testnet data. Two of them are
+      not cosmetic: they silently make a careful implementation wrong.
+    </p>
+
+    <div class="findings">
+      <div class="finding">
+        <span class="fn">01</span>
+        <p>
+          <span class="ft">Settlement resolves against the EMA, not spot.</span>
+          Over the eight most recent settlements, <code>mark</code> reproduced
+          the on-chain winner 8/8 while <code>spot</code> managed 6/8 -
+          disagreeing on exactly the near-the-money windows most worth trading.
+          Price off the wrong series and you are confidently wrong where it
+          costs most.
+        </p>
+      </div>
+      <div class="finding">
+        <span class="fn">02</span>
+        <p>
+          <span class="ft">That feed is a 1-second EMA, so naive volatility reads about 4× too low.</span>
+          Consecutive increments are heavily autocorrelated; the textbook
+          estimator measures the smoothing rather than the process. Volatility
+          has to be estimated from <code>spot</code> on a 30-second grid.
+        </p>
+      </div>
+      <div class="finding">
+        <span class="fn">03</span>
+        <p>
+          <span class="ft">The opening price is not published anywhere.</span>
+          It is the strike of every window - the single number the contract's
+          question turns on - and it has to be reconstructed from the tick
+          history.
+        </p>
+      </div>
+      <div class="finding">
+        <span class="fn">04</span>
+        <p>
+          <span class="ft"><code>ec-core</code> cannot be installed.</span>
+          It is marked private inside the Bot Kit monorepo, so every team
+          building outside that repo will vendor it independently. Publishing it
+          would be a small release with a large effect.
+        </p>
+      </div>
+      <div class="finding">
+        <span class="fn">05</span>
+        <p>
+          <span class="ft">Plus two more, and what worked well.</span>
+          <code>fetchPriceCandles</code> is broken on the testnet feed, and
+          several venues run concurrently on one deployment. The full report
+          also records what was good, because feedback that only complains is
+          not useful to the team receiving it.
+        </p>
+      </div>
+    </div>
+
+    <div class="note amber">
+      <p>
+        Submitted as the hackathon's optional SDK and documentation feedback
+        report, with measurements and suggested fixes for each finding.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════ 09 · vision -->
+<section id="s9">
+  <div class="wrap">
+    <p class="eyebrow"><span class="n">09</span> Where this goes</p>
+    <h2>Liquidity that can explain itself.</h2>
+
+    <div class="two" style="margin-top:26px">
+      <div>
+        <h3>Near term</h3>
+        <p style="font-size:14.5px">
+          More windows quoted at once, because zero-inventory quoting scales
+          with compute rather than capital. Session keys so the trading key
+          cannot withdraw. A public calibration feed any trader can check before
+          deciding whether our quotes deserve their trust.
+        </p>
+      </div>
+      <div>
+        <h3>Further out</h3>
+        <p style="font-size:14.5px">
+          The forecast registry is a general instrument: any agent can commit a
+          probability before the fact and be scored on it afterwards. A venue
+          where forecasters compete on a public Brier score is a better price
+          discovery mechanism than one where they compete on confidence.
+        </p>
+      </div>
+    </div>
+
+    <div class="stats words">
+      <div class="stat">
+        <div class="k">Attracts</div>
+        <div class="v mdl">Makers</div>
+        <div class="s">no inventory required</div>
+      </div>
+      <div class="stat">
+        <div class="k">Generates</div>
+        <div class="v">Two-sided depth</div>
+        <div class="s">on every live window</div>
+      </div>
+      <div class="stat">
+        <div class="k">Gives traders</div>
+        <div class="v">A check</div>
+        <div class="s">settlement, recomputed</div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:34px">
+      <p class="lead" style="margin:0">
+        An event contract is a probability. Vaticr derives it, quotes it, and
+        publishes its score - so the market can tell skill from luck without
+        taking anyone's word for it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://docs.dreamdex.io/developers/event-contracts" target="_blank" rel="noreferrer">DreamDEX Event Contracts ↗</a>
+      <a href="https://github.com/somnia-chain/dreamdex-bot-kit" target="_blank" rel="noreferrer">dreamDEX Bot Kit ↗</a>
+      <a href="https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A" target="_blank" rel="noreferrer">Forecast registry ↗</a>
+      <a href="https://somnia.network" target="_blank" rel="noreferrer">Somnia ↗</a>
+    </div>
+    <p class="foot-note">
+      Vaticr · Apache-2.0 · Somnia Shannon testnet, chain 50312 · registry
+      0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A<br>
+      Every figure in this deck is reproducible from the repository. Testnet
+      tokens have no monetary value, and nothing here is financial advice.
+    </p>
+  </div>
+</footer>
