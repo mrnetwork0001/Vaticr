@@ -195,6 +195,11 @@ A market-making wallet holding **0.533 STT** - comfortably funded for hundreds
 of these transactions - could not send a single one. Every order failed at the
 approve, 12% short of a ceiling it would never have touched.
 
+The threshold was then measured directly. Topping the same wallet to
+**0.833 STT** and changing nothing else, the next cycle placed four orders
+across two markets and escrowed 9.34 tUSDC. The transactions cost about
+0.008 STT each; what had blocked them was the reservation, not the spend.
+
 **And the error names the wrong cause.** The rejection arrives as JSON-RPC
 `-32000`, which viem renders as its generic short message:
 
@@ -219,9 +224,11 @@ someone losing an hour to the same thing on 2026-07-31.
    `placeOrder` ~6M; a flat 10M for both, at a 10x fee ceiling, is what turns a
    funded wallet into an unfunded one.
 3. Say the funding requirement out loud in the docs: **a signer needs
-   `0.6 STT` free per in-flight write**, not "some gas". The testnet faucet
-   drips less than a single transaction's reserve, so the first thing a new
-   integrator does cannot work.
+   `0.6 STT` free per in-flight write**, not "some gas". Every testnet faucet
+   we could find drips well under that, so a new integrator's first order
+   cannot succeed on a freshly funded wallet - which is exactly the moment
+   they are least equipped to tell a reservation problem from a bug in their
+   own code.
 4. Wrap the RPC error in the write path, or re-export the unwrapper from the
    package root. A ceiling problem should not present as a payload problem.
 
