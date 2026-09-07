@@ -48,7 +48,7 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
 ];
 
 function FooterLink({ label, href }: { label: string; href: string }) {
-  const cls = "font-mono text-[15px] text-gray-300 transition hover:text-market";
+  const cls = "block py-0.5 font-mono text-[14px] leading-snug text-gray-300 transition hover:text-model";
   const external = !href.startsWith("/") && !href.startsWith("#");
   return (
     <a href={href} className={cls} {...(external ? { target: "_blank", rel: "noreferrer" } : {})}>
@@ -59,9 +59,9 @@ function FooterLink({ label, href }: { label: string; href: string }) {
 
 export default function Footer() {
   return (
-    <footer className="border-t border-ink-700/70 bg-ink-950 pb-8 pt-14">
+    <footer className="border-t border-ink-700/70 bg-ink-950 pb-14 pt-14">
       <div className="mx-auto max-w-page px-4 sm:px-6">
-        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8">
+        <div className="grid gap-y-9 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8">
           {/* brand */}
           <div className="max-w-md">
             <a href="#top" className="inline-flex items-center gap-3" aria-label="Vaticr, back to top">
@@ -96,7 +96,7 @@ export default function Footer() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Vaticr on GitHub"
-                className="text-gray-400 transition hover:text-market"
+                className="text-gray-400 transition hover:text-model"
               >
                 <Github size={20} aria-hidden />
               </a>
@@ -105,10 +105,10 @@ export default function Footer() {
 
           {COLUMNS.map((col) => (
             <nav key={col.heading} aria-label={col.heading}>
-              <p className="font-mono text-xs uppercase tracking-[0.28em] text-market">
+              <p className="font-mono text-xs uppercase tracking-[0.28em] text-model">
                 {col.heading}
               </p>
-              <ul className="mt-6 space-y-4">
+              <ul className="mt-3.5 space-y-1.5">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     <FooterLink {...l} />
@@ -117,15 +117,6 @@ export default function Footer() {
               </ul>
             </nav>
           ))}
-        </div>
-
-        <div className="mt-14 flex flex-wrap items-center justify-between gap-3 border-t border-ink-700/70 pt-6">
-          <p className="font-mono text-[11px] text-gray-600">
-            Apache-2.0 · vendored Bot Kit MIT, © DreamDEX S.A.
-          </p>
-          <p className="font-mono text-[11px] text-gray-600">
-            Markets and settlement are the DreamDEX protocol. The forecasting is Vaticr&rsquo;s.
-          </p>
         </div>
       </div>
     </footer>
