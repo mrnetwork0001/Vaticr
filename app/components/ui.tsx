@@ -9,7 +9,7 @@ export function Card({
 }) {
   const headingId = id ? `${id}-title` : undefined;
   return (
-    <section className="card overflow-hidden" aria-labelledby={headingId}>
+    <section className="card min-w-0 overflow-hidden" aria-labelledby={headingId}>
       <header className="flex items-baseline justify-between gap-4 border-b border-white/10 px-4 py-3">
         <div>
           <h2 id={headingId} className="text-sm font-semibold tracking-wide text-slate-100">

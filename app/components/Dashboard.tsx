@@ -494,8 +494,12 @@ export default function Dashboard() {
           does, and it stays on screen while the page scrolls. */}
       {canTrade && <SummaryStrip positions={posSummary} claims={claimSummary} />}
 
-      <div className="grid gap-5 lg:grid-cols-3">
-        <div className={`space-y-5 ${view === "markets" ? "lg:col-span-2" : "lg:col-span-3"}`}>
+      {/* `min-w-0` on both, or a grid item's automatic minimum size is its
+          content's min-content width - which for the settlement table is the
+          full twelve columns, and the whole page ends up scrolling sideways
+          instead of the table scrolling inside its own card. */}
+      <div className="grid min-w-0 gap-5 lg:grid-cols-3">
+        <div className={`min-w-0 space-y-5 ${view === "markets" ? "lg:col-span-2" : "lg:col-span-3"}`}>
           {/* The ticket, the positions and the claim sweep exist only for a
               wallet that can actually sign. With none attached this column is
               the same read-only console it has always been.

@@ -37,13 +37,13 @@ export default function Landing() {
         }
       >
         <Reveal>
-          <div className="stagger grid gap-4 md:grid-cols-3">
+          <div className="stagger grid min-w-0 gap-4 md:grid-cols-3">
             {[
               ["Markets cannot be created", "Event contracts are rolling Up/Down windows on BTC and ETH, minted per window by BinaryMarketsModule. There is no permissionless creation entry point and the question text is fixed."],
               ["Contracts cannot be resolved", "Settlement is automatic. The question is scheduled on the OracleHub at creation with its resolution gas reserved, and Somnia reactivity fires the callback at expiry."],
               ["It is a CLOB, not an AMM", "One on-chain order book per market, quoted in YES terms, where a NO price is always 1 − yes. There is no curve to provide liquidity to."],
             ].map(([t, d], i) => (
-              <div key={t} style={nth(i)}>
+              <div key={t} className="min-w-0" style={nth(i)}>
                 <Panel className="h-full">
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 font-mono text-down">✕</span>
@@ -173,7 +173,7 @@ export default function Landing() {
         }
       >
         <Reveal>
-          <div className="grid gap-4 lg:grid-cols-[1fr_1.1fr]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[1fr_1.1fr]">
             <Panel>
               <table className="w-full text-[13px]">
                 <tbody className="divide-y divide-ink-700/70">
@@ -229,13 +229,13 @@ export default function Landing() {
         </Reveal>
 
         <Reveal i={1}>
-          <div className="stagger mt-4 grid gap-4 md:grid-cols-3">
+          <div className="stagger mt-4 grid min-w-0 gap-4 md:grid-cols-3">
             {[
               ["No lookahead", "Volatility and level at each decision point use only ticks at or before that instant. All 900 cases assert it, and 120 are re-run against a physically truncated history so the assertion is not vacuous."],
               ["Prior only", "The headline layer is excluded, because a historical scout window cannot be reconstructed without leaking the future. This measures the price-process prior alone."],
               ["Edge is concentrated", "The 300s windows - where the bot actually trades - score +0.3865 over n=597. The long windows are thin and closer to a coin flip on small samples."],
             ].map(([t, d], i) => (
-              <div key={t} style={nth(i)}>
+              <div key={t} className="min-w-0" style={nth(i)}>
                 <Panel className="h-full">
                   <h3 className="text-[13px] font-semibold text-gray-100">{t}</h3>
                   <p className="mt-2 text-[12.5px] leading-relaxed text-gray-400">{d}</p>
@@ -254,7 +254,7 @@ export default function Landing() {
         lead="Of the four ways orders cross on a binary book, one needs no seller at all. It is the best thing about building on this venue and deserves more than a row in a table."
       >
         <Reveal>
-          <div className="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[1.1fr_1fr]">
             <Panel className="p-0">
               <div className="border-b border-ink-700 px-5 py-3">
                 <h3 className="text-[13px] font-semibold text-gray-200">How orders cross</h3>
@@ -282,7 +282,7 @@ export default function Landing() {
               </ul>
             </Panel>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <Panel>
                 <h3 className="text-[14px] font-semibold text-gray-100">Two resting buys are a complete quote</h3>
                 <div className="formula mt-3 space-y-1.5 rounded border border-ink-700 bg-ink-950 p-3">
@@ -318,7 +318,7 @@ export default function Landing() {
         lead="Both were silent failures - the code runs, the orders fill, and the money quietly goes the wrong way. Both are written up in the SDK feedback report."
       >
         <Reveal>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
             <Panel className="p-0">
               <div className="border-b border-ink-700 px-5 py-4">
                 <h3 className="text-[14px] font-semibold text-gray-100">Settlement resolves against the EMA, not spot</h3>
@@ -405,7 +405,7 @@ export default function Landing() {
         lead="Python reads and models; TypeScript owns every write, because that is where the Bot Kit and markets-sdk own signing, nonces and escrow - and two senders on one key race each other."
       >
         <Reveal>
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-2">
             <Panel className="p-0">
               <div className="border-b border-ink-700 px-5 py-3">
                 <h3 className="text-[13px] font-semibold text-gray-200">Modules</h3>
@@ -431,7 +431,7 @@ export default function Landing() {
               </ul>
             </Panel>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <Panel>
                 <h3 className="text-[13px] font-semibold text-gray-200">Get it running</h3>
                 <Code className="mt-3">{`git clone github.com/mrnetwork0001/Vaticr
