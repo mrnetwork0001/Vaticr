@@ -63,6 +63,23 @@ const stats: Stats = {
   cycles: 0, quoted: 0, taken: 0, skipped: 0, errors: 0,
 };
 
+/**
+ * Markets this process may have an order resting on.
+ *
+ * `cancelResting` is two indexer round-trips, and on testnet each can take
+ * tens of seconds. Paying that on every skip - for markets the bot has never
+ * quoted and cannot have anything resting on - made a four-market cycle take
+ * four minutes, by which time every window had aged past its minimum and the
+ * bot skipped them all again. It could never trade.
+ *
+ * A market enters this set when an order is placed on it and leaves when the
+ * sweep comes back empty. `sweptAtStartup` forces one full pass on the first
+ * cycle, because orders from a previous run of this process are not in here
+ * and do need pulling.
+ */
+const mayHaveResting = new Set<string>();
+let sweptAtStartup = false;
+
 /** Top of the YES book, in YES probability terms. */
 async function bookTop(ctx: EcContext, yesSymbol: string): Promise<BookTop> {
   const ob = await ctx.exchange.fetchOrderBook(yesSymbol, 3);
@@ -133,14 +150,27 @@ async function actOnMarket(
       budget.releaseMarket(market.symbol);
       return;
     }
-    const pulled = await cancelResting(ctx, market).catch(() => 0);
+    if (!sweptAtStartup || mayHaveResting.has(market.symbol)) {
+      const pulled = await cancelResting(ctx, market).catch(() => 0);
+      if (pulled) log(`     pulled ${pulled} stale resting order(s)`);
+      else mayHaveResting.delete(market.symbol);
+    }
     budget.releaseMarket(market.symbol);
-    if (pulled) log(`     pulled ${pulled} stale resting order(s)`);
   };
 
   // Always re-read the on-chain snapshot: the indexer lags by seconds and only
   // `Trading` accepts orders. Reuse this one snapshot for every read and write
   // in the pass so we never straddle a pool recycle.
+  // The envelope already knows the posterior and roughly how long is left. When
+  // that alone is decisive, say so now rather than after a chain read: on a
+  // window with 78s left the answer cannot change, and the read is not free.
+  const interval0 = isBinaryMarket(market.info) ? Number(market.info.intervalSec ?? 0) : 0;
+  const earlySkip = skipReason(f.posterior, f.seconds_left, minLeftSec(interval0 || null), f.degraded);
+  if (earlySkip) {
+    await standDown(earlySkip);
+    return;
+  }
+
   const onchain = await marketOnchain(ctx, market);
   // Not a binary row at all, so it has no YES/NO books and nothing of ours can
   // be resting on it - the one early return with nothing to stand down from.
@@ -257,6 +287,7 @@ async function actOnMarket(
       const price = decision.takePrice ?? f.posterior;
       if (!afford(price, `take ${outcome}`)) return;
       try {
+        mayHaveResting.add(market.symbol);
         const res = await placeLimit(ctx, {
           market, onchain, outcome, side: "buy",
           price, size, type: "ioc", expiresInSec: ttl,
@@ -282,6 +313,7 @@ async function actOnMarket(
       if (leg.price === undefined) continue;
       if (!afford(leg.price, `BUY_${leg.outcome}`)) continue;
       try {
+        mayHaveResting.add(market.symbol);
         const res = await placeLimit(ctx, {
           market, onchain, outcome: leg.outcome, side: "buy",
           price: leg.price, size, type: "post-only", expiresInSec: ttl,
