@@ -6,6 +6,8 @@ Built for the [Somnia × DreamDEX Event Contracts Hackathon](https://dorahacks.i
 
 ---
 
+**Live on Somnia testnet: [usevaticr.xyz](https://usevaticr.xyz)**
+
 ## Reviewing this? Start here
 
 The five things worth opening first, in order of how much they prove:

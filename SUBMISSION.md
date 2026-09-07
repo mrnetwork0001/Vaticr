@@ -3,7 +3,7 @@
 Paste-ready text for the Somnia × DreamDEX Event Contracts Hackathon.
 Fill the four bracketed placeholders before submitting.
 
-- `[LIVE URL]` - the Vercel deployment
+- `[LIVE URL]` - https://usevaticr.xyz (live)
 - `[VIDEO URL]` - the 2-3 minute walkthrough
 - `[REPO URL]` - `https://github.com/mrnetwork0001/Vaticr` **once it is reachable by judges**
 - `[DECK URL]` - https://claude.ai/code/artifact/72484586-670b-40fc-814f-a520e14b780e
@@ -77,7 +77,7 @@ measurements, in our SDK feedback report.
 
 | | |
 |---|---|
-| Live app | `[LIVE URL]` |
+| Live app | https://usevaticr.xyz |
 | Demo video | `[VIDEO URL]` |
 | Repository | `[REPO URL]` |
 | Deck | https://claude.ai/code/artifact/72484586-670b-40fc-814f-a520e14b780e |
