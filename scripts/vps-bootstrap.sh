@@ -1,173 +1,220 @@
 #!/usr/bin/env bash
 #
-# Stand up the Vaticr forecasting API. Run this ON the server, as root, from
-# a checkout of the repository:
+# Stand up Vaticr on a single VPS: the Next.js web app, the Python
+# forecasting API, and optionally the trading bot, behind nginx with TLS.
 #
-#   sudo bash scripts/vps-bootstrap.sh --check          # inspect only, change nothing
-#   sudo bash scripts/vps-bootstrap.sh
-#   sudo bash scripts/vps-bootstrap.sh api.your-domain.tld
-#   sudo bash scripts/vps-bootstrap.sh api.your-domain.tld you@email.tld
+# Run ON the server, as root, from a checkout at /opt/vaticr:
 #
-# With a domain it configures nginx; with an email as well it requests a
-# Let's Encrypt certificate. Idempotent - re-run it after every `git pull`.
+#   sudo bash scripts/vps-bootstrap.sh --check --domain usevaticr.xyz
+#   sudo bash scripts/vps-bootstrap.sh --domain usevaticr.xyz --email you@mail.com
+#   sudo bash scripts/vps-bootstrap.sh --domain usevaticr.xyz --with-bot
 #
-# SAFE ON A SHARED BOX. This assumes the server is already running things
-# that matter, so it:
+# Options
+#   --check          survey and print the plan; change nothing
+#   --domain NAME    hostname to serve (www.NAME is included automatically)
+#   --email ADDR     request a Let's Encrypt certificate for those names
+#   --api-only       install just the Python brain, no web app
+#   --with-bot       also install the trading bot, in DRY RUN
+#
+# Everything the browser reaches is the web app. The brain binds 127.0.0.1
+# and is reached only by the web app's server-side proxy, so it is never
+# exposed to the internet and needs no certificate of its own.
+#
+# ─────────────────────────────────────────────────────────────────────────
+# SAFE ON A SHARED BOX. This assumes the server already runs things that
+# matter, so it:
 #
 #   - never removes or edits an existing nginx site, including `default`,
 #     and never touches nginx.conf;
 #   - refuses to install nginx if something else already holds port 80,
 #     rather than fighting Apache or Caddy for the bind;
+#   - never replaces a system Node. If Node 20+ is not already present it
+#     installs one privately under /opt/vaticr-node and uses it by absolute
+#     path, so other Node services keep the runtime they have;
 #   - tars /etc/nginx to /root before its first change;
 #   - rolls its own site file back out if `nginx -t` fails, so a broken
-#     config is never left behind for someone else's reload to hit;
-#   - picks a free port if 8787 is taken;
-#   - installs only python3-venv, and nginx/certbot only when you asked for
-#     a domain. It never runs `apt-get upgrade`.
+#     config is never left for someone else's reload to hit;
+#   - moves to a free port if 8787 or 3000 is taken;
+#   - never runs `apt-get upgrade`.
 #
-# Run it with --check first. That touches nothing and prints the plan.
-#
-# (To drive the same thing from a laptop instead, use deploy-vps.sh.)
+# Run with --check first. That touches nothing.
+# ─────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
 
-CHECK_ONLY=0
-if [[ "${1:-}" == "--check" ]]; then CHECK_ONLY=1; shift; fi
+CHECK_ONLY=0; DOMAIN=""; TLS_EMAIL=""; API_ONLY=0; WITH_BOT=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --check)    CHECK_ONLY=1; shift ;;
+    --domain)   DOMAIN="${2:-}"; shift 2 ;;
+    --email)    TLS_EMAIL="${2:-}"; shift 2 ;;
+    --api-only) API_ONLY=1; shift ;;
+    --with-bot) WITH_BOT=1; shift ;;
+    -h|--help)  sed -n '2,30p' "$0"; exit 0 ;;
+    *) echo "unknown option: $1" >&2; exit 2 ;;
+  esac
+done
 
-DOMAIN="${1:-}"
-TLS_EMAIL="${2:-}"
-
-SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_DIR=/opt/vaticr
+APP="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 STATE_DIR=/var/lib/vaticr
-PORT="${VATICR_PORT:-8787}"
+NODE_DIR=/opt/vaticr-node
+API_PORT="${VATICR_API_PORT:-8787}"
+WEB_PORT="${VATICR_WEB_PORT:-3000}"
+NODE_VER=20.18.1
 NGINX_BACKUP=/root/nginx-before-vaticr-$(date +%Y%m%d-%H%M%S).tar.gz
 
 [[ $EUID -eq 0 ]] || { echo "Run this with sudo." >&2; exit 1; }
 
 say()  { printf '\n\033[1;35m==>\033[0m %s\n' "$1"; }
-warn() { printf '\033[1;33m  ! %s\033[0m\n' "$1"; }
-die()  { printf '\033[1;31m  ✗ %s\033[0m\n' "$1" >&2; exit 1; }
+ok()   { printf '  \033[0;32m✓\033[0m %s\n' "$1"; }
+warn() { printf '  \033[1;33m!\033[0m %s\n' "$1"; }
+die()  { printf '  \033[1;31m✗ %s\033[0m\n' "$1" >&2; exit 1; }
 
-listening_on() {   # who holds a port, if anyone
-  ss -ltnp 2>/dev/null | awk -v p=":$1\$" '$4 ~ p {print $NF}' | head -1
+listening_on() { ss -ltnp 2>/dev/null | awk -v p=":$1\$" '$4 ~ p {print $NF}' | head -1; }
+port_free()    { [[ -z "$(listening_on "$1")" ]]; }
+
+pick_port() {  # $1 = wanted, $2 = ceiling, $3 = label. Echoes the chosen port.
+  local want="$1" top="$2" label="$3" holder
+  if port_free "$want"; then echo "$want"; return; fi
+  holder="$(listening_on "$want")"
+  if [[ "$holder" == *vaticr* || "$holder" == *uvicorn* || "$holder" == *next* ]]; then echo "$want"; return; fi
+  local p
+  for ((p = want + 1; p <= top; p++)); do
+    if port_free "$p"; then warn "$label port $want is held by $holder - using $p" >&2; echo "$p"; return; fi
+  done
+  die "no free $label port between $want and $top"
 }
-port_free() { [[ -z "$(listening_on "$1")" ]]; }
 
-# ------------------------------------------------------------------ survey
-# Everything here is read-only. It decides what is safe to do before doing it.
+# ══════════════════════════════════════════════════════════════════ survey
+# Read-only. Decides what is safe before anything is done.
 say "Surveying the box"
 . /etc/os-release && echo "  $PRETTY_NAME"
 export DEBIAN_FRONTEND=noninteractive
 
-# What already holds the web ports, and is it something we can share with?
-WEB80="$(listening_on 80)"
-WEB443="$(listening_on 443)"
-NGINX_PRESENT=0; command -v nginx >/dev/null && NGINX_PRESENT=1
-WEB_OK=1
+command -v ss >/dev/null || { apt-get update -qq; apt-get install -y -qq iproute2; }
 
-if [[ -n "$WEB80" || -n "$WEB443" ]]; then
-  echo "  port 80:  ${WEB80:-free}"
-  echo "  port 443: ${WEB443:-free}"
+MEM_MB=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+SWAP_MB=$(awk '/SwapTotal/{print int($2/1024)}' /proc/meminfo)
+echo "  memory: ${MEM_MB} MB RAM, ${SWAP_MB} MB swap"
+
+# Python
+if command -v python3 >/dev/null && python3 -c 'import sys; sys.exit(0 if sys.version_info>=(3,11) else 1)'; then
+  ok "$(python3 -V) meets the 3.11 minimum"
+else
+  die "Vaticr needs Python 3.11+; this box has $(python3 -V 2>&1). Upgrade the box or add deadsnakes."
+fi
+
+# Node: use the system one only if it is new enough, and never replace it.
+NODE_BIN=""; NPM_BIN=""
+if command -v node >/dev/null; then
+  SYS_NODE="$(node -v)"
+  if [[ "${SYS_NODE#v}" == 2[0-9].* || "${SYS_NODE#v}" == [3-9][0-9].* ]]; then
+    NODE_BIN="$(command -v node)"; NPM_BIN="$(command -v npm)"
+    ok "system Node $SYS_NODE will be used"
+  else
+    warn "system Node $SYS_NODE is too old, and other services may depend on it"
+    warn "Node $NODE_VER will be installed privately under $NODE_DIR instead"
+  fi
+else
+  echo "  no system Node; Node $NODE_VER will be installed under $NODE_DIR"
+fi
+[[ -x "$NODE_DIR/bin/node" ]] && { NODE_BIN="$NODE_DIR/bin/node"; NPM_BIN="$NODE_DIR/bin/npm"; ok "private Node already at $NODE_DIR"; }
+
+# Web server
+WEB80="$(listening_on 80)"; WEB443="$(listening_on 443)"
+NGINX_OK=1
+if [[ -n "$WEB80$WEB443" ]]; then
+  echo "  port 80: ${WEB80:-free} · port 443: ${WEB443:-free}"
   if [[ "$WEB80$WEB443" == *nginx* ]]; then
-    echo "  nginx already serves this box - Vaticr will be added as one more site"
+    ok "nginx already serves this box; Vaticr will be added as one more site"
   else
-    WEB_OK=0
-    warn "something other than nginx holds the web ports"
-    warn "Vaticr will NOT install nginx or touch that server. See the note at the end."
+    NGINX_OK=0
+    warn "a non-nginx server holds the web ports - nginx will NOT be installed"
   fi
 else
-  echo "  ports 80 and 443 are free"
+  ok "ports 80 and 443 are free"
 fi
 
-# Our own port. Never take one that is in use by something else.
-if ! port_free "$PORT"; then
-  HOLDER="$(listening_on "$PORT")"
-  if [[ "$HOLDER" == *uvicorn* || "$HOLDER" == *vaticr* ]]; then
-    echo "  port $PORT: already ours, will be restarted"
-  else
-    for p in $(seq 8788 8799); do
-      if port_free "$p"; then warn "port $PORT is taken by $HOLDER - using $p instead"; PORT="$p"; break; fi
-    done
-    port_free "$PORT" || die "no free port in 8787-8799"
-  fi
-else
-  echo "  port $PORT is free"
+API_PORT="$(pick_port "$API_PORT" 8799 API)"
+[[ $API_ONLY -eq 0 ]] && WEB_PORT="$(pick_port "$WEB_PORT" 3010 web)"
+ok "API on 127.0.0.1:$API_PORT$([[ $API_ONLY -eq 0 ]] && echo ", web on 127.0.0.1:$WEB_PORT")"
+
+# A production Next build is the memory-hungry step on a small box.
+if [[ $API_ONLY -eq 0 && $((MEM_MB + SWAP_MB)) -lt 1800 ]]; then
+  warn "only $((MEM_MB + SWAP_MB)) MB of RAM+swap; the Next build may be killed"
+  warn "this script will add a 2G swapfile at /swapfile if none exists"
 fi
 
-# Anything already installed under our names?
-[[ -e /etc/systemd/system/vaticr-api.service ]] && echo "  an existing vaticr-api unit will be replaced"
-[[ -d "$APP_DIR" ]] && echo "  an existing $APP_DIR will be updated in place"
-[[ -f "$APP_DIR/.env" ]] && echo "  an existing $APP_DIR/.env will be kept as-is"
-
-# Report what we would install, so nothing is a surprise.
-WANT=()
-command -v python3 >/dev/null || WANT+=(python3)
-dpkg -s python3-venv >/dev/null 2>&1 || WANT+=(python3-venv)
-command -v curl >/dev/null || WANT+=(curl)
-command -v rsync >/dev/null || WANT+=(rsync)
-if [[ -n "$DOMAIN" && $WEB_OK -eq 1 && $NGINX_PRESENT -eq 0 ]]; then WANT+=(nginx); fi
-if [[ -n "$DOMAIN" && -n "$TLS_EMAIL" && $WEB_OK -eq 1 ]]; then WANT+=(certbot python3-certbot-nginx); fi
-if ((${#WANT[@]})); then echo "  apt would install: ${WANT[*]}"; else echo "  nothing to install from apt"; fi
+for u in vaticr-api vaticr-web vaticr-bot; do
+  [[ -e "/etc/systemd/system/$u.service" ]] && echo "  existing $u unit will be replaced"
+done
 
 if [[ $CHECK_ONLY -eq 1 ]]; then
   say "Check only - nothing was changed"
+  echo "  Plan: API on $API_PORT$([[ $API_ONLY -eq 0 ]] && echo ", web on $WEB_PORT")"
+  [[ -n "$DOMAIN" ]] && echo "  nginx: $DOMAIN, www.$DOMAIN $([[ $NGINX_OK -eq 0 ]] && echo '(SKIPPED - another server holds port 80)')"
+  [[ -n "$TLS_EMAIL" ]] && echo "  TLS: certificate for $DOMAIN via $TLS_EMAIL"
+  [[ $WITH_BOT -eq 1 ]] && echo "  bot: installed in DRY RUN"
   echo "  Re-run without --check to apply."
   exit 0
 fi
 
-command -v python3 >/dev/null || { apt-get update -qq; apt-get install -y -qq python3; }
-if ! python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,11) else 1)'; then
-  echo "  ! Vaticr needs Python 3.11+; this box has $(python3 -V)." >&2
-  echo "    On Ubuntu 20.04 or Debian 11, add deadsnakes or upgrade the box." >&2
-  exit 1
+# ═══════════════════════════════════════════════════════════════════ swap
+if [[ $API_ONLY -eq 0 && $((MEM_MB + SWAP_MB)) -lt 1800 && ! -e /swapfile ]]; then
+  say "Adding a 2G swapfile so the build is not killed"
+  fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+  chmod 600 /swapfile; mkswap -q /swapfile; swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+  ok "swap active"
 fi
-echo "  $(python3 -V)"
-dpkg -s python3-venv >/dev/null 2>&1 || { apt-get update -qq; apt-get install -y -qq python3-venv; }
-command -v rsync >/dev/null || apt-get install -y -qq rsync
-command -v curl  >/dev/null || apt-get install -y -qq curl
 
-# -------------------------------------------------------------------- files
-say "Installing to $APP_DIR"
-id vaticr >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin -d "$APP_DIR" vaticr
-mkdir -p "$APP_DIR" "$STATE_DIR"
+# ═══════════════════════════════════════════════════════════ dependencies
+say "Installing what is missing"
+NEED=()
+dpkg -s python3-venv >/dev/null 2>&1 || NEED+=(python3-venv)
+command -v curl >/dev/null || NEED+=(curl)
+command -v rsync >/dev/null || NEED+=(rsync)
+command -v git >/dev/null || NEED+=(git)
+if ((${#NEED[@]})); then apt-get update -qq; apt-get install -y -qq "${NEED[@]}"; ok "apt: ${NEED[*]}"; else ok "apt: nothing needed"; fi
 
-# Only the forecasting layer is served. The checkout stays wherever it is.
-rsync -a --delete --exclude '__pycache__' --exclude '*.pyc' \
-  "$SRC/agents/" "$APP_DIR/agents/"
-cp "$SRC/requirements.txt" "$APP_DIR/requirements.txt"
-echo "  agents/ and requirements.txt in place"
+if [[ $API_ONLY -eq 0 && -z "$NODE_BIN" ]]; then
+  say "Installing Node $NODE_VER privately (system Node untouched)"
+  ARCH=$(uname -m); case "$ARCH" in x86_64) NARCH=x64 ;; aarch64) NARCH=arm64 ;; *) die "unsupported arch $ARCH" ;; esac
+  mkdir -p "$NODE_DIR"
+  curl -fsSL "https://nodejs.org/dist/v$NODE_VER/node-v$NODE_VER-linux-$NARCH.tar.xz" \
+    | tar -xJ -C "$NODE_DIR" --strip-components=1
+  NODE_BIN="$NODE_DIR/bin/node"; NPM_BIN="$NODE_DIR/bin/npm"
+  ok "$("$NODE_BIN" -v) at $NODE_DIR"
+fi
 
-[[ -x "$APP_DIR/.venv/bin/python" ]] || python3 -m venv "$APP_DIR/.venv"
-"$APP_DIR/.venv/bin/pip" install -q --upgrade pip
-"$APP_DIR/.venv/bin/pip" install -q -r "$APP_DIR/requirements.txt"
-echo "  dependencies installed"
+id vaticr >/dev/null 2>&1 || useradd -r -s /usr/sbin/nologin -d "$APP" vaticr
+mkdir -p "$STATE_DIR"
 
-# Written once. A redeploy never overwrites your edits.
-if [[ ! -f "$APP_DIR/.env" ]]; then
-  cat > "$APP_DIR/.env" <<ENVFILE
+# ══════════════════════════════════════════════════════════════════ brain
+say "Building the forecasting API"
+[[ -x "$APP/.venv/bin/python" ]] || python3 -m venv "$APP/.venv"
+"$APP/.venv/bin/pip" install -q --upgrade pip
+"$APP/.venv/bin/pip" install -q -r "$APP/requirements.txt"
+ok "python dependencies installed"
+
+# Written once; a redeploy never overwrites edits. Only the ports are synced.
+if [[ ! -f "$APP/.env" ]]; then
+  cat > "$APP/.env" <<ENVFILE
 NETWORK=testnet
 VENUE_ID=0x679795a0195a1b76cdebb7c51d74e058aee92919b8c3389af86ef24535e8a28c
 VATICR_API_HOST=127.0.0.1
-VATICR_API_PORT=$PORT
+VATICR_API_PORT=$API_PORT
 VATICR_STATE_DIR=$STATE_DIR
+DRY_RUN=true
 ENVFILE
-  echo "  wrote $APP_DIR/.env"
+  ok "wrote $APP/.env"
 else
-  echo "  kept the existing $APP_DIR/.env"
-  # One targeted edit: if the survey moved us to a different port, the file
-  # must not keep advertising the old one. Nothing else in it is touched.
-  if grep -q '^VATICR_API_PORT=' "$APP_DIR/.env"; then
-    sed -i "s/^VATICR_API_PORT=.*/VATICR_API_PORT=$PORT/" "$APP_DIR/.env"
-  else
-    echo "VATICR_API_PORT=$PORT" >> "$APP_DIR/.env"
-  fi
+  sed -i "s|^VATICR_API_PORT=.*|VATICR_API_PORT=$API_PORT|" "$APP/.env" 2>/dev/null || true
+  grep -q '^VATICR_STATE_DIR=' "$APP/.env" || echo "VATICR_STATE_DIR=$STATE_DIR" >> "$APP/.env"
+  ok "kept the existing $APP/.env"
 fi
-chmod 600 "$APP_DIR/.env"
-chown -R vaticr:vaticr "$APP_DIR" "$STATE_DIR"
+chmod 600 "$APP/.env"
 
-# ------------------------------------------------------------------ service
-say "Installing the service"
 cat > /etc/systemd/system/vaticr-api.service <<UNIT
 [Unit]
 Description=Vaticr forecasting API
@@ -178,13 +225,11 @@ Wants=network-online.target
 Type=simple
 User=vaticr
 Group=vaticr
-WorkingDirectory=$APP_DIR
-EnvironmentFile=$APP_DIR/.env
-ExecStart=$APP_DIR/.venv/bin/python -m uvicorn agents.server:app --host 127.0.0.1 --port $PORT
+WorkingDirectory=$APP
+EnvironmentFile=$APP/.env
+ExecStart=$APP/.venv/bin/python -m uvicorn agents.server:app --host 127.0.0.1 --port $API_PORT
 Restart=always
 RestartSec=5
-
-# It reads public feeds and appends one state file. It needs nothing else.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
@@ -195,64 +240,152 @@ ReadWritePaths=$STATE_DIR
 WantedBy=multi-user.target
 UNIT
 
-systemctl daemon-reload
-systemctl enable -q vaticr-api
-systemctl restart vaticr-api
-sleep 3
+# ════════════════════════════════════════════════════════════════════ web
+if [[ $API_ONLY -eq 0 ]]; then
+  say "Building the web app (this is the slow step)"
+  SITE_URL="http://localhost:$WEB_PORT"
+  [[ -n "$DOMAIN" ]] && SITE_URL="https://$DOMAIN"
 
-if ! systemctl is-active --quiet vaticr-api; then
-  echo "  ! the service did not start:" >&2
-  journalctl -u vaticr-api -n 30 --no-pager >&2
-  exit 1
+  # NEXT_PUBLIC_* values are compiled into the browser bundle, so this file
+  # has to exist BEFORE the build, not just at runtime.
+  cat > "$APP/.env.production" <<WEBENV
+NEXT_PUBLIC_SITE_URL=$SITE_URL
+NEXT_PUBLIC_VENUE_ID=0x679795a0195a1b76cdebb7c51d74e058aee92919b8c3389af86ef24535e8a28c
+NEXT_PUBLIC_SOMNIA_RPC_URL=https://api.infra.testnet.somnia.network
+NEXT_PUBLIC_INDEXER_URL=https://dev.smk.somnia.host/v1/graphql
+VATICR_REGISTRY=0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A
+WEBENV
+  ok "wrote $APP/.env.production (site $SITE_URL)"
+
+  cd "$APP"
+  "$NPM_BIN" install --no-audit --no-fund
+  "$NPM_BIN" run build
+  ok "next build complete"
+
+  cat > /etc/systemd/system/vaticr-web.service <<UNIT
+[Unit]
+Description=Vaticr web app
+After=network-online.target vaticr-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vaticr
+Group=vaticr
+WorkingDirectory=$APP
+Environment=NODE_ENV=production
+Environment=PORT=$WEB_PORT
+Environment=HOSTNAME=127.0.0.1
+Environment=VATICR_API_URL=http://127.0.0.1:$API_PORT
+ExecStart=$NODE_BIN $APP/node_modules/.bin/next start -p $WEB_PORT -H 127.0.0.1
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+UNIT
 fi
-echo "  vaticr-api active"
 
-# -------------------------------------------------------------------- nginx
-if [[ -n "$DOMAIN" && $WEB_OK -eq 0 ]]; then
+# ════════════════════════════════════════════════════════════════════ bot
+if [[ $WITH_BOT -eq 1 ]]; then
+  say "Installing the trading bot, in DRY RUN"
+  grep -q '^DRY_RUN=' "$APP/.env" || echo "DRY_RUN=true" >> "$APP/.env"
+  grep -q '^VATICR_API_URL=' "$APP/.env" || echo "VATICR_API_URL=http://127.0.0.1:$API_PORT" >> "$APP/.env"
+
+  cat > /etc/systemd/system/vaticr-bot.service <<UNIT
+[Unit]
+Description=Vaticr trading bot
+After=network-online.target vaticr-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vaticr
+Group=vaticr
+WorkingDirectory=$APP
+EnvironmentFile=$APP/.env
+Environment=PATH=$(dirname "$NODE_BIN"):/usr/local/bin:/usr/bin:/bin
+ExecStart=$NPM_BIN run bot:only
+Restart=always
+RestartSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+  warn "the bot needs PRIVATE_KEY in $APP/.env before it can do anything"
+  warn "it stays in DRY_RUN until you set DRY_RUN=false yourself"
+fi
+
+chown -R vaticr:vaticr "$APP" "$STATE_DIR"
+
+# ════════════════════════════════════════════════════════════════ services
+say "Starting services"
+systemctl daemon-reload
+systemctl enable -q vaticr-api && systemctl restart vaticr-api
+sleep 3
+systemctl is-active --quiet vaticr-api || { journalctl -u vaticr-api -n 30 --no-pager >&2; die "vaticr-api did not start"; }
+ok "vaticr-api active on 127.0.0.1:$API_PORT"
+
+if [[ $API_ONLY -eq 0 ]]; then
+  systemctl enable -q vaticr-web && systemctl restart vaticr-web
+  sleep 4
+  systemctl is-active --quiet vaticr-web || { journalctl -u vaticr-web -n 30 --no-pager >&2; die "vaticr-web did not start"; }
+  ok "vaticr-web active on 127.0.0.1:$WEB_PORT"
+fi
+
+# ══════════════════════════════════════════════════════════════════ nginx
+if [[ -n "$DOMAIN" && $NGINX_OK -eq 0 ]]; then
   say "Skipping nginx"
-  warn "Port 80 belongs to: $WEB80"
+  warn "port 80 belongs to: $WEB80"
   warn "Vaticr will not install a second web server or edit that one's config."
-  warn "Point it at http://127.0.0.1:$PORT yourself with a vhost for $DOMAIN,"
-  warn "or tell me what it is and I will write the block for it."
+  warn "Proxy $DOMAIN to http://127.0.0.1:$WEB_PORT from it yourself."
 elif [[ -n "$DOMAIN" ]]; then
   say "Configuring nginx for $DOMAIN"
   command -v nginx >/dev/null || { apt-get update -qq; apt-get install -y -qq nginx; }
+  tar czf "$NGINX_BACKUP" -C /etc nginx 2>/dev/null && ok "backed up /etc/nginx to $NGINX_BACKUP"
 
-  # A copy of the working config before we add anything to it.
-  tar czf "$NGINX_BACKUP" -C /etc nginx 2>/dev/null && echo "  backed up /etc/nginx to $NGINX_BACKUP"
-
-  # Refuse to clobber someone else's site file of the same name.
-  if [[ -e /etc/nginx/sites-available/vaticr-api ]] && ! grep -q "vaticr" /etc/nginx/sites-available/vaticr-api 2>/dev/null; then
-    die "/etc/nginx/sites-available/vaticr-api exists and is not ours - refusing to overwrite"
+  if [[ -e /etc/nginx/sites-available/vaticr ]] && ! grep -q vaticr /etc/nginx/sites-available/vaticr 2>/dev/null; then
+    die "/etc/nginx/sites-available/vaticr exists and is not ours - refusing to overwrite"
   fi
-  # Warn if another site already claims this hostname.
-  if grep -rlE "server_name[^;]*[[:space:]]$DOMAIN[;[:space:]]" /etc/nginx/sites-enabled/ 2>/dev/null \
-     | grep -qv vaticr-api; then
+  if grep -rlE "server_name[^;]*[[:space:]]$DOMAIN[;[:space:]]" /etc/nginx/sites-enabled/ 2>/dev/null | grep -qv vaticr; then
     warn "another enabled site already mentions $DOMAIN - check for a conflict"
   fi
 
-  cat > /etc/nginx/sites-available/vaticr-api <<NGINX
+  cat > /etc/nginx/sites-available/vaticr <<NGINX
 server {
     listen 80;
-    server_name $DOMAIN;
+    listen [::]:80;
+    server_name $DOMAIN www.$DOMAIN;
+
+    client_max_body_size 2m;
+
     location / {
-        proxy_pass http://127.0.0.1:$PORT;
+        proxy_pass http://127.0.0.1:$WEB_PORT;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
         proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
         proxy_read_timeout 90s;   # /audit recomputes settlements; give it room
     }
 }
 NGINX
   # `default` and every other existing site are left exactly as they are.
-  ln -sf /etc/nginx/sites-available/vaticr-api /etc/nginx/sites-enabled/vaticr-api
+  ln -sf /etc/nginx/sites-available/vaticr /etc/nginx/sites-enabled/vaticr
 
   if nginx -t 2>/dev/null; then
     systemctl reload nginx
-    echo "  nginx serving $DOMAIN on port 80, other sites untouched"
+    ok "nginx serving $DOMAIN, other sites untouched"
   else
-    rm -f /etc/nginx/sites-enabled/vaticr-api
-    echo "  rolled our site back out; re-testing the config as it was:"
+    rm -f /etc/nginx/sites-enabled/vaticr
+    echo "  rolled our site back out; the config as it was:"
     nginx -t || true
     die "nginx rejected the new site. Nothing of ours is enabled; your other sites are unaffected. Restore point: $NGINX_BACKUP"
   fi
@@ -260,27 +393,25 @@ NGINX
   if [[ -n "$TLS_EMAIL" ]]; then
     say "Requesting a certificate (touches only the $DOMAIN block)"
     apt-get install -y -qq certbot python3-certbot-nginx
-    certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m "$TLS_EMAIL" --redirect
+    certbot --nginx -d "$DOMAIN" -d "www.$DOMAIN" \
+      --non-interactive --agree-tos -m "$TLS_EMAIL" --redirect \
+      || warn "certbot failed - the site still works over http. Check DNS has propagated, then re-run just this: certbot --nginx -d $DOMAIN -d www.$DOMAIN"
   fi
 fi
 
-# ------------------------------------------------------------------- verify
+# ═════════════════════════════════════════════════════════════════ verify
 say "Verifying"
-curl -fsS --max-time 25 "localhost:$PORT/health" >/dev/null \
-  && echo "  /health: ok" \
-  || { echo "  /health: FAILED"; journalctl -u vaticr-api -n 30 --no-pager; exit 1; }
-
-if [[ -n "$DOMAIN" ]]; then
-  SCHEME=http; [[ -n "$TLS_EMAIL" ]] && SCHEME=https
-  API_URL="$SCHEME://$DOMAIN"
-else
-  API_URL="http://127.0.0.1:$PORT   (loopback only - give a domain to expose it)"
+curl -fsS --max-time 25 "127.0.0.1:$API_PORT/health" >/dev/null && ok "api /health" || die "api /health failed"
+if [[ $API_ONLY -eq 0 ]]; then
+  curl -fsS --max-time 25 -o /dev/null "127.0.0.1:$WEB_PORT/" && ok "web /" || die "web / failed"
+  curl -fsS --max-time 40 -o /dev/null "127.0.0.1:$WEB_PORT/api/vaticr/health" \
+    && ok "web reaches the brain through its proxy" \
+    || warn "the web app could not reach the brain - check VATICR_API_URL in the unit"
 fi
 
 say "Done"
-echo "  Set this in Vercel, for Production and Preview:"
+[[ -n "$DOMAIN" ]] && echo "  https://$DOMAIN"
 echo
-echo "      VATICR_API_URL=$API_URL"
-echo
-echo "  Logs:    journalctl -u vaticr-api -f"
-echo "  Restart: systemctl restart vaticr-api"
+echo "  Logs:    journalctl -u vaticr-web -f     (or -u vaticr-api, -u vaticr-bot)"
+echo "  Restart: systemctl restart vaticr-web"
+echo "  Redeploy after a git pull: sudo bash scripts/vps-bootstrap.sh --domain ${DOMAIN:-YOURDOMAIN}"
