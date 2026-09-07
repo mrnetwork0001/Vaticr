@@ -32,6 +32,8 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
       { label: "API reference", href: `${BLOB}/docs/API.md` },
       { label: "Backtest, 900 forecasts", href: `${BLOB}/docs/evidence/backtest-2026-09-04.json` },
       { label: "114 tests", href: `${GITHUB}/tree/main/tests` },
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
     ],
   },
   {

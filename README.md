@@ -1,8 +1,25 @@
-# 🔮 Vaticr
+# Vaticr
 
 **Autonomous DeAI forecasting and market making for DreamDEX Event Contracts on Somnia.**
 
 Built for the [Somnia × DreamDEX Event Contracts Hackathon](https://dorahacks.io/hackathon/event-contracts/detail) · Apache-2.0
+
+---
+
+## Reviewing this? Start here
+
+The five things worth opening first, in order of how much they prove:
+
+| | |
+|---|---|
+| **The model is measurably right** | [Backtest evidence](docs/evidence/backtest-2026-09-04.json) - 900 forecasts, 300 windows, Brier **0.15522** against a coin flip's 0.25. Skill **+0.3791**. Lookahead-free and frozen; the harness is [`agents/backtest.py`](agents/backtest.py). |
+| **It ran on-chain, before the fact** | [On-chain proof](#on-chain-proof) - a forecast committed to the registry **318 seconds before** its window settled, and a post-only order that rested on the real book inside the touch. Every step links to its transaction on the Shannon explorer. |
+| **It checks its own work** | The settlement audit recomputes every settled window from the public oracle feed and compares it to the on-chain winner. It is the part of the app that could embarrass us, which is why it is in the app. |
+| **We went past the happy path** | [**SDK feedback report**](docs/SDK_FEEDBACK.md) - six substantive findings plus a list of smaller ones, all hit in practice and verified against live testnet data, including the settlement reference being the EMA rather than spot, which is undocumented and quietly changes what a correct price is. |
+| **It is not a demo shell** | [114 tests](#testing) - 75 Python, 32 TypeScript, 7 Solidity. `npm test` runs all of them. |
+
+Deploying it yourself: [DEPLOY.md](DEPLOY.md). Recording the walkthrough:
+[DEMO.md](DEMO.md).
 
 ---
 
@@ -258,8 +275,9 @@ tests/           Python engine property tests
 test/            Solidity tests (hardhat)
 app/             Next.js 14 landing + dashboard
 vendor/ec-core   dreamDEX Bot Kit ec-core, vendored verbatim (MIT) - see SDK feedback
-docs/            ARCHITECTURE.md · API.md · SDK_FEEDBACK.md
+docs/            ARCHITECTURE.md · API.md · SDK_FEEDBACK.md · evidence/
 DEMO.md          runbook for the demo recording
+DEPLOY.md        Vercel (web) + VPS (brain and bot)
 ```
 
 ---
