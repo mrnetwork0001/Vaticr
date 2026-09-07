@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
 import AppShell, { type View } from "./AppShell";
+import GetStarted from "./wallet/GetStarted";
 import CalibrationPanel from "./Calibration";
 import { Evidence, signed } from "./Evidence";
 import {
@@ -492,6 +493,9 @@ export default function Dashboard() {
 
       {/* Nothing above the fold used to say a wallet had money waiting. This
           does, and it stays on screen while the page scrolls. */}
+      {/* Only renders while the connected wallet is actually missing something. */}
+      <GetStarted />
+
       {canTrade && <SummaryStrip positions={posSummary} claims={claimSummary} />}
 
       {/* `min-w-0` on both, or a grid item's automatic minimum size is its
