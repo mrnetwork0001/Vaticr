@@ -13,7 +13,7 @@ export default function Nav() {
   return (
     <nav className="sticky top-0 z-40 border-b border-ink-700/80 bg-ink-950/90 backdrop-blur" aria-label="Sections">
       <div className="mx-auto flex h-14 max-w-nav items-center gap-3 px-4 sm:px-6">
-        <a href="#top" className="flex items-center" aria-label="Vaticr, back to top">
+        <a href="/" className="flex items-center" aria-label="Vaticr, home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/brand/vaticr-header.png"
@@ -27,7 +27,7 @@ export default function Nav() {
           {LINKS.map((l) => (
             <li key={l.id}>
               <a
-                href={`#${l.id}`}
+                href={`/#${l.id}`}
                 className="rounded px-2 py-1 text-sm text-gray-400 transition hover:bg-ink-800 hover:text-gray-100"
               >
                 {l.label}

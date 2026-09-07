@@ -56,7 +56,7 @@ export default function MobileMenu({
           {links.map((l) => (
             <li key={l.id}>
               <a
-                href={`#${l.id}`}
+                href={`/#${l.id}`}
                 onClick={() => setOpen(false)}
                 className="block rounded px-3 py-2 text-[14px] text-gray-300 transition hover:bg-ink-800 hover:text-gray-100"
               >

@@ -348,7 +348,23 @@ UNIT
   fi
 fi
 
-chown -R vaticr:vaticr "$APP" "$STATE_DIR"
+# Ownership, deliberately narrow. Chowning the whole checkout to the service
+# user makes git refuse it as "dubious ownership" for root, which breaks the
+# documented `git pull` redeploy. The service only needs to READ the tree,
+# which world-readable permissions already allow; it writes just three places.
+chown -R vaticr:vaticr "$STATE_DIR"
+chown vaticr:vaticr "$APP/.env" 2>/dev/null || true
+chown vaticr:vaticr "$APP/.env.production" 2>/dev/null || true
+[[ -d "$APP/.next" ]] && chown -R vaticr:vaticr "$APP/.next"
+
+# Repair a checkout an earlier version chowned wholesale, so git works again.
+if [[ -d "$APP/.git" && "$(stat -c %U "$APP/.git")" != root ]]; then
+  chown -R root:root "$APP/.git"
+  find "$APP" -maxdepth 1 -mindepth 1 \
+    ! -name .next ! -name .env ! -name .env.production ! -name .git \
+    -exec chown -R root:root {} + 2>/dev/null || true
+  ok "returned the checkout to root so git pull works"
+fi
 
 # ════════════════════════════════════════════════════════════════ services
 say "Starting services"

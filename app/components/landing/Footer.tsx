@@ -17,10 +17,10 @@ const COLUMNS: { heading: string; links: { label: string; href: string }[] }[] =
     heading: "Product",
     links: [
       { label: "Launch app", href: "/dashboard" },
-      { label: "How it works", href: "#how" },
-      { label: "Does the model work?", href: "#evidence" },
-      { label: "Mint-a-pair", href: "#mint" },
-      { label: "Run it yourself", href: "#build" },
+      { label: "How it works", href: "/#how" },
+      { label: "Does the model work?", href: "/#evidence" },
+      { label: "Mint-a-pair", href: "/#mint" },
+      { label: "Run it yourself", href: "/#build" },
     ],
   },
   {
@@ -66,7 +66,7 @@ export default function Footer() {
         <div className="grid gap-y-9 md:grid-cols-[1.4fr_1fr_1fr_1fr] md:gap-8">
           {/* brand */}
           <div className="max-w-md">
-            <a href="#top" className="inline-block" aria-label="Vaticr, back to top">
+            <a href="/" className="inline-block" aria-label="Vaticr, home">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/brand/vaticr-header.png"
