@@ -317,8 +317,12 @@ export default function Dashboard() {
 
   const ticketRow = ticket ? tradable.find((e) => e.forecast.market_id === ticket) : undefined;
 
+  // Wider than the landing page on purpose: this is a working surface, and the
+  // market list, the book and the model's number all want to be readable on one
+  // line. max-w-app is calc(25vw + 60rem) — the side margin a max-w-7xl shell
+  // would leave, at three quarters of its width.
   return (
-    <main id="main" className="mx-auto max-w-7xl px-5 py-8">
+    <main id="main" className="mx-auto max-w-app px-4 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
           {/* The lockup IS the way back to the landing page, which is where a

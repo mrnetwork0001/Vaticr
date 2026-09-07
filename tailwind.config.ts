@@ -40,6 +40,8 @@ const config: Config = {
       },
       maxWidth: {
         page: "calc(50vw + 36rem)",
+        // The app shell. See the derivation in Dashboard.tsx.
+        app: "calc(25vw + 60rem)",
         nav: "calc(75vw + 18rem)",
       },
     },
