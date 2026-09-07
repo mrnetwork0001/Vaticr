@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Address } from "viem";
+import AppShell, { ViewTabs, type View } from "./AppShell";
 import CalibrationPanel from "./Calibration";
 import { Evidence, signed } from "./Evidence";
 import {
@@ -229,6 +230,9 @@ export default function Dashboard() {
   const [focusPool, setFocusPool] = useState<Address | undefined>(undefined);
   /** Headline figures reported up by the two panels, for the summary strip. */
   const [posSummary, setPosSummary] = useState<PositionsSummary | null>(null);
+  // One surface at a time. Every data hook stays mounted above this, so
+  // switching views is a render, never a refetch.
+  const [view, setView] = useState<View>("markets");
   const [claimSummary, setClaimSummary] = useState<ClaimSummary | null>(null);
 
   const venueQuery = VENUE ? `venue=${VENUE}&` : "";
@@ -321,7 +325,17 @@ export default function Dashboard() {
   // market list, the book and the model's number all want to be readable on one
   // line. max-w-app is calc(25vw + 60rem) — the side margin a max-w-7xl shell
   // would leave, at three quarters of its width.
+  // A wallet that disconnects while on a wallet-only view must not be stranded
+  // looking at an empty panel.
+  if (!canTrade && view === "positions") setView("markets");
+
   return (
+    <AppShell
+      view={view}
+      onView={setView}
+      canTrade={canTrade}
+      badges={{ positions: claimSummary && claimSummary.total > 0 ? "$" : null }}
+    >
     <main id="main" className="mx-auto max-w-app px-4 py-8">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -447,8 +461,10 @@ export default function Dashboard() {
           does, and it stays on screen while the page scrolls. */}
       {canTrade && <SummaryStrip positions={posSummary} claims={claimSummary} />}
 
+      <ViewTabs view={view} onView={setView} canTrade={canTrade} />
+
       <div className="grid gap-5 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
+        <div className={`space-y-5 ${view === "markets" ? "lg:col-span-2" : "lg:col-span-3"}`}>
           {/* The ticket, the positions and the claim sweep exist only for a
               wallet that can actually sign. With none attached this column is
               the same read-only console it has always been.
@@ -459,7 +475,7 @@ export default function Dashboard() {
               live-windows table, which put a settled payout below the fold and
               made it invisible. Disconnected, none of this mounts and the
               column opens on "Live windows" exactly as it always has. */}
-          {canTrade && (
+          {canTrade && view === "markets" && (
             <>
               {ticketRow && (
                 <TradeTicket
@@ -471,6 +487,11 @@ export default function Dashboard() {
                 />
               )}
 
+            </>
+          )}
+
+          {canTrade && view === "positions" && (
+            <>
               <Positions
                 focusPool={focusPool}
                 refreshToken={tradeNonce}
@@ -485,6 +506,7 @@ export default function Dashboard() {
             </>
           )}
 
+          {view === "markets" && (
           <Card
             id="windows"
             title="Live windows"
@@ -617,13 +639,17 @@ export default function Dashboard() {
               </div>
             )}
           </Card>
+          )}
 
-          <CalibrationPanel
-            cal={calibration.data}
-            state={calibration.state}
-            detail={calibration.detail}
-          />
+          {view === "calibration" && (
+            <CalibrationPanel
+              cal={calibration.data}
+              state={calibration.state}
+              detail={calibration.detail}
+            />
+          )}
 
+          {view === "audit" && (
           <Card
             id="audit"
             title="Settlement audit"
@@ -739,8 +765,10 @@ export default function Dashboard() {
               </>
             )}
           </Card>
+          )}
         </div>
 
+        {(view === "markets" || view === "evidence") && (
         <Card
           id="headlines"
           title="Headline evidence"
@@ -799,6 +827,7 @@ export default function Dashboard() {
             </ul>
           )}
         </Card>
+        )}
       </div>
 
       <footer className="mt-8 text-center text-[11px] text-slate-400">
@@ -806,5 +835,6 @@ export default function Dashboard() {
         markets and settlement are DreamDEX protocol; forecasting is Vaticr.
       </footer>
     </main>
+    </AppShell>
   );
 }
