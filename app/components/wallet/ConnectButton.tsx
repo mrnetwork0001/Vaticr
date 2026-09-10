@@ -151,33 +151,37 @@ export default function ConnectButton() {
   }
 
   // ---- connected, wrong network ---------------------------------------
+  // This lives in a 232px rail, so everything stacks. The earlier row layout
+  // was written for a wide header and wrapped into an unreadable pile here.
   if (!chainOk) {
     return (
-      <div className="flex flex-col items-end">
-        <div className="flex items-center gap-2">
-          <Pill tone="warn">
-            Wrong network{chainId !== undefined ? ` · chain ${chainId}` : ""}
-          </Pill>
-          <button
-            type="button"
-            disabled={isSwitching}
-            onClick={() => void switchToSomnia()}
-            className="rounded-lg border border-amber-400/40 bg-amber-400/15 px-3 py-1.5 text-[13px] font-semibold text-amber-300 transition hover:bg-amber-400/25 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {isSwitching ? "Switching…" : "Switch to Somnia testnet"}
-          </button>
-          <button
-            type="button"
-            onClick={() => disconnect()}
-            className="rounded-lg border border-white/10 px-2.5 py-1.5 text-[13px] text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
-          >
-            Disconnect
-          </button>
-        </div>
-        <p className="mt-2 max-w-sm text-right text-[11px] leading-relaxed text-slate-400">
-          Vaticr trades only on Somnia Shannon testnet (50312). Your wallet will
-          be asked to add the network if it does not have it.
+      <div className="flex w-full flex-col gap-2">
+        <Pill tone="warn">
+          Wrong network{chainId !== undefined ? ` · chain ${chainId}` : ""}
+        </Pill>
+
+        <button
+          type="button"
+          disabled={isSwitching}
+          onClick={() => void switchToSomnia()}
+          className="w-full rounded-lg border border-amber-400/40 bg-amber-400/15 px-3 py-2 text-[12.5px] font-semibold leading-tight text-amber-300 transition hover:bg-amber-400/25 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {isSwitching ? "Check your wallet…" : "Switch to Somnia testnet"}
+        </button>
+
+        <p className="text-[11px] leading-snug text-slate-400">
+          Vaticr trades only on Somnia Shannon testnet (50312). Most wallets do
+          not ship it, so you will be asked to add it first.
         </p>
+
+        <button
+          type="button"
+          onClick={() => disconnect()}
+          className="w-full rounded-lg border border-white/10 px-2.5 py-1.5 text-[12px] text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
+        >
+          Disconnect
+        </button>
+
         <ErrorNote error={switchError} />
       </div>
     );

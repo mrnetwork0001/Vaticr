@@ -15,7 +15,7 @@
  * step that actually broke.
  */
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useSwitchChain } from "wagmi";
 import { SOMNIA_ADD_CHAIN_PARAMS, SOMNIA_CHAIN_ID } from "./chain";
 
@@ -43,6 +43,17 @@ export function isUserRejection(err: unknown): boolean {
   return msg.includes("user rejected") || msg.includes("user denied");
 }
 
+/**
+ * Addresses this tab has already offered the switch to.
+ *
+ * Module-level on purpose. `ConnectButton` mounts twice - the shell renders a
+ * narrow and a wide footer variant and hides one with CSS - so a per-component
+ * guard would put two wallet prompts on screen at once. A rejection also lands
+ * here, because re-prompting someone who just said no is how a dapp becomes
+ * something you close.
+ */
+const offered = new Set<string>();
+
 export interface SomniaChainState {
   /** The chain the wallet reports, or `undefined` when disconnected. */
   chainId: number | undefined;
@@ -57,7 +68,7 @@ export interface SomniaChainState {
 }
 
 export function useSomniaChain(): SomniaChainState {
-  const { chainId, connector, isConnected } = useAccount();
+  const { address, chainId, connector, isConnected } = useAccount();
   const { switchChainAsync } = useSwitchChain();
   const [isSwitching, setIsSwitching] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -101,6 +112,20 @@ export function useSomniaChain(): SomniaChainState {
       setIsSwitching(false);
     }
   }, [connector, switchChainAsync]);
+
+  // Offer the switch as soon as a wallet arrives on the wrong chain, rather
+  // than waiting to be asked. Almost no wallet ships Somnia, so the common case
+  // is not "user picked the wrong network" - it is "user has never heard of
+  // this one", and a button they must first notice is a poor way to say so.
+  const switchRef = useRef(switchToSomnia);
+  switchRef.current = switchToSomnia;
+  useEffect(() => {
+    if (!isConnected || !address) return;
+    if (chainId === SOMNIA_CHAIN_ID) return;
+    if (offered.has(address)) return;
+    offered.add(address);
+    void switchRef.current();
+  }, [isConnected, address, chainId]);
 
   return {
     chainId,
