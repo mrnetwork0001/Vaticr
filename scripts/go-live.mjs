@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * One command to put Vaticr on-chain.
+ * One command to put Vaticr onchain.
  *
  *   npm run go-live          # dry run: show exactly what it would do
  *   npm run go-live -- --send
@@ -13,7 +13,7 @@
  * It does four things, each independently skippable:
  *   1. deploy VaticrForecastRegistry            (hardhat)
  *   2. mint tUSDC from the public testnet faucet
- *   3. commit one real forecast on-chain, taken from the live Vaticr API
+ *   3. commit one real forecast onchain, taken from the live Vaticr API
  *   4. place ONE small real order on a live event contract
  *
  * The only thing it cannot do for you is obtain native STT for gas - every
@@ -80,7 +80,7 @@ async function main() {
   const gas = await pub.getBalance({ address: account.address });
   console.log(`   native STT: ${formatEther(gas)}`);
   if (gas === 0n) {
-    bad("This address has no STT, so nothing on-chain can happen.");
+    bad("This address has no STT, so nothing onchain can happen.");
     console.log(`
    Fund it - every Somnia faucet is captcha-gated, so this step needs a human:
      https://testnet.somnia.network/
@@ -121,10 +121,10 @@ async function main() {
   step(2, "Mint tUSDC from the public faucet, commit a forecast, place one order");
   if (!SEND) {
     console.log("   would run: npx tsx scripts/go-live-onchain.ts");
-    console.log("   (faucet -> on-chain forecast commit -> one small real order)");
+    console.log("   (faucet -> onchain forecast commit -> one small real order)");
   } else {
     const r = spawnSync("npx", ["tsx", "scripts/go-live-onchain.ts"], { stdio: "inherit", env: process.env });
-    if (r.status !== 0) bad("on-chain step reported a failure - see output above");
+    if (r.status !== 0) bad("onchain step reported a failure - see output above");
     if (existsSync("deployments/onchain-proof.json")) {
       out.steps.onchain = JSON.parse(readFileSync("deployments/onchain-proof.json", "utf8"));
     }

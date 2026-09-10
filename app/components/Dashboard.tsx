@@ -225,7 +225,7 @@ const VIEW_META: Record<View, { title: string; lead: string }> = {
   },
   audit: {
     title: "Settlement audit",
-    lead: "Every settled window recomputed from the public oracle feed and compared to the on-chain winner.",
+    lead: "Every settled window recomputed from the public oracle feed and compared to the onchain winner.",
   },
   calibration: {
     title: "Calibration",
@@ -722,7 +722,7 @@ export default function Dashboard() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
                     <caption className="sr-only">
-                      Settled windows, with the on-chain outcome beside the one
+                      Settled windows, with the onchain outcome beside the one
                       recomputed independently from the oracle price feed.
                     </caption>
                     <thead className="text-slate-300">
@@ -731,7 +731,7 @@ export default function Dashboard() {
                         <th scope="col" className="px-3 py-2 font-medium">Open</th>
                         <th scope="col" className="px-3 py-2 font-medium">Close</th>
                         <th scope="col" className="px-3 py-2 font-medium">Margin</th>
-                        <th scope="col" className="px-3 py-2 font-medium">On-chain</th>
+                        <th scope="col" className="px-3 py-2 font-medium">Onchain</th>
                         <th scope="col" className="px-3 py-2 font-medium">Recomputed</th>
                         <th scope="col" className="px-3 py-2 font-medium">Receipt</th>
                       </tr>

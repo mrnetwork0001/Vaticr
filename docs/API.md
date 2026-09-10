@@ -134,7 +134,7 @@ whether it is even worth quoting.
 | `asset` | string | - | `BTC` / `ETH` |
 | `limit` | int | `12` | max `50` |
 
-Returns an array of envelopes: the `Forecast` plus the on-chain window facts.
+Returns an array of envelopes: the `Forecast` plus the onchain window facts.
 
 One live envelope, captured verbatim from the testnet venue:
 
@@ -206,7 +206,7 @@ Notes that matter for anyone reading these numbers:
 - `vol_source` is `"fallback"` when the tick history was too thin to estimate,
   in which case `VATICR_FALLBACK_VOL` was used and `degraded` is usually set.
 - `status` is the **indexer's** view and lags by seconds. The bot re-checks the
-  authoritative on-chain status before sending anything; only `Trading` accepts
+  authoritative onchain status before sending anything; only `Trading` accepts
   orders.
 - A market whose opening price or level cannot be recovered is **omitted**
   rather than returned with a guessed number, so this array can be shorter than
@@ -280,7 +280,7 @@ Response:
 Idempotent per `market_id`: a second commit for the same market returns
 `{"recorded": false, "reason": "already committed"}` rather than overwriting.
 Commitments land in `.vaticr/forecasts.jsonl`. This is the *off-chain* record;
-the on-chain equivalent - same discipline, but tamper-evident - is
+the onchain equivalent - same discipline, but tamper-evident - is
 `bot/src/registry.ts` writing to `VaticrForecastRegistry.sol`, and it is the bot
 that makes that call, not this service.
 
@@ -328,7 +328,7 @@ several seconds.
 ## `GET /audit`
 
 Independently recomputes each settled window from the public oracle price feed
-and compares the result to the on-chain winner.
+and compares the result to the onchain winner.
 
 | param | type | default | notes |
 |---|---|---|---|
@@ -379,7 +379,7 @@ The 1bp floor is not a fudge. The oracle settles on its own sampled tick and we
 recover the reference from the public feed by timestamp; the two can differ by a
 tick, which is irrelevant on a normal window and decisive on one that closed
 0.005% from its open. Measured over twenty settlements, both "nearest tick" and
-"last tick at or before the boundary" reproduce the on-chain winner 19/20,
+"last tick at or before the boundary" reproduce the onchain winner 19/20,
 failing on the *same* window. Below that margin the honest statement is that our
 resolution ran out - not that the chain is wrong. Anything at or above it is
 reported as a real mismatch.

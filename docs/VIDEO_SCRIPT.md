@@ -42,7 +42,7 @@ made after the fact. Vaticr fixes both halves."
 calculation using time remaining and volatility measured live. It tilts that
 with scored news, folded in as log-odds so evidence compounds without any one
 headline running the number to certainty. Then it trades the gap, and commits
-every forecast on-chain before the window settles."
+every forecast onchain before the window settles."
 
 ---
 
@@ -54,7 +54,7 @@ every forecast on-chain before the window settles."
 "Here it is live. A new wallet needs test collateral, and the app mints it in
 one click. Then the ticket shows both numbers side by side: the model says
 eighty-nine point nine, the book asks eighty-eight point nine. One cent of edge
-per share. Take it, and the fill confirms on-chain in about a second."
+per share. Take it, and the fill confirms onchain in about a second."
 
 ---
 

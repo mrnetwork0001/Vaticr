@@ -134,7 +134,7 @@ export default function ClaimPanel({
       });
       if (res.receipt?.status === "reverted") {
         throw new Error(
-          `The claim was mined but REVERTED on-chain (tx ${res.hash}). Nothing was redeemed. ` +
+          `The claim was mined but REVERTED onchain (tx ${res.hash}). Nothing was redeemed. ` +
             "A batch claim is all-or-nothing - try claiming the rows one at a time to find the one that objects.",
         );
       }

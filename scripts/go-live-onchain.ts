@@ -1,5 +1,5 @@
 /**
- * The on-chain half of `npm run go-live -- --send`.
+ * The onchain half of `npm run go-live -- --send`.
  *
  * Produces the evidence a "working prototype on testnet" needs, in one pass:
  *   1. mint tUSDC from the public testnet faucet
@@ -7,7 +7,7 @@
  *   3. place ONE small real order on a live event contract
  *
  * Deliberately conservative: one order, minimum size, post-only so it rests
- * rather than crossing, and gated on the authoritative on-chain status. The
+ * rather than crossing, and gated on the authoritative onchain status. The
  * point is a verifiable footprint on the explorer, not a trading session.
  */
 
@@ -119,8 +119,8 @@ async function main(): Promise<void> {
     proof.errors.push(`api: ${(e as Error).message}`);
   }
 
-  // --- 2. on-chain forecast commitment -------------------------------------
-  console.log("\n   [2/3] Publish the forecast on-chain");
+  // --- 2. onchain forecast commitment -------------------------------------
+  console.log("\n   [2/3] Publish the forecast onchain");
   const dep = "deployments/50312.json";
   const registry = existsSync(dep) ? JSON.parse(readFileSync(dep, "utf8")).forecastRegistry : null;
   if (!registry) {

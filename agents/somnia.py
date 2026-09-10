@@ -250,7 +250,7 @@ class SomniaReader:
     # Determined empirically, because the protocol docs say only "a multi-source
     # price reference": over the eight most recently settled BTC/ETH windows on
     # the testnet venue, comparing close-vs-open on `mark` reproduced the
-    # on-chain winner 8/8, while `spot` reproduced it 6/8 - the two
+    # onchain winner 8/8, while `spot` reproduced it 6/8 - the two
     # disagreements being exactly the windows where spot and mark drifted apart
     # in direction. Pricing a contract off `spot` therefore mis-prices every
     # window that closes near its own opening price, which is precisely the

@@ -26,7 +26,7 @@ second copy to drift out of date. **Read these instead:**
    protocol-minted rolling Up/Down windows on BTC/ETH; settlement is automatic
    via the OracleHub. Anything that reads like a "headline-to-contract factory"
    is describing a design that was abandoned because the protocol forbids it.
-2. **Python is read-only; TypeScript owns every on-chain write.** Orders,
+2. **Python is read-only; TypeScript owns every onchain write.** Orders,
    claims, backstops and registry commitments are all in `bot/src/`.
 3. **`vendor/ec-core` is the official Bot Kit, vendored verbatim under MIT.**
    Never edit it. Vaticr code lives in `bot/` and imports it as any in-repo

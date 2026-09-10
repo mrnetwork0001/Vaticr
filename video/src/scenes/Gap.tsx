@@ -1,7 +1,7 @@
 // The film's central image: one probability axis, two opinions, and the
 // distance between them.
 //
-// Every figure is from the real trade in the README's on-chain proof - the
+// Every figure is from the real trade in the README's onchain proof - the
 // model at 0.899, the book's best offer at 0.889. The gap shades in last,
 // because it is the thing being sold.
 import React from "react";

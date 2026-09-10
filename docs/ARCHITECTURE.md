@@ -18,11 +18,11 @@ stating plainly because they are properties of the protocol, not gaps in it:
 2. **Contracts cannot be resolved from news.** Resolution is oracle-driven and
    automatic. Each market's settlement question is scheduled on the OracleHub at
    creation *with the gas for its own resolution reserved up front*, and
-   Somnia's on-chain reactivity delivers the answer straight to the hub's
+   Somnia's onchain reactivity delivers the answer straight to the hub's
    callback at expiry. `BinaryMarketsModule` is the only address a market trusts
    as its settler. As the docs put it: **"Nobody has to - the chain does."**
 
-3. **It is a CLOB, not an AMM.** One on-chain order book per market, quoted in
+3. **It is a CLOB, not an AMM.** One onchain order book per market, quoted in
    YES terms, where a NO price is always `1 − yes`.
 
 So Vaticr does not deploy markets and does not resolve them. It does the thing
@@ -170,7 +170,7 @@ Two consequences:
 Taking is gated on clearing the **touch**, never the mid. Paying the spread is
 the most common way a signal bot with genuine edge still loses money.
 
-Each cycle also gates on the authoritative on-chain status (the indexer lags by
+Each cycle also gates on the authoritative onchain status (the indexer lags by
 seconds; only `Trading` accepts orders), scales its expiry headroom to the
 window's cadence, and sweeps settled markets - **winnings are claimed, not
 received**, and claiming runs inside the trading loop so it cannot race its own
@@ -182,14 +182,14 @@ nonce.
 open:
 
 - **Audit.** Recompute every settlement independently from the public oracle
-  feed and compare to the on-chain winner, surfacing the per-source receipt URL.
+  feed and compare to the onchain winner, surfacing the per-source receipt URL.
 
   One honest limit: the oracle settles on its own sampled tick, and we recover
   the reference from the public feed by timestamp. Those can differ by a tick,
   which is irrelevant on a normal window and decisive on one that closed a
   fraction of a basis point from its open. Measured over twenty settlements,
   both "nearest tick" and "last tick at or before the boundary" reproduce the
-  on-chain winner 19/20, failing on the *same* window - one that moved 0.005%.
+  onchain winner 19/20, failing on the *same* window - one that moved 0.005%.
 
   So a disagreement under 1bp is reported as **inconclusive** rather than a
   mismatch: at that margin our reconstruction has run out of resolution, and
@@ -204,7 +204,7 @@ open:
   Execution is [`bot/src/backstop.ts`](../bot/src/backstop.ts), which holds the
   signer.
 
-## On-chain commitments
+## Onchain commitments
 
 [`contracts/VaticrForecastRegistry.sol`](../contracts/VaticrForecastRegistry.sol)
 is an append-only log of forecasts published *before* settlement. A prediction

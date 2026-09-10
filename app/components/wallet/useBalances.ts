@@ -33,7 +33,7 @@ import { exactAmount, shortAmount } from "./format";
 export const DEFAULT_BALANCE_REFRESH_MS = 12_000;
 
 export interface TokenBalance {
-  /** Raw on-chain units. The only value safe to do arithmetic on. */
+  /** Raw onchain units. The only value safe to do arithmetic on. */
   raw: bigint;
   decimals: number;
   symbol: string;

@@ -41,7 +41,7 @@ export default function Landing() {
             {[
               ["Markets cannot be created", "Event contracts are rolling Up/Down windows on BTC and ETH, minted per window by BinaryMarketsModule. There is no permissionless creation entry point and the question text is fixed."],
               ["Contracts cannot be resolved", "Settlement is automatic. The question is scheduled on the OracleHub at creation with its resolution gas reserved, and Somnia reactivity fires the callback at expiry."],
-              ["It is a CLOB, not an AMM", "One on-chain order book per market, quoted in YES terms, where a NO price is always 1 − yes. There is no curve to provide liquidity to."],
+              ["It is a CLOB, not an AMM", "One onchain order book per market, quoted in YES terms, where a NO price is always 1 − yes. There is no curve to provide liquidity to."],
             ].map(([t, d], i) => (
               <div key={t} className="min-w-0" style={nth(i)}>
                 <Panel className="h-full">
@@ -451,7 +451,7 @@ npm run bot:start   # brain + bot, one command`}</Code>
               <Panel>
                 <h3 className="text-[13px] font-semibold text-gray-200">Live on Somnia testnet</h3>
                 <p className="mt-2 text-[12.5px] leading-relaxed text-gray-400">
-                  The forecast registry is deployed, with a forecast committed on-chain
+                  The forecast registry is deployed, with a forecast committed onchain
                   318 seconds before its window closed and a real order placed.
                 </p>
                 <a

@@ -353,7 +353,7 @@ export default function Positions({
           // not traded" are different statements, and telling a user who just
           // filled an order to go and place one reads as a broken app. Say
           // which of the two it is, and that waiting is the fix.
-          empty="Nothing indexed for this wallet yet. If you have just traded, the indexer runs several minutes behind the chain - your fill is on-chain already and will appear here shortly. Otherwise, place an order from the ticket above."
+          empty="Nothing indexed for this wallet yet. If you have just traded, the indexer runs several minutes behind the chain - your fill is onchain already and will appear here shortly. Otherwise, place an order from the ticket above."
         />
       )}
 

@@ -1,5 +1,5 @@
 /**
- * On-chain forecast commitments (`contracts/VaticrForecastRegistry.sol`).
+ * Onchain forecast commitments (`contracts/VaticrForecastRegistry.sol`).
  *
  * Opt-in: set `VATICR_REGISTRY` to the deployed address. When it is unset the
  * bot still records forecasts off-chain through the Python API, which is enough
@@ -115,13 +115,13 @@ export class ForecastRegistry {
     private readonly account: Address,
   ) {}
 
-  /** Returns null when unconfigured - the caller simply skips on-chain commits. */
+  /** Returns null when unconfigured - the caller simply skips onchain commits. */
   static create(ctx: EcContext): ForecastRegistry | null {
     const address = (process.env.VATICR_REGISTRY ?? "").trim();
     if (!address) return null;
     const pk = ctx.config.privateKey;
     if (!pk) {
-      warn("VATICR_REGISTRY is set but there is no PRIVATE_KEY - skipping on-chain commits");
+      warn("VATICR_REGISTRY is set but there is no PRIVATE_KEY - skipping onchain commits");
       return null;
     }
     const chain = makeChain(ctx.config);
@@ -194,7 +194,7 @@ export class ForecastRegistry {
       }
 
       this.committed.add(marketId);
-      log(`     registry: committed ${env.forecast.symbol} on-chain - tx ${hash}`);
+      log(`     registry: committed ${env.forecast.symbol} onchain - tx ${hash}`);
       return true;
     } catch (err) {
       warn(`registry commit failed (continuing): ${(err as Error).message}`);

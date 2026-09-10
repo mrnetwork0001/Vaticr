@@ -75,7 +75,7 @@ export default async function Hero() {
               ["+0.3791", "backtested skill", "900 forecasts"],
               // The claim no other entry can make - the forecast was public and
               // immutable while the outcome was still unknown.
-              ["318s", "committed early", "on-chain, before settlement"],
+              ["318s", "committed early", "onchain, before settlement"],
               // Live, because it moves.
               tally
                 ? [tally[0], "settlements", tally[1]]

@@ -4,7 +4,7 @@ import { LegalPage, H2, P, List, Item, Strong } from "../components/legal/LegalP
 export const metadata: Metadata = {
   title: "Privacy",
   description:
-    "Vaticr has no accounts, no cookies and no analytics. This page says exactly what your browser stores, what the server sees, and what is public on-chain by design.",
+    "Vaticr has no accounts, no cookies and no analytics. This page says exactly what your browser stores, what the server sees, and what is public onchain by design.",
 };
 
 const GITHUB = "https://github.com/mrnetwork0001/Vaticr";
@@ -72,7 +72,7 @@ export default function Privacy() {
         user is ever passed to it.
       </P>
 
-      <H2>What is public on-chain, and permanently</H2>
+      <H2>What is public onchain, and permanently</H2>
       <P>
         This is the part worth reading twice. Anything you do <em>through</em> Vaticr
         that touches Somnia is a public blockchain transaction: your wallet

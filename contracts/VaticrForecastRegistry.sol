@@ -18,7 +18,7 @@ pragma solidity 0.8.24;
 ///         the outcome was known. An off-chain log proves nothing: whoever
 ///         holds the file can rewrite it. So Vaticr writes each forecast here,
 ///         timestamped by the chain and refused after the window closes.
-///         Afterwards anyone can read the market's own on-chain outcome, score
+///         Afterwards anyone can read the market's own onchain outcome, score
 ///         these commitments with a Brier score, and check the claimed track
 ///         record without trusting the agent that produced it.
 ///

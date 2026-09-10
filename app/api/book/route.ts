@@ -8,7 +8,7 @@
  * That returned `null` for every market on the live venue while the chain
  * demonstrably had books - measured 2026-09-04: this route reported
  * best_bid/best_ask null on all eight live windows at the same moment the
- * on-chain reader saw [0.803/0.828] and [0.813/0.836]. So the dashboard showed
+ * onchain reader saw [0.803/0.828] and [0.813/0.836]. So the dashboard showed
  * "mid -" on every row, on the exact screen whose whole argument is that the
  * model disagrees with the market.
  *

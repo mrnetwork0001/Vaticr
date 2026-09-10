@@ -29,7 +29,7 @@ export default function Terms() {
       <P>
         Vaticr derives a probability for each DreamDEX Event Contract window,
         trades the gap between that probability and the order book, and commits
-        each forecast on-chain before the window settles so the record can be
+        each forecast onchain before the window settles so the record can be
         audited afterwards. It is an independent project. It is{" "}
         <Strong>not affiliated with, endorsed by, or operated by DreamDEX or
         Somnia</Strong>, whose protocols it builds on and does not control.
@@ -73,7 +73,7 @@ export default function Terms() {
       <H2>5. Settlement is not ours</H2>
       <P>
         Windows settle automatically through the DreamDEX protocol&apos;s oracle,
-        on-chain, without our involvement. Vaticr&apos;s settlement audit{" "}
+        onchain, without our involvement. Vaticr&apos;s settlement audit{" "}
         <em>recomputes</em> outcomes from the public feed and compares them to the
         chain; it observes and cannot alter them. If a settlement is disputed, that
         is a matter for the protocol, not for us.

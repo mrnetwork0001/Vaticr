@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * A market's authoritative on-chain snapshot, plus the grid its pool enforces.
+ * A market's authoritative onchain snapshot, plus the grid its pool enforces.
  *
  * This hook exists because of one rule the protocol is unforgiving about: the
  * INDEXER LAGS THE CHAIN BY SECONDS, and a 15-minute window can leave `Trading`

@@ -647,7 +647,7 @@
       <div class="step"><span class="num">04</span>
         <p><strong>Commit.</strong> Each forecast is written to a <code>VaticrForecastRegistry</code> contract while the window is still open. Append-only.</p></div>
       <div class="step"><span class="num">05</span>
-        <p><strong>Audit.</strong> Every settled window is recomputed from the public oracle feed, compared to the on-chain winner, and Brier-scored in the app.</p></div>
+        <p><strong>Audit.</strong> Every settled window is recomputed from the public oracle feed, compared to the onchain winner, and Brier-scored in the app.</p></div>
     </div>
 
     <div class="note">
@@ -856,8 +856,8 @@
 </section>
 
 <!-- ══════════════════════════════════════════════════════ 09 · proof -->
-<section class="slide" id="s9" aria-label="Slide 9: On-chain proof">
-  <div class="slide-head"><span class="n">09</span> <span>On-chain proof</span></div>
+<section class="slide" id="s9" aria-label="Slide 9: Onchain proof">
+  <div class="slide-head"><span class="n">09</span> <span>Onchain proof</span></div>
   <div class="slide-body">
     <h2>Not a dry run.</h2>
     <p>
@@ -910,7 +910,7 @@
       <div class="finding"><span class="fn">01</span>
         <p><span class="ft">Settlement resolves against the EMA, not spot.</span>
         Over the eight most recent settlements <code>mark</code> reproduced the
-        on-chain winner 8/8 while <code>spot</code> managed 6/8, disagreeing on
+        onchain winner 8/8 while <code>spot</code> managed 6/8, disagreeing on
         exactly the near-the-money windows most worth trading.</p></div>
       <div class="finding"><span class="fn">02</span>
         <p><span class="ft">That feed is a 1-second EMA, so naive volatility reads about 4× too low.</span>

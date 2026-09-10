@@ -5,7 +5,7 @@
  *
  * Two things live here rather than in any one panel:
  *
- *  1. **The on-chain market status.** Only `Trading` accepts orders, and the
+ *  1. **The onchain market status.** Only `Trading` accepts orders, and the
  *     indexer lags the chain by seconds - so every write re-reads the status
  *     from chain immediately before signing. The names and the explanations of
  *     each state belong next to each other so the UI can never say "Locked"
@@ -26,7 +26,7 @@ import { explorerTx } from "../wallet";
 
 /* ------------------------------------------------------------------ status */
 
-/** On-chain `MarketStatus` enum. Only `Trading` accepts orders. */
+/** Onchain `MarketStatus` enum. Only `Trading` accepts orders. */
 export const MARKET_STATUS = {
   Listed: 0,
   Trading: 1,
@@ -139,7 +139,7 @@ export function explainError(err: unknown): Explained {
         return {
           headline: "The window stopped accepting orders",
           detail:
-            "It moved out of Trading between the on-chain check and the send - windows are short. Nothing was placed.",
+            "It moved out of Trading between the onchain check and the send - windows are short. Nothing was placed.",
           routine: true,
           raw,
         };

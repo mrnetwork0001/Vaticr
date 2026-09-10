@@ -43,7 +43,7 @@ design around wishes here.
 - **`vendor/ec-core` is vendored verbatim from the official Bot Kit (MIT).**
   Never edit it. Vaticr code lives in `bot/` and imports
   `@dreamdex-bot-kit/ec-core` exactly as an in-repo strategy would.
-- **Gate writes on the on-chain status, never the indexer** (it lags seconds).
+- **Gate writes on the onchain status, never the indexer** (it lags seconds).
   Only `Trading` (status 1) accepts orders.
 - **Take only when the posterior clears the touch, never the mid.** Paying the
   spread is how a bot with real edge still loses.

@@ -53,7 +53,7 @@ export const SOMNIA_PRICE_FEED = SOMNIA_TESTNET_PRICE_FEED;
 export const COLLATERAL_ADDRESS: Address =
   (SOMNIA_ADDRESSES.collateral ?? SOMNIA_ADDRESSES.testUsdc) as Address;
 
-/** Fallback decimals until the on-chain `decimals()` read lands. */
+/** Fallback decimals until the onchain `decimals()` read lands. */
 export const COLLATERAL_DECIMALS_FALLBACK = 6;
 
 /** Display ticker for the collateral token. */

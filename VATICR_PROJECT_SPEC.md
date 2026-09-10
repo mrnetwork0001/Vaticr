@@ -139,12 +139,12 @@ from npm; see SDK_FEEDBACK §1), plus `@somnia-chain/markets-sdk`. Takes only
 when the posterior clears the **touch**, never the mid; otherwise rests a
 `Buy YES @ p−δ` + `Buy NO @ (1−p)−δ` **mint-a-pair** quote, which is a complete
 two-sided market with no inventory because two opposite-side buyers mint a fresh
-pair. Gates every write on the authoritative on-chain status, and claims
+pair. Gates every write on the authoritative onchain status, and claims
 winnings inside the loop so nothing races its own nonce.
 
 ### 4. Resolution, audit and backstops (`agents/resolver.py`)
 Three jobs the protocol leaves open to anyone. **Audit:** recompute every
-settlement from the public oracle feed and compare it to the on-chain winner,
+settlement from the public oracle feed and compare it to the onchain winner,
 reporting *verified / mismatched / inconclusive* - where "inconclusive" is a
 disagreement under 1bp, which is finer than an off-chain reconstruction can
 resolve. **Score:** Brier-score every pre-committed forecast against a 0.25
@@ -152,7 +152,7 @@ coin-flip baseline. **Backstop:** find windows the oracle has not answered and
 name the permissionless `pokeOracle` / `voidExpired` call;
 [`bot/src/backstop.ts`](bot/src/backstop.ts) holds the signer and makes it.
 
-### Supporting: on-chain forecast commitments (`contracts/VaticrForecastRegistry.sol`)
+### Supporting: onchain forecast commitments (`contracts/VaticrForecastRegistry.sol`)
 An append-only log of forecasts published *before* settlement, with no owner, no
 upgrade path, and no revisions. An off-chain file proves nothing - whoever holds
 it can rewrite it. 7 Solidity tests.
@@ -164,7 +164,7 @@ it can rewrite it. 7 Solidity tests.
 - [x] GitHub repository (`mrnetwork0001/Vaticr`), Apache 2.0 - **currently private; must be made public before submission.**
 - [x] Integration with official DreamDEX Bot Kit (`vendor/ec-core` + `markets-sdk`).
 - [x] DreamDEX SDK Feedback Report - [docs/SDK_FEEDBACK.md](docs/SDK_FEEDBACK.md).
-- [x] Deployed smart contracts on Somnia Testnet - `VaticrForecastRegistry` is live at [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A), with a forecast committed on-chain 318s before its window closed and a real order placed. Addresses and transaction hashes in `deployments/`.
+- [x] Deployed smart contracts on Somnia Testnet - `VaticrForecastRegistry` is live at [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A), with a forecast committed onchain 318s before its window closed and a real order placed. Addresses and transaction hashes in `deployments/`.
 - [ ] 2–3 minute demo video URL - **not yet recorded.** Runbook: [DEMO.md](DEMO.md).
 
 ---

@@ -15,8 +15,8 @@ The five things worth opening first, in order of how much they prove:
 | | |
 |---|---|
 | **The model is measurably right** | [Backtest evidence](docs/evidence/backtest-2026-09-04.json) - 900 forecasts, 300 windows, Brier **0.15522** against a coin flip's 0.25. Skill **+0.3791**. Lookahead-free and frozen; the harness is [`agents/backtest.py`](agents/backtest.py). |
-| **It ran on-chain, before the fact** | [On-chain proof](#on-chain-proof) - a forecast committed to the registry **318 seconds before** its window settled, and a post-only order that rested on the real book inside the touch. Every step links to its transaction on the Shannon explorer. |
-| **It checks its own work** | The settlement audit recomputes every settled window from the public oracle feed and compares it to the on-chain winner. It is the part of the app that could embarrass us, which is why it is in the app. |
+| **It ran onchain, before the fact** | [Onchain proof](#onchain-proof) - a forecast committed to the registry **318 seconds before** its window settled, and a post-only order that rested on the real book inside the touch. Every step links to its transaction on the Shannon explorer. |
+| **It checks its own work** | The settlement audit recomputes every settled window from the public oracle feed and compares it to the onchain winner. It is the part of the app that could embarrass us, which is why it is in the app. |
 | **We went past the happy path** | [**SDK feedback report**](docs/SDK_FEEDBACK.md) - eight substantive findings plus a list of smaller ones, all hit in practice and verified against live testnet data, including the settlement reference being the EMA rather than spot, which is undocumented and quietly changes what a correct price is. |
 | **It is not a demo shell** | [114 tests](#testing) - 75 Python, 32 TypeScript, 7 Solidity. `npm test` runs all of them. |
 
@@ -264,12 +264,12 @@ agents/          Python 3.11 - read-only. The brain.
   server.py        FastAPI surface the bot polls
   store.py         forecast commitments (.vaticr/forecasts.jsonl)
 
-bot/src/         TypeScript - every on-chain write.
+bot/src/         TypeScript - every onchain write.
   runner.ts        the trading loop  (npm run bot:start)
   strategy.ts      take-vs-quote, mint-a-pair levels, inventory caps
   backstop.ts      pokeOracle / voidExpired
   doctor.ts        preflight
-  registry.ts      on-chain forecast commitments
+  registry.ts      onchain forecast commitments
   signal.ts        typed client for the Python API
 
 contracts/       VaticrForecastRegistry.sol - append-only, no owner
@@ -293,7 +293,7 @@ complete two-sided quote with **no inventory and no counterparty maker**.
 Vaticr never sells, which means the only risk it carries is its net imbalance.
 
 **Settlement resolves against the EMA, not spot.** This is undocumented, and it
-matters: over the eight most recent settlements, `mark` reproduced the on-chain
+matters: over the eight most recent settlements, `mark` reproduced the onchain
 winner 8/8 while `spot` managed 6/8 - disagreeing exactly on the near-the-money
 windows that are most worth trading. Vaticr prices the level off `mark` and
 measures volatility off `spot`. That finding and seven others are written up in
@@ -342,7 +342,7 @@ npm run test -w @vaticr/bot   # take-vs-quote, touch pricing, inventory caps
 
 [`0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A`](https://shannon-explorer.somnia.network/address/0x3D04ff026A4Dc553a2ae9071dbc238a40D24b27A)
 
-### On-chain proof
+### Onchain proof
 
 Vaticr is not a dry-run demo. One command - `npm run go-live -- --send` - put the
 whole loop on testnet, and every step is independently verifiable:

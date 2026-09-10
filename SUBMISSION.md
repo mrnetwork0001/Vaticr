@@ -24,7 +24,7 @@ Vaticr
 
 An event contract's YES token has a real, derivable probability. Vaticr derives
 it from the price process, tilts it with live news, trades the gap with zero
-inventory, commits every forecast on-chain before settlement, and Brier-scores
+inventory, commits every forecast onchain before settlement, and Brier-scores
 itself afterwards.
 
 ## Full description
@@ -47,11 +47,11 @@ quote was skilful or lucky, because nothing was written down before the fact.
    the touch by more than fees; otherwise it rests a two-sided **mint-a-pair**
    quote, which on a binary book needs no counterparty maker and therefore
    **no inventory**.
-4. **Committed on-chain, before the fact.** Each forecast is written to a
+4. **Committed onchain, before the fact.** Each forecast is written to a
    `VaticrForecastRegistry` contract while the window is still open, so the
    record cannot be edited after the outcome is known.
 5. **Audited afterwards.** Every settled window is recomputed from the public
-   oracle feed and compared to the on-chain winner, and the whole history is
+   oracle feed and compared to the onchain winner, and the whole history is
    Brier-scored against a coin flip in the app.
 
 **Why it is not a demo shell.** The frozen backtest covers 900 forecasts over
@@ -64,7 +64,7 @@ is committed to the repository, not screenshotted.
 **What we learned that others will hit.** Two findings changed what a *correct*
 price even is, and both are undocumented. Settlement resolves against the
 oracle's EMA (`mark`), not spot - over the eight most recent settlements `mark`
-reproduced the on-chain winner 8/8 while spot managed 6/8, disagreeing exactly
+reproduced the onchain winner 8/8 while spot managed 6/8, disagreeing exactly
 on the near-the-money windows most worth trading. And because that feed is an
 EMA sampled every second, the textbook volatility estimator measures the
 smoothing rather than the process and reads roughly **4× too low**; volatility
@@ -96,7 +96,7 @@ link.
 **Innovation & originality (20%).** Most prediction-market entries help a human
 place a bet. Vaticr treats the contract as what it mathematically is - a
 probability - and makes the interesting claim falsifiable by committing each
-forecast on-chain *before* settlement, then scoring itself in public. The
+forecast onchain *before* settlement, then scoring itself in public. The
 mint-a-pair quoting strategy is a second original use of the protocol: it makes
 two-sided market-making possible with zero inventory and no counterparty maker.
 

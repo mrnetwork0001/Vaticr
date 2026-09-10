@@ -77,7 +77,7 @@ settlement reference only as "a multi-source price reference", which reads like
 It is `mark`. Measured over the eight most recently settled BTC/ETH windows,
 comparing close-versus-open:
 
-| reference | reproduced the on-chain winner |
+| reference | reproduced the onchain winner |
 |---|---|
 | `mark` | **8 / 8** |
 | `spot` | 6 / 8 |
@@ -90,7 +90,7 @@ nothing tells it so: the orders fill, the settlements just go the other way.
 
 *On the 8/8:* that is a clean sweep on eight windows, not a claim that an
 off-chain reconstruction can adjudicate every settlement. Widened to twenty
-settlements, `mark` reproduces the on-chain winner 19/20, and the single
+settlements, `mark` reproduces the onchain winner 19/20, and the single
 exception is a window that closed 0.005% from its open - where the oracle's own
 sampled tick and the tick we recover from the public feed by timestamp differ by
 one. Vaticr's audit therefore reports three counts, not two: **verified**,
@@ -246,7 +246,7 @@ newest indexed Fill block 482126666
 lag                 493 seconds - 8.2 minutes
 ```
 
-A user places an order, the fill confirms on-chain in about a second, and the
+A user places an order, the fill confirms onchain in about a second, and the
 portfolio panel shows nothing at all for the next eight minutes. There is no
 signal distinguishing "you hold nothing" from "we cannot see it yet", so the
 honest reading of the screen is that the trade failed. Ours said, in that

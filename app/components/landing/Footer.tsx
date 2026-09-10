@@ -80,7 +80,7 @@ export default function Footer() {
             <p className="mt-8 text-[15px] leading-relaxed text-gray-400">
               Derives the fair probability of every DreamDEX Up/Down window on
               Somnia from the price process and the news, trades the gap, and
-              commits each forecast on-chain before it settles - so the record
+              commits each forecast onchain before it settles - so the record
               can be checked, not taken on trust.
             </p>
 

@@ -166,7 +166,7 @@ Then the calibration block:
 > "And every forecast is committed *before* its window closes, then Brier-scored
 > once the oracle speaks. A coin flip scores 0.25. That is the only way to know
 > whether a forecasting bot is a forecaster or a random number generator - and
-> it is why the commitments also go on-chain, append-only, no owner, no
+> it is why the commitments also go onchain, append-only, no owner, no
 > revisions. An agent that could edit its own history would prove nothing by
 > having one."
 
@@ -204,5 +204,5 @@ End on the passing output. No outro card, no music.
 
 The checklist lives at the bottom of
 [VATICR_PROJECT_SPEC.md](VATICR_PROJECT_SPEC.md). Two items must be closed
-registry (`npm run deploy:registry`) if you want shot 5's on-chain-commitment
+registry (`npm run deploy:registry`) if you want shot 5's onchain-commitment
 claim to point at a real address.

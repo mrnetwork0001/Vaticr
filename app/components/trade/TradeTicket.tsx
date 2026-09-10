@@ -16,7 +16,7 @@
  *     effect, so there is at least one render where wagmi says "connected" and
  *     `exchange.trader` still throws `SignerRequiredError`.
  *
- *  2. The on-chain status, not the indexed one. The indexer lags by seconds and
+ *  2. The onchain status, not the indexed one. The indexer lags by seconds and
  *     these windows are minutes long, so the status is re-read from chain
  *     IMMEDIATELY before the send and the write is abandoned if it is not
  *     `Trading` (1).
@@ -283,7 +283,7 @@ export default function TradeTicket({
   }, [priceInput, grid, tick, decimals, one]);
 
   const built = useMemo((): { plan?: Plan; problem?: string } => {
-    if (!marketId) return { problem: "This forecast is not bound to an on-chain market yet." };
+    if (!marketId) return { problem: "This forecast is not bound to an onchain market yet." };
     if (!canTrade) {
       return {
         problem: !isConnected
@@ -671,7 +671,7 @@ export default function TradeTicket({
       // render here as a success with a transaction hash attached to it.
       if (res.receipt?.status === "reverted") {
         throw new Error(
-          `The transaction was mined but REVERTED on-chain (tx ${res.hash}). No order was placed. ` +
+          `The transaction was mined but REVERTED onchain (tx ${res.hash}). No order was placed. ` +
             "Open the receipt for the decoded reason.",
         );
       }
@@ -1116,7 +1116,7 @@ export default function TradeTicket({
           )}
 
           <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-            The window's on-chain status is re-read one more time immediately before this is
+            The window's onchain status is re-read one more time immediately before this is
             signed. If it has left <span className="mono">Trading</span>, or the pool has rolled onto
             the next window, the order is abandoned rather than sent.
           </p>
@@ -1165,12 +1165,12 @@ export default function TradeTicket({
           <div className={`rounded-lg border px-3 py-3 ${good ? "border-up/30 bg-up/[0.07]" : "border-amber-400/30 bg-amber-400/[0.07]"}`}>
             <p className={`text-[13px] font-semibold ${good ? "text-up" : "text-amber-300"}`}>
               {filled && rested
-                ? "Filled and resting on-chain"
+                ? "Filled and resting onchain"
                 : filled
                   ? `Filled - you own ${rawToNumber(placed.filledRaw, placed.decimals)} ${placed.outcome} shares`
                   : rested
                     ? "Resting on the book"
-                    : "Confirmed on-chain, but nothing filled and nothing rested"}
+                    : "Confirmed onchain, but nothing filled and nothing rested"}
             </p>
             <p className="mt-1.5 text-[12px] leading-relaxed text-slate-300">
               {filled && (
@@ -1218,7 +1218,7 @@ export default function TradeTicket({
                 </>
               )}
               {!filled && !rested && placed.kind === "post" && (
-                <>The order was accepted on-chain but nothing rested and nothing filled - no
+                <>The order was accepted onchain but nothing rested and nothing filled - no
                 collateral was escrowed and you hold no new shares.</>
               )}
             </p>

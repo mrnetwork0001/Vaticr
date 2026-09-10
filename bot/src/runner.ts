@@ -6,7 +6,7 @@
  * Each cycle:
  *   1. ask the Vaticr intelligence layer for a Bayesian posterior on every live
  *      BTC/ETH window (price-process prior + decayed headline evidence);
- *   2. gate on the AUTHORITATIVE on-chain market status, never the indexer's;
+ *   2. gate on the AUTHORITATIVE onchain market status, never the indexer's;
  *   3. take when the posterior clears the touch, otherwise rest a two-sided
  *      mint-a-pair quote that needs no inventory;
  *   4. commit the forecast so the resolver can Brier-score it after settlement;
@@ -180,7 +180,7 @@ async function actOnMarket(
     budget.releaseMarket(market.symbol);
   };
 
-  // Always re-read the on-chain snapshot: the indexer lags by seconds and only
+  // Always re-read the onchain snapshot: the indexer lags by seconds and only
   // `Trading` accepts orders. Reuse this one snapshot for every read and write
   // in the pass so we never straddle a pool recycle.
   // The envelope already knows the posterior and roughly how long is left. When

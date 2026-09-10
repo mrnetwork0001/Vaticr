@@ -6,14 +6,14 @@ and the bot.)
 What this agent is *not*: a thing that resolves markets from news payloads.
 DreamDEX event contracts settle themselves. The settlement question is
 scheduled on the OracleHub when the market is created, with the gas for its own
-resolution reserved up front, and Somnia's on-chain reactivity delivers the
+resolution reserved up front, and Somnia's onchain reactivity delivers the
 answer straight to the hub's callback at expiry. `BinaryMarketsModule` is the
 only address a market trusts as its settler. No keeper, no cron, no operator.
 
 So this agent does the three jobs that *are* still unowned:
 
 1. **Audit.** Independently recompute every settlement from the public oracle
-   feed and compare it to the on-chain winner, and surface the receipt URL that
+   feed and compare it to the onchain winner, and surface the receipt URL that
    shows each price source that voted. A settlement nobody checks is a
    settlement nobody can trust.
 
