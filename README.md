@@ -24,7 +24,13 @@ The five things worth opening first, in order of how much they prove:
 | **It is not a demo shell** | [114 tests](#testing) - 75 Python, 32 TypeScript, 7 Solidity. `npm test` runs all of them. |
 
 Deploying it yourself: [DEPLOY.md](DEPLOY.md). Recording the walkthrough:
-[DEMO.md](DEMO.md).
+[DEMO.md](DEMO.md). The submission itself: [SUBMISSION.md](SUBMISSION.md).
+
+**Running live**, all three services on one host behind Caddy: the Next.js app,
+the Python forecasting API on loopback, and the trading bot. One idempotent
+script stands the whole thing up and is safe on a server that already has
+tenants - it joins whichever web server owns port 80 rather than fighting it,
+and rolls its own config back out if the config test fails.
 
 ---
 
@@ -121,7 +127,15 @@ pays gas in STT.
 
 Alternate faucets if that one is dry: [Google Cloud](https://cloud.google.com/application/web3/faucet/somnia/shannon),
 [Stakely](https://stakely.io/faucet/somnia-testnet-stt), [thirdweb](https://thirdweb.com/somnia-shannon-testnet).
-A few STT is plenty - these are cheap transactions.
+
+**Get more than a faucet gives you.** The SDK signs with a fixed 10,000,000 gas
+ceiling at 60 gwei, and Somnia reserves `gas_limit × maxFeePerGas` up front, so
+a signer needs **0.6 STT free per in-flight write** regardless of the ~0.008 the
+transaction actually costs. Measured: at 0.533 STT every order failed at the
+approve; at 0.833 the same wallet placed four orders across two markets. Worse,
+the rejection arrives as "Missing or invalid parameters", which sends you
+looking at your payload rather than your balance. Aim for 2 STT. This is
+[finding 7](docs/SDK_FEEDBACK.md).
 
 **2. tUSDC collateral - the Bot Kit fetches this for you.** Test collateral is
 `0x70a86D8842FB63C4Ad2b7cdddF530eBf1BB25d8E` (6 decimals) and it exposes a public
@@ -129,6 +143,13 @@ A few STT is plenty - these are cheap transactions.
 the signer's balance drops below 1,000 tUSDC, on any non-mainnet network. You do
 not need to do anything - but it does need gas, which is why STT comes first.
 Set `FAUCET_ENABLED=false` to turn that off.
+
+**Through the app instead.** A wallet that arrives at
+[usevaticr.xyz/dashboard](https://usevaticr.xyz/dashboard) with nothing in it is
+told so: the app offers to add Somnia if the wallet has never heard of it, then
+names what is still missing. Gas links out to the faucets above, because we
+cannot mint it. Collateral is one button, because the testnet token's
+`faucet(uint256)` is public. The panel removes itself once both are present.
 
 Confirm both with `npm run doctor`. It prints the wallet's native and collateral
 balances and fails on either being zero - and on gas being merely *thin*, since
@@ -278,11 +299,23 @@ bot/src/         TypeScript - every onchain write.
 contracts/       VaticrForecastRegistry.sol - append-only, no owner
 tests/           Python engine property tests
 test/            Solidity tests (hardhat)
-app/             Next.js 14 landing + dashboard
+
+app/             Next.js 14. Server components read the chain; the client signs.
+  page.tsx         landing
+  dashboard/       the working surface: markets, positions, evidence, audit, calibration
+  privacy/ terms/  what the app stores, and what it does not promise
+  components/wallet/  connect, chain guard, balances, first-run funding
+  components/trade/   ticket, positions, claims
+  api/book/        order-book tops, read from the chain rather than the indexer
+  api/vaticr/      server-side proxy to the Python layer
+
+video/           Remotion composition for the demo film - see video/README.md
 vendor/ec-core   dreamDEX Bot Kit ec-core, vendored verbatim (MIT) - see SDK feedback
-docs/            ARCHITECTURE.md · API.md · SDK_FEEDBACK.md · evidence/
+docs/            ARCHITECTURE.md · API.md · SDK_FEEDBACK.md · VIDEO_SCRIPT.md
+                 evidence/ (frozen backtest) · deck/ (the presentation)
 DEMO.md          runbook for the demo recording
-DEPLOY.md        Vercel (web) + VPS (brain and bot)
+DEPLOY.md        one VPS: web app, forecasting API and bot behind Caddy
+SUBMISSION.md    the hackathon entry, mapped to the judging criteria
 ```
 
 ---
