@@ -5,10 +5,13 @@ export default function Hero() {
     <header id="top" className="hero-grid border-b border-ink-700/70">
       <div className="mx-auto grid w-full max-w-page gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.05fr_1fr] lg:items-center">
         <div>
+          {/* The two verbs carry the two voices the whole app is coloured by:
+              the model prices, the market is where you trade. Nothing else in
+              the line is tinted, so neither colour is spent on decoration. */}
           <h1 className="hero-in mt-6 text-balance text-4xl font-bold leading-[1.05] tracking-tight text-gray-50 sm:text-5xl">
-            Price the window.
+            <span className="text-model">Price</span> the window.
             <br />
-            Trade the gap.
+            <span className="text-market">Trade</span> the gap.
           </h1>
 
           <p className="hero-in mt-5 max-w-xl text-pretty text-[16px] leading-relaxed text-gray-400">
