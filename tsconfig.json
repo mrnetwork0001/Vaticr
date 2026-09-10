@@ -17,5 +17,5 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "bot", "vendor", "artifacts", ".hardhat-cache"]
+  "exclude": ["node_modules", "bot", "vendor", "video", "artifacts", ".hardhat-cache"]
 }
