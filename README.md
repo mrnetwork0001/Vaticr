@@ -2,6 +2,9 @@
 
 **Autonomous DeAI forecasting and market making for DreamDEX Event Contracts on Somnia.**
 
+<img width="2986" height="1398" alt="image" src="https://github.com/user-attachments/assets/c31ca5a3-d8e0-400d-a301-cf981acb37a6" />
+
+
 Built for the [Somnia × DreamDEX Event Contracts Hackathon](https://dorahacks.io/hackathon/event-contracts/detail) · Apache-2.0
 
 ---
