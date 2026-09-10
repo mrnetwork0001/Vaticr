@@ -1,7 +1,8 @@
-// The cut. Each beat is a scene with its narration; beats cross-fade with a whoosh; a soft pad runs
-// underneath at low volume. Every timing comes from timeline.ts, which derives it from the manifest.
+// The cut. Each beat is a scene with its narration; beats cross-fade, with a
+// continuous bed underneath at low volume. Every timing comes from timeline.ts,
+// which derives it from the manifest.
 import React from "react";
-import { AbsoluteFill, Audio, Loop, Sequence, staticFile, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, Sequence, staticFile, useVideoConfig } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 import { BEATS, FPS, TRANSITION_S, beatStartFrame, manifest } from "./timeline";
@@ -28,8 +29,7 @@ const Scene: React.FC<{ i: number }> = ({ i }) => {
 
 export const Demo: React.FC = () => {
   const { fps, durationInFrames } = useVideoConfig();
-  const pad = manifest.sfx.pad;
-  const padFrames = Math.max(1, Math.round(pad.seconds * fps));
+  const bed = manifest.sfx.bed;
   return (
     <AbsoluteFill style={{ background: "#07090f" }}>
       <TransitionSeries>
@@ -49,15 +49,11 @@ export const Demo: React.FC = () => {
       {BEATS.map((b, i) => (
         <Narration key={b.id} id={b.narration} at={beatStartFrame(i) + Math.round(fps * 0.35)} />
       ))}
-      {/* a whoosh on every cut */}
-      {BEATS.slice(1).map((b, i) => (
-        <Sfx key={b.id} id="whoosh" at={beatStartFrame(i + 1) - Math.round(TRANSITION_S * fps * 0.5)} volume={0.35} />
-      ))}
-      {/* music bed */}
+      {/* Music bed: one continuous file, not a 20s loop.
+          Looping it clicked audibly at every seam - the loudest transient in
+          the whole film sat at 80 seconds, which is exactly four loops in. */}
       <Sequence from={0} durationInFrames={durationInFrames} layout="none">
-        <Loop durationInFrames={padFrames} times={Math.ceil(durationInFrames / padFrames)} layout="none">
-          <Audio src={staticFile(pad.file)} volume={0.11} />
-        </Loop>
+        <Audio src={staticFile(bed.file)} volume={0.10} />
       </Sequence>
     </AbsoluteFill>
   );

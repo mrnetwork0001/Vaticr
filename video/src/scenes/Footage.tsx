@@ -26,17 +26,18 @@ export const Footage: React.FC<{ beat: Beat; frames: number }> = ({ beat, frames
   return (
     <AbsoluteFill>
       <Grid glow={false} />
-      <AbsoluteFill style={{ alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 1800, height: 1012, borderRadius: 18, overflow: "hidden", border: `1px solid ${INK[700]}`, boxShadow: "0 40px 120px rgba(0,0,0,0.6)", transform: `scale(${enter})`, background: INK[950] }}>
-          <OffthreadVideo
-            src={staticFile(clip.file)}
-            startFrom={Math.round(from * fps)}
-            endAt={Math.round((from + play) * fps) + 1}
-            playbackRate={rate}
-            muted
-            style={{ width: 1800, height: 1012, objectFit: "cover" }}
-          />
-        </div>
+      {/* Full bleed. The clip was previously inset in a rounded 1800x1012
+          card, which read as a screenshot pasted onto a slide and made the
+          recorded app smaller than the graphics either side of it. */}
+      <AbsoluteFill>
+        <OffthreadVideo
+          src={staticFile(clip.file)}
+          startFrom={Math.round(from * fps)}
+          endAt={Math.round((from + play) * fps) + 1}
+          playbackRate={rate}
+          muted
+          style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${enter})` }}
+        />
       </AbsoluteFill>
       {beat.caption ? <Caption text={beat.caption} kicker={beat.kicker} total={frames} /> : null}
       {events.map((e, i) => {

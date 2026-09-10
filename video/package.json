@@ -8,7 +8,7 @@
     "narrate": "node scripts/narrate.mjs",
     "manifest": "node scripts/manifest.mjs",
     "stills": "node scripts/stills.mjs out/stills 100,503,983,1318,1792,2479,3047,3637",
-    "render": "remotion render src/index.ts Demo out/vaticr-demo.mp4 --codec h264 --crf 18",
+    "render": "remotion render src/index.ts Demo out/vaticr-demo.mp4 --codec h264 --crf 14 --x264-preset slower --audio-bitrate 320k --concurrency 4",
     "preview": "remotion studio src/index.ts",
     "render:720": "remotion render src/index.ts Demo out/vaticr-demo-720p.mp4 --codec h264 --crf 20 --scale 0.6667"
   },

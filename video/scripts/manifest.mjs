@@ -21,7 +21,7 @@ for (const n of ['landing', 'audit', 'trade']) {
   footage[n] = { file: `footage/${n}.mp4`, seconds: dur(mp4), events: ev.events };
 }
 const sfx = {};
-for (const id of ['whoosh', 'key', 'click', 'ding', 'veto', 'pad']) {
+for (const id of ['whoosh', 'key', 'click', 'ding', 'veto', 'pad', 'bed']) {
   const mp3 = `${PUB}/sfx/${id}.mp3`, wav = `${PUB}/sfx/${id}.wav`;
   const f = existsSync(mp3) ? mp3 : wav; sfx[id] = { file: `sfx/${id}.${existsSync(mp3) ? 'mp3' : 'wav'}`, seconds: dur(f) };
 }
