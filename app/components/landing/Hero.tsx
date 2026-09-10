@@ -1,6 +1,39 @@
 import HeroScene from "./HeroScene";
 
-export default function Hero() {
+const API = (process.env.VATICR_API_URL ?? "http://127.0.0.1:8787").replace(/\/$/, "");
+
+/**
+ * The settlement tally, read at request time.
+ *
+ * This was typed into the page as "12/12" and went stale the moment a
+ * settlement disagreed - the hero claimed perfect agreement while the audit
+ * view three clicks away showed a mismatch. A number that changes has to be
+ * computed, or it becomes a claim the product itself contradicts.
+ *
+ * The audit recomputes every settlement from the oracle feed, which takes
+ * about three seconds - too slow to block a page load on. So it is revalidated
+ * at most once a minute and served from cache in between: at worst a minute
+ * stale, against the months of staleness a typed number accumulated.
+ *
+ * On any failure the tile drops the count rather than inventing one.
+ */
+async function settlementTally(): Promise<[string, string] | null> {
+  try {
+    // No AbortSignal here: Next's patched fetch will not cache a request that
+    // carries one, and the throw lands in the catch below - which is what put
+    // the tile on its fallback while the call underneath was succeeding.
+    const res = await fetch(`${API}/audit`, { next: { revalidate: 60 } });
+    if (!res.ok) return null;
+    const d = (await res.json()) as { verified?: number; total?: number };
+    if (typeof d.verified !== "number" || typeof d.total !== "number" || d.total === 0) return null;
+    return [`${d.verified}/${d.total}`, "independently recomputed"];
+  } catch {
+    return null;
+  }
+}
+
+export default async function Hero() {
+  const tally = await settlementTally();
   return (
     <header id="top" className="hero-grid border-b border-ink-700/70">
       <div className="mx-auto grid w-full max-w-page gap-10 px-4 py-16 sm:px-6 sm:py-24 lg:grid-cols-[1.05fr_1fr] lg:items-center">
@@ -38,9 +71,15 @@ export default function Hero() {
 
           <dl className="mt-10 grid grid-cols-3 gap-px overflow-hidden rounded-lg border border-ink-700 bg-ink-700">
             {[
+              // Frozen artefact, so correctly static: docs/evidence/backtest-2026-09-04.json
               ["+0.3791", "backtested skill", "900 forecasts"],
-              ["114", "tests", "python · ts · solidity"],
-              ["12/12", "settlements", "independently recomputed"],
+              // The claim no other entry can make - the forecast was public and
+              // immutable while the outcome was still unknown.
+              ["318s", "committed early", "on-chain, before settlement"],
+              // Live, because it moves.
+              tally
+                ? [tally[0], "settlements", tally[1]]
+                : ["every", "settlement", "recomputed from the feed"],
             ].map(([v, k, s]) => (
               <div key={k} className="bg-ink-900 px-4 py-3">
                 <dt className="mono text-lg font-bold text-gray-100">{v}</dt>
