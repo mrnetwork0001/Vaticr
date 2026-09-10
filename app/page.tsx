@@ -330,7 +330,7 @@ export default function Landing() {
               </div>
               <div className="px-5 py-4">
                 <p className="mb-3 font-mono text-[11px] text-gray-500">
-                  close-vs-open over the eight most recent settlements
+                  close-vs-open over eight consecutive settlements, 4 Sep 2026
                 </p>
                 <div className="space-y-2">
                   {[["mark", 100, "8/8", "#34d399"], ["spot", 75, "6/8", "#fb7185"]].map(([k, w, v, c]) => (

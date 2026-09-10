@@ -74,7 +74,7 @@ it at that moment would still remove all the guesswork.
 settlement reference only as "a multi-source price reference", which reads like
 `spot`.
 
-It is `mark`. Measured over the eight most recently settled BTC/ETH windows,
+It is `mark`. Measured on 4 September 2026 over eight consecutively settled BTC/ETH windows,
 comparing close-versus-open:
 
 | reference | reproduced the onchain winner |

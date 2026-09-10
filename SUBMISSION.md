@@ -63,7 +63,7 @@ is committed to the repository, not screenshotted.
 
 **What we learned that others will hit.** Two findings changed what a *correct*
 price even is, and both are undocumented. Settlement resolves against the
-oracle's EMA (`mark`), not spot - over the eight most recent settlements `mark`
+oracle's EMA (`mark`), not spot - over eight consecutive settlements `mark`
 reproduced the onchain winner 8/8 while spot managed 6/8, disagreeing exactly
 on the near-the-money windows most worth trading. And because that feed is an
 EMA sampled every second, the textbook volatility estimator measures the

@@ -293,7 +293,7 @@ complete two-sided quote with **no inventory and no counterparty maker**.
 Vaticr never sells, which means the only risk it carries is its net imbalance.
 
 **Settlement resolves against the EMA, not spot.** This is undocumented, and it
-matters: over the eight most recent settlements, `mark` reproduced the onchain
+matters: over eight consecutive settlements measured on 4 September 2026, `mark` reproduced the onchain
 winner 8/8 while `spot` managed 6/8 - disagreeing exactly on the near-the-money
 windows that are most worth trading. Vaticr prices the level off `mark` and
 measures volatility off `spot`. That finding and seven others are written up in
