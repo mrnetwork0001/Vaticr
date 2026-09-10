@@ -1,9 +1,10 @@
 // The film's central image: one probability axis, two opinions, and the
 // distance between them.
 //
-// Every figure is from the real trade in the README's onchain proof - the
-// model at 0.899, the book's best offer at 0.889. The gap shades in last,
-// because it is the thing being sold.
+// Every figure is from the ticket in the footage two beats later - the model
+// at 0.465, the book's best offer at 0.351, on an ETH 300-second window. The
+// graphic and the screen recording quote the same trade on purpose: a viewer
+// who checks one against the other should find them agreeing.
 import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import { INK, MARKET, MARKET_DIM, MODEL, MODEL_DIM, MONO, SANS, TEXT } from "../theme";
@@ -14,12 +15,12 @@ const X1 = 1620;
 const Y = 372;
 // The axis is zoomed to where both numbers sit. A full 0-1 scale renders a
 // one-cent edge as ten pixels, which hides the only thing this frame is for.
-const LO = 0.85;
-const HI = 0.93;
+const LO = 0.28;
+const HI = 0.58;
 const x = (p: number) => X0 + ((p - LO) / (HI - LO)) * (X1 - X0);
 
-const MODEL_P = 0.899;
-const BOOK_P = 0.889;
+const MODEL_P = 0.465;
+const BOOK_P = 0.351;
 
 export const Gap: React.FC<{ frames: number }> = ({ frames }) => {
   const frame = useCurrentFrame();
@@ -65,20 +66,20 @@ export const Gap: React.FC<{ frames: number }> = ({ frames }) => {
               x={(x(BOOK_P) + x(MODEL_P)) / 2} y={Y - 92} textAnchor="middle"
               fontFamily={MONO} fontSize={26} fill={MODEL} opacity={(gapIn - 0.6) / 0.4}
             >
-              +0.010 / share
+              +0.114 / share
             </text>
           ) : null}
 
           {/* axis */}
           <line x1={X0} y1={Y} x2={X0 + (X1 - X0) * axis} y2={Y} stroke={INK[700]} strokeWidth={3} />
-          {axis > 0.98 ? [0.85, 0.87, 0.89, 0.91, 0.93].map((p) => tick(p, p.toFixed(2))) : null}
+          {axis > 0.98 ? [0.30, 0.35, 0.40, 0.45, 0.50, 0.55].map((p) => tick(p, p.toFixed(2))) : null}
 
           {/* the book */}
           <g opacity={bookIn}>
             <line x1={x(BOOK_P)} y1={Y - 64} x2={x(BOOK_P)} y2={Y} stroke={MARKET} strokeWidth={5} />
             <circle cx={x(BOOK_P)} cy={Y} r={11} fill={MARKET} />
             <text x={x(BOOK_P) - 22} y={Y - 84} textAnchor="end" fontFamily={MONO} fontSize={34} fontWeight={700} fill={MARKET}>
-              BOOK 0.889
+              BOOK 0.351
             </text>
             <text x={x(BOOK_P) - 22} y={Y - 122} textAnchor="end" fontFamily={MONO} fontSize={22} fill={MARKET_DIM}>
               best offer on YES
@@ -90,14 +91,14 @@ export const Gap: React.FC<{ frames: number }> = ({ frames }) => {
             <line x1={x(MODEL_P)} y1={Y} x2={x(MODEL_P)} y2={Y + 96} stroke={MODEL} strokeWidth={5} />
             <circle cx={x(MODEL_P)} cy={Y} r={11} fill={MODEL} />
             <text x={x(MODEL_P) + 24} y={Y + 108} fontFamily={MONO} fontSize={34} fontWeight={700} fill={MODEL}>
-              VATICR 0.899
+              VATICR 0.465
             </text>
             <text x={x(MODEL_P) + 24} y={Y + 146} fontFamily={MONO} fontSize={22} fill={MODEL_DIM}>
               posterior on YES
             </text>
           </g>
           <text x={X1} y={Y + 92} textAnchor="end" fontFamily={MONO} fontSize={20} fill={TEXT.lo}>
-            axis 0.85 – 0.93
+            axis 0.28 - 0.58
           </text>
         </svg>
       </AbsoluteFill>

@@ -9,19 +9,25 @@
       "text": "Every event contract asks one question. Will this window close at or above the price it opened at? That makes the fair value of a YES token a real probability. Not an opinion. It can be derived." },
 
     { "id": "gap",
-      "text": "But the book is quoted by people eyeballing a chart. Here the model says eighty-nine point nine, and the book asks eighty-eight point nine. One cent of edge per share, and nobody else is computing it." },
+      "text": "But the book is quoted by people eyeballing a chart. Here the model says forty-six point five, while the book is asking thirty-five point one. Eleven cents of edge per share, and nobody else is computing it." },
 
     { "id": "how",
       "text": "Vaticr derives that number from the price process, using time remaining and volatility measured live. Then it tilts it with scored news, folded in as log-odds, so evidence compounds without any one headline running the probability to certainty." },
 
+    { "id": "onboard",
+      "text": "Here it is, live. This wallet has never touched Somnia, so the app offers to add the network, then says plainly what is still missing before you can trade. Gas, and test collateral." },
+
+    { "id": "fund",
+      "text": "Gas comes from a public faucet. The collateral is mintable by anyone, so that is one click and one signature. The panel watches both and removes itself the moment you have them." },
+
     { "id": "trade",
-      "text": "This is the live app. A new wallet mints test collateral in one click. The ticket then shows both numbers side by side, the model against the book, and takes the difference. The fill confirms on chain in about a second." },
+      "text": "Now the ticket. The posterior against the top of the book, side by side, with the difference priced per share. Take it with an immediate-or-cancel, and the fill confirms onchain in about a second." },
+
+    { "id": "fill",
+      "text": "Ten shares, filled. The escrow that was not needed is released in the same transaction, and the position separates what is genuinely at risk from what a matched pair already guarantees." },
 
     { "id": "mint",
       "text": "The agent quotes both sides at once. On a binary book, buying YES and buying NO needs no seller. The pool mints a fresh pair. So two resting bids are a complete two-sided market, made with no inventory and no counterparty maker." },
-
-    { "id": "bot",
-      "text": "That is the agent on a live book right now. Reading the top, deriving the posterior, resting a pair of quotes around it. Those orders are being filled by real counterparties." },
 
     { "id": "evidence",
       "text": "And it is measurably right. Nine hundred forecasts, over three hundred settled windows the model never saw. A Brier score of zero point one five five, against a coin flip's zero point two five. Skill, plus zero point three seven nine." },

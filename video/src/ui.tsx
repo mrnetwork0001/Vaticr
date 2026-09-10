@@ -54,15 +54,33 @@ export const Eyebrow: React.FC<{ children: React.ReactNode; color?: string; styl
 );
 
 /** Lower-third caption: fades in after `delay`, out before the beat ends. */
-export const Caption: React.FC<{ text: string; delay?: number; total: number }> = ({ text, delay = 10, total }) => {
+export const Caption: React.FC<{ text: string; kicker?: string; delay?: number; total: number }> = ({
+  text, kicker, delay = 10, total,
+}) => {
   const frame = useCurrentFrame();
   const o = interpolate(frame, [delay, delay + 12, total - 18, total - 4], [0, 1, 1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   const y = interpolate(frame, [delay, delay + 12], [16, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
   return (
     <div style={{ position: "absolute", left: 72, bottom: 56, opacity: o, transform: `translateY(${y}px)` }}>
-      <div style={{ display: "inline-flex", alignItems: "center", gap: 14, padding: "12px 18px", borderRadius: 10, background: "rgba(7,9,15,0.82)", border: `1px solid ${INK[700]}`, backdropFilter: "blur(6px)" }}>
-        <span style={{ width: 10, height: 10, background: MARKET, borderRadius: 2 }} />
-        <span style={{ fontFamily: SANS, fontSize: 24, color: TEXT.hi, fontWeight: 600 }}>{text}</span>
+      <div
+        style={{
+          display: "inline-flex", alignItems: "flex-start", gap: 14,
+          padding: "14px 20px", borderRadius: 10,
+          background: "rgba(7,9,15,0.86)", border: `1px solid ${INK[700]}`,
+          backdropFilter: "blur(6px)",
+        }}
+      >
+        <span style={{ width: 10, height: 10, background: MARKET, borderRadius: 2, marginTop: 9 }} />
+        <span style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {kicker ? (
+            <span style={{ fontFamily: MONO, fontSize: 15, letterSpacing: "0.18em", textTransform: "uppercase", color: MODEL }}>
+              {kicker}
+            </span>
+          ) : null}
+          <span style={{ fontFamily: SANS, fontSize: 25, color: TEXT.hi, fontWeight: 600, lineHeight: 1.25 }}>
+            {text}
+          </span>
+        </span>
       </div>
     </div>
   );

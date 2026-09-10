@@ -38,7 +38,7 @@ export const Footage: React.FC<{ beat: Beat; frames: number }> = ({ beat, frames
           />
         </div>
       </AbsoluteFill>
-      {beat.caption ? <Caption text={beat.caption} total={frames} /> : null}
+      {beat.caption ? <Caption text={beat.caption} kicker={beat.kicker} total={frames} /> : null}
       {events.map((e, i) => {
         const at = toFrame(e.t);
         if (e.kind === "key") return <Sfx key={i} id="key" at={at} volume={0.55} />;
